@@ -1,0 +1,79 @@
+{
+  "source_name": "Federal Reserve Economic Data (FRED)",
+  "source_type": "government / aggregator",
+  "status": "active",
+  "sector_coverage": [
+    "Sector proxies",
+    "Macro indicators",
+    "Industry-tagged series",
+    "Release-based bulk retrieval"
+  ],
+  "api": {
+    "name": "FRED API",
+    "base_url": "https://api.stlouisfed.org/fred",
+    "docs_url": "https://fred.stlouisfed.org/docs/api/fred/",
+    "auth": {
+      "required": true,
+      "method": "api_key_query_param",
+      "param_name": "api_key"
+    },
+    "formats": [
+      "JSON",
+      "XML"
+    ],
+    "request_style": "GET",
+    "production_endpoints": [
+      {
+        "name": "series_search",
+        "path": "/series/search",
+        "required_params": {
+          "search_text": "{query}",
+          "api_key": "{api_key}",
+          "file_type": "json"
+        }
+      },
+      {
+        "name": "series_metadata",
+        "path": "/series",
+        "required_params": {
+          "series_id": "{series_id}",
+          "api_key": "{api_key}",
+          "file_type": "json"
+        }
+      },
+      {
+        "name": "series_observations",
+        "path": "/series/observations",
+        "required_params": {
+          "series_id": "{series_id}",
+          "api_key": "{api_key}",
+          "file_type": "json"
+        }
+      },
+      {
+        "name": "series_release",
+        "path": "/series/release",
+        "required_params": {
+          "series_id": "{series_id}",
+          "api_key": "{api_key}",
+          "file_type": "json"
+        }
+      },
+      {
+        "name": "release_observations_v2_bulk",
+        "path": "/fred/v2/release/observations",
+        "required_params": {
+          "release_id": "{release_id}",
+          "api_key": "{api_key}",
+          "file_type": "json"
+        },
+        "notes": "Version 2 is suited to bulk observations for all series in a release."
+      }
+    ],
+    "example_url": "https://api.stlouisfed.org/fred/series/observations?series_id=INDPRO&api_key={api_key}&file_type=json"
+  },
+  "production_notes": [
+    "Use series search plus tags/categories to discover sector-oriented series.",
+    "Version 2 is useful when you want all series in a release, not just single-series calls."
+  ]
+}

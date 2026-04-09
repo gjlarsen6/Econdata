@@ -1,0 +1,52 @@
+{
+  "source_name": "World Bank Indicators API",
+  "source_type": "multilateral",
+  "status": "active",
+  "sector_coverage": [
+    "Global sector indicators",
+    "Manufacturing/services/agriculture shares",
+    "Country-level sector comparisons"
+  ],
+  "api": {
+    "name": "World Bank Indicators API",
+    "base_url": "https://api.worldbank.org/v2",
+    "docs_url": "https://datahelpdesk.worldbank.org/knowledgebase/articles/889392-about-the-indicators-api-documentation",
+    "auth": {
+      "required": false
+    },
+    "formats": [
+      "JSON",
+      "XML"
+    ],
+    "request_style": "GET",
+    "production_endpoints": [
+      {
+        "name": "indicator_catalog",
+        "path": "/indicator",
+        "required_params": {
+          "format": "json",
+          "per_page": 20000
+        }
+      },
+      {
+        "name": "country_indicator_timeseries",
+        "path": "/country/{country_code}/indicator/{indicator_code}",
+        "required_params": {
+          "format": "json"
+        }
+      },
+      {
+        "name": "source_indicators",
+        "path": "/source/{source_id}/indicators",
+        "required_params": {
+          "format": "json"
+        }
+      }
+    ],
+    "example_url": "https://api.worldbank.org/v2/country/US/indicator/NV.IND.MANF.ZS?format=json"
+  },
+  "production_notes": [
+    "Use indicator metadata pulls first to map sector indicator codes you need.",
+    "Strong fit for cross-country sector comparisons rather than U.S.-only high-frequency releases."
+  ]
+}

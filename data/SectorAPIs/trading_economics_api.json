@@ -1,0 +1,58 @@
+{
+  "source_name": "Trading Economics",
+  "source_type": "commercial aggregator",
+  "status": "active",
+  "sector_coverage": [
+    "Indicators by category",
+    "Economic calendar",
+    "Official-source time series",
+    "Cross-country sector monitoring"
+  ],
+  "api": {
+    "name": "Trading Economics API",
+    "base_url": "https://api.tradingeconomics.com",
+    "docs_url": "https://docs.tradingeconomics.com/",
+    "auth": {
+      "required": true,
+      "methods": [
+        "client_key/client_secret",
+        "guest or demo access may exist for limited workflows depending on plan/docs"
+      ]
+    },
+    "formats": [
+      "JSON",
+      "CSV",
+      "XML"
+    ],
+    "request_style": "GET",
+    "production_endpoints": [
+      {
+        "name": "indicators_catalog",
+        "path": "/indicators",
+        "required_params": {}
+      },
+      {
+        "name": "calendar",
+        "path": "/calendar",
+        "required_params": {}
+      },
+      {
+        "name": "country_indicator_historical",
+        "path": "/historical/country/{country}/indicator/{indicator}",
+        "required_params": {}
+      },
+      {
+        "name": "country_data",
+        "path": "/country/{country}",
+        "required_params": {
+          "group": "{category_optional}"
+        }
+      }
+    ],
+    "example_url": "https://api.tradingeconomics.com/indicators"
+  },
+  "production_notes": [
+    "Good unifying layer when you want one API across countries and categories.",
+    "Verify licensing and plan limits before production deployment."
+  ]
+}

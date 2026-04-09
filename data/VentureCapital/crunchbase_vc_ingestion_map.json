@@ -1,0 +1,358 @@
+{
+  "version": "1.0",
+  "source": {
+    "name": "Crunchbase Data API",
+    "site_url": "https://www.crunchbase.com",
+    "docs_url": "https://data.crunchbase.com/docs/welcome-to-crunchbase-data",
+    "api_base_url": "https://api.crunchbase.com/v4/data",
+    "authentication": {
+      "method": "user_key",
+      "transport": [
+        "query_param",
+        "header"
+      ],
+      "param_name": "user_key"
+    },
+    "rate_limits": {
+      "default_documented_limit": "200 calls per minute"
+    },
+    "packages": [
+      "Fundamentals",
+      "Insights",
+      "Predictions"
+    ],
+    "notes": [
+      "Search APIs require field_ids and query in the request body.",
+      "Search filters in a single query are ANDed together; use multiple calls for OR logic.",
+      "Entity lookup supports field_ids and card_ids.",
+      "Organization card lookups return up to 100 items per card; paginate card endpoints for more."
+    ]
+  },
+  "collections": {
+    "organizations": {
+      "search_endpoint": "/searches/organizations",
+      "entity_lookup_endpoint": "/entities/organizations/{entity_id}",
+      "card_lookup_endpoint": "/entities/organizations/{entity_id}/cards/{card_id}",
+      "common_field_ids": [
+        "identifier",
+        "name",
+        "short_description",
+        "website",
+        "rank_org_company",
+        "founded_on",
+        "categories",
+        "category_groups",
+        "location_identifiers",
+        "num_funding_rounds",
+        "funding_total",
+        "last_funding_type",
+        "last_funding_at",
+        "status",
+        "num_investors"
+      ]
+    },
+    "funding_rounds": {
+      "search_endpoint": "/searches/funding_rounds",
+      "entity_lookup_endpoint": "/entities/funding_rounds/{entity_id}",
+      "common_field_ids": [
+        "identifier",
+        "announced_on",
+        "funded_organization_identifier",
+        "money_raised",
+        "investment_type",
+        "num_investors",
+        "lead_investor_identifiers"
+      ]
+    },
+    "categories_and_groups": {
+      "autocomplete_endpoint": "/autocompletes",
+      "autocomplete_collection_ids": [
+        "categories",
+        "category_groups"
+      ],
+      "lookup_strategy": [
+        "Resolve categories and category groups first via autocomplete.",
+        "Persist returned UUIDs or permalinks for stable downstream search filters."
+      ]
+    }
+  },
+  "production_endpoints": [
+    {
+      "name": "organizations_search",
+      "method": "POST",
+      "url_template": "https://api.crunchbase.com/v4/data/searches/organizations?user_key={user_key}"
+    },
+    {
+      "name": "funding_rounds_search",
+      "method": "POST",
+      "url_template": "https://api.crunchbase.com/v4/data/searches/funding_rounds?user_key={user_key}"
+    },
+    {
+      "name": "organization_entity_lookup",
+      "method": "GET",
+      "url_template": "https://api.crunchbase.com/v4/data/entities/organizations/{entity_id}?field_ids=categories,category_groups,short_description,rank_org_company,founded_on,website,created_at&card_ids=founders,raised_funding_rounds,investors&user_key={user_key}"
+    },
+    {
+      "name": "organization_card_lookup",
+      "method": "GET",
+      "url_template": "https://api.crunchbase.com/v4/data/entities/organizations/{entity_id}/cards/{card_id}?user_key={user_key}",
+      "supported_card_examples": [
+        "investors",
+        "raised_funding_rounds",
+        "growth_insights",
+        "investor_insights",
+        "similar_organizations"
+      ]
+    },
+    {
+      "name": "autocomplete_categories",
+      "method": "GET",
+      "url_template": "https://api.crunchbase.com/v4/data/autocompletes?query={query}&collection_ids=categories,category_groups&limit=10&user_key={user_key}"
+    }
+  ],
+  "sector_analysis": {
+    "objective": "Track VC investment activity and compare AI vs fintech vs healthcare trends.",
+    "analysis_time_windows": [
+      "30d",
+      "90d",
+      "180d",
+      "365d",
+      "ytd"
+    ],
+    "canonical_segments": {
+      "ai": {
+        "label": "AI",
+        "category_resolution_queries": [
+          "artificial intelligence",
+          "generative ai",
+          "machine learning",
+          "ai infrastructure",
+          "computer vision",
+          "natural language processing"
+        ],
+        "category_group_hints": [
+          "software",
+          "data and analytics"
+        ],
+        "metrics": [
+          "company_count",
+          "new_round_count",
+          "capital_raised_usd",
+          "median_round_size_usd",
+          "lead_investor_count",
+          "stage_mix",
+          "top_investors",
+          "top_subcategories"
+        ]
+      },
+      "fintech": {
+        "label": "Fintech",
+        "category_resolution_queries": [
+          "fintech",
+          "payments",
+          "digital banking",
+          "insurtech",
+          "embedded finance",
+          "lending"
+        ],
+        "category_group_hints": [
+          "financial services",
+          "payments",
+          "software"
+        ],
+        "metrics": [
+          "company_count",
+          "new_round_count",
+          "capital_raised_usd",
+          "median_round_size_usd",
+          "lead_investor_count",
+          "stage_mix",
+          "top_investors",
+          "top_subcategories"
+        ]
+      },
+      "healthcare": {
+        "label": "Healthcare",
+        "category_resolution_queries": [
+          "health care",
+          "healthcare",
+          "health tech",
+          "biotech",
+          "medical device",
+          "digital health"
+        ],
+        "category_group_hints": [
+          "health care",
+          "biotechnology"
+        ],
+        "metrics": [
+          "company_count",
+          "new_round_count",
+          "capital_raised_usd",
+          "median_round_size_usd",
+          "lead_investor_count",
+          "stage_mix",
+          "top_investors",
+          "top_subcategories"
+        ]
+      }
+    },
+    "comparison_outputs": [
+      {
+        "name": "segment_scorecard",
+        "fields": [
+          "segment",
+          "window",
+          "company_count",
+          "new_round_count",
+          "capital_raised_usd",
+          "median_round_size_usd",
+          "top_investors",
+          "top_geographies",
+          "momentum_vs_prior_window_pct"
+        ]
+      },
+      {
+        "name": "stage_mix",
+        "fields": [
+          "segment",
+          "pre_seed_count",
+          "seed_count",
+          "series_a_count",
+          "series_b_plus_count",
+          "growth_count",
+          "late_stage_count"
+        ]
+      }
+    ]
+  },
+  "search_templates": {
+    "segment_org_search": {
+      "field_ids": [
+        "identifier",
+        "categories",
+        "category_groups",
+        "location_identifiers",
+        "short_description",
+        "rank_org_company",
+        "funding_total",
+        "last_funding_at",
+        "num_funding_rounds"
+      ],
+      "order": [
+        {
+          "field_id": "rank_org_company",
+          "sort": "asc"
+        }
+      ],
+      "query": [
+        {
+          "type": "predicate",
+          "field_id": "categories",
+          "operator_id": "includes",
+          "values": [
+            "{resolved_category_uuid_or_permalink}"
+          ]
+        }
+      ]
+    },
+    "segment_round_search": {
+      "field_ids": [
+        "identifier",
+        "announced_on",
+        "funded_organization_identifier",
+        "money_raised",
+        "investment_type",
+        "num_investors"
+      ],
+      "order": [
+        {
+          "field_id": "announced_on",
+          "sort": "desc"
+        }
+      ],
+      "query": [
+        {
+          "type": "predicate",
+          "field_id": "announced_on",
+          "operator_id": "gte",
+          "values": [
+            "{start_date}"
+          ]
+        },
+        {
+          "type": "predicate",
+          "field_id": "funded_organization_categories",
+          "operator_id": "includes",
+          "values": [
+            "{resolved_category_uuid_or_permalink}"
+          ]
+        }
+      ]
+    }
+  },
+  "pipeline_design": {
+    "jobs": [
+      {
+        "job_name": "resolve_segment_categories",
+        "frequency": "weekly",
+        "steps": [
+          "Call autocomplete for each segment query using collection_ids=categories,category_groups",
+          "Review results and pin preferred category or category_group identifiers",
+          "Store mappings in a category dimension table"
+        ]
+      },
+      {
+        "job_name": "organizations_incremental_pull",
+        "frequency": "daily",
+        "steps": [
+          "Search organizations for target segment categories",
+          "Persist changed organizations and sector tags",
+          "Backfill details with entity lookup for high-priority companies"
+        ]
+      },
+      {
+        "job_name": "funding_rounds_incremental_pull",
+        "frequency": "daily",
+        "steps": [
+          "Search funding_rounds filtered by announced_on >= watermark date",
+          "Join funded organizations to stored segment mappings",
+          "Aggregate capital raised and stage mix by segment and window"
+        ]
+      },
+      {
+        "job_name": "organization_card_enrichment",
+        "frequency": "daily",
+        "steps": [
+          "For top companies by new capital, fetch investors and raised_funding_rounds cards",
+          "Paginate card lookups when row counts exceed 100"
+        ]
+      }
+    ],
+    "storage_model": {
+      "tables": [
+        "dim_category",
+        "dim_organization",
+        "fact_funding_round",
+        "fact_investment",
+        "bridge_org_category",
+        "agg_segment_daily",
+        "agg_segment_windowed"
+      ]
+    }
+  },
+  "governance": {
+    "data_quality_checks": [
+      "Deduplicate entities on identifier or uuid",
+      "Normalize currencies before aggregation",
+      "Persist raw category and category_group IDs and labels",
+      "Track pagination completeness",
+      "Handle deleted entities feed when available"
+    ],
+    "operational_limits": [
+      "Respect 200 calls per minute rate limit",
+      "Batch search requests and avoid repeated autocomplete lookups",
+      "Cache category resolutions and common entity lookups"
+    ]
+  }
+}

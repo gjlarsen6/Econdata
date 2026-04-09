@@ -1,0 +1,77 @@
+{
+  "source_name": "U.S. Bureau of Economic Analysis (BEA)",
+  "source_type": "government",
+  "status": "active",
+  "sector_coverage": [
+    "GDP by industry",
+    "Value added by industry",
+    "Gross output by industry",
+    "Input-output / industry accounts"
+  ],
+  "api": {
+    "name": "BEA Data API",
+    "base_url": "https://apps.bea.gov/api/data/",
+    "docs_url": "https://www.bea.gov/resources/for-developers",
+    "auth": {
+      "required": true,
+      "method": "api_key_query_param",
+      "param_name": "UserID"
+    },
+    "formats": [
+      "JSON",
+      "XML"
+    ],
+    "request_style": "GET",
+    "production_endpoints": [
+      {
+        "name": "list_datasets",
+        "path": "/api/data/",
+        "required_params": {
+          "UserID": "{api_key}",
+          "method": "GETDATASETLIST",
+          "ResultFormat": "JSON"
+        }
+      },
+      {
+        "name": "list_parameters",
+        "path": "/api/data/",
+        "required_params": {
+          "UserID": "{api_key}",
+          "method": "GetParameterList",
+          "DataSetName": "GDPbyIndustry",
+          "ResultFormat": "JSON"
+        }
+      },
+      {
+        "name": "list_parameter_values",
+        "path": "/api/data/",
+        "required_params": {
+          "UserID": "{api_key}",
+          "method": "GetParameterValues",
+          "DataSetName": "GDPbyIndustry",
+          "ParameterName": "TableName",
+          "ResultFormat": "JSON"
+        }
+      },
+      {
+        "name": "get_gdp_by_industry_data",
+        "path": "/api/data/",
+        "required_params": {
+          "UserID": "{api_key}",
+          "method": "GetData",
+          "DataSetName": "GDPbyIndustry",
+          "TableName": "{table_name}",
+          "Frequency": "{A|Q}",
+          "Year": "{year_or_ALL}",
+          "ResultFormat": "JSON"
+        }
+      }
+    ],
+    "example_url": "https://apps.bea.gov/api/data/?UserID={api_key}&method=GetData&DataSetName=GDPbyIndustry&TableName=TGO105&Frequency=A&Year=ALL&ResultFormat=JSON"
+  },
+  "production_notes": [
+    "Use dataset discovery endpoints first because valid TableName values vary by dataset/table vintage.",
+    "Persist returned metadata so downstream jobs do not hard-code table structures.",
+    "Best source for sector-level U.S. GDP and value-added analytics."
+  ]
+}

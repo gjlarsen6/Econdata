@@ -1,0 +1,21 @@
+# macOS metadata
+.DS_Store
+
+# Python cache
+__pycache__/
+*.py[cod]
+*.pyo
+
+# API keys — never commit
+.env
+
+# Local Claude Code config
+.claude/
+
+# Editor settings
+.vscode/
+
+# Byte-compiled / optimized / DLL files
+*.egg-info/
+dist/
+build/

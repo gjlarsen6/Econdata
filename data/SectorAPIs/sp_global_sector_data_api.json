@@ -1,0 +1,40 @@
+{
+  "source_name": "S&P Global",
+  "source_type": "commercial",
+  "status": "commercial_api_available_but_product_specific",
+  "sector_coverage": [
+    "PMI and sector indicators",
+    "Capital IQ datasets",
+    "Product-specific datasets and APIs"
+  ],
+  "api": {
+    "name": "S&P Global API Solutions / product APIs",
+    "base_url": "product-specific",
+    "docs_url": "https://www.marketplace.spglobal.com/en/solutions/api-solutions-%2861953ac7-ea64-4fac-926a-feb7f846c2be%29",
+    "auth": {
+      "required": true,
+      "method": "commercial contract plus credentials/token",
+      "notes": "APIs are exposed through product-specific solutions rather than one single public PMI endpoint page."
+    },
+    "formats": [
+      "product-specific"
+    ],
+    "request_style": "product_specific",
+    "production_endpoints": [],
+    "known_products": [
+      {
+        "name": "PMI product page",
+        "url": "https://www.spglobal.com/market-intelligence/en/solutions/products/pmi",
+        "notes": "PMI covers 45 economies and 30 sectors."
+      },
+      {
+        "name": "API Solutions hub",
+        "url": "https://www.marketplace.spglobal.com/en/solutions/api-solutions-%2861953ac7-ea64-4fac-926a-feb7f846c2be%29"
+      }
+    ]
+  },
+  "production_notes": [
+    "I did not verify a single public, PMI-specific REST reference page with concrete endpoints.",
+    "Treat this as a commercial integration that requires sales or docs access."
+  ]
+}

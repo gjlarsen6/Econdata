@@ -1,0 +1,29 @@
+{
+  "source_name": "Institute for Supply Management (ISM)",
+  "source_type": "private association",
+  "status": "no_public_api_verified",
+  "sector_coverage": [
+    "Manufacturing PMI",
+    "Services PMI",
+    "Sector-based survey outputs"
+  ],
+  "api": {
+    "name": "No public API verified",
+    "base_url": null,
+    "docs_url": "https://www.ismworld.org/supply-management-news-and-reports/reports/ism-pmi-reports/",
+    "auth": {
+      "required": null
+    },
+    "formats": [
+      "Web reports",
+      "Licensed feeds",
+      "Manual extraction"
+    ],
+    "request_style": null,
+    "production_endpoints": []
+  },
+  "production_notes": [
+    "I verified the PMI reports page, but not a public API.",
+    "For production, use licensed redistribution, a vendor feed, or a compliant extraction workflow if your license allows it."
+  ]
+}

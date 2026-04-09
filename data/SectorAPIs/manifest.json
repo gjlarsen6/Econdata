@@ -1,0 +1,13 @@
+{
+  "package_name": "sector_data_source_api_jsons",
+  "count": 7,
+  "created_files": [
+    "bea_gdp_by_industry_api.json",
+    "bls_public_data_api.json",
+    "fred_api.json",
+    "ism_pmi_data_access.json",
+    "sp_global_sector_data_api.json",
+    "trading_economics_api.json",
+    "world_bank_indicators_api.json"
+  ]
+}

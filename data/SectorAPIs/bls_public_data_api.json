@@ -1,0 +1,73 @@
+{
+  "source_name": "U.S. Bureau of Labor Statistics (BLS)",
+  "source_type": "government",
+  "status": "active",
+  "sector_coverage": [
+    "Employment by industry",
+    "Wages by sector",
+    "Productivity by industry",
+    "JOLTS and labor indicators by sector"
+  ],
+  "api": {
+    "name": "BLS Public Data API v2",
+    "base_url": "https://api.bls.gov/publicAPI/v2",
+    "docs_url": "https://www.bls.gov/developers/home.htm",
+    "auth": {
+      "required": false,
+      "optional_registration": true,
+      "notes": "Public API is open for use; registration is encouraged by BLS."
+    },
+    "formats": [
+      "JSON",
+      "XLSX (via some workflows)"
+    ],
+    "request_style": [
+      "GET",
+      "POST"
+    ],
+    "production_endpoints": [
+      {
+        "name": "single_series",
+        "method": "GET",
+        "path": "/timeseries/data/{series_id}"
+      },
+      {
+        "name": "multiple_series",
+        "method": "POST",
+        "path": "/timeseries/data/",
+        "body_template": {
+          "seriesid": [
+            "CES0000000001",
+            "CES3000000001"
+          ],
+          "startyear": "2020",
+          "endyear": "2026"
+        }
+      },
+      {
+        "name": "multiple_series_with_options",
+        "method": "POST",
+        "path": "/timeseries/data/",
+        "body_template": {
+          "seriesid": [
+            "CES0000000001"
+          ],
+          "startyear": "2020",
+          "endyear": "2026",
+          "catalog": true,
+          "calculations": true,
+          "annualaverage": true
+        }
+      }
+    ],
+    "series_lookup_strategy": [
+      "Use BLS survey/series lookup resources to identify sector series IDs.",
+      "For payroll employment by industry, CES series are common starting points."
+    ]
+  },
+  "production_notes": [
+    "POST is the usual choice for multi-series production jobs.",
+    "Store both raw values and returned footnotes/status fields.",
+    "Best source for U.S. labor conditions by industry sector."
+  ]
+}
