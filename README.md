@@ -20,11 +20,13 @@ The project also includes a separate Tennessee Eastman Process (TEP) fault-detec
 8. [Model Scripts](#model-scripts)
 9. [Shared Utilities — macro_utils.py](#shared-utilities--macro_utilspy)
 10. [Summary Table Output](#summary-table-output)
-11. [TEP Fault Detection — train.py](#tep-fault-detection--trainpy)
-12. [Output Files Reference](#output-files-reference)
-13. [Data Files Reference](#data-files-reference)
-14. [Scheduling with Cron](#scheduling-with-cron)
-15. [Adding New Series](#adding-new-series)
+11. [REST API — api.py](#rest-api--apipy)
+12. [API Testing](#api-testing)
+13. [TEP Fault Detection — train.py](#tep-fault-detection--trainpy)
+14. [Output Files Reference](#output-files-reference)
+15. [Data Files Reference](#data-files-reference)
+16. [Scheduling with Cron](#scheduling-with-cron)
+17. [Adding New Series](#adding-new-series)
 
 ---
 
@@ -68,6 +70,9 @@ tep-ml/
 ├── cost_of_capital_model.py   # Cost of Capital model (DFF, DPRIME, T10Y3M, T10Y2Y)
 ├── risk_model.py              # Risk model (recession probability, consumer sentiment)
 ├── data_summary.py            # Data inventory and feature engineering recommendations
+├── api.py                     # Read-only REST API server (FastAPI, port 8100)
+├── test_api.py                # Comprehensive API test suite (26 checks incl. security)
+├── test_api_quick.py          # Quick smoke test (5 checks, one line each)
 ├── train.py                   # TEP binary fault detection (LR, RF, LightGBM, MLP)
 │
 ├── .env.example               # API key template — copy to .env and fill in
@@ -116,7 +121,7 @@ observation_date,SERIES_ID
 ### Prerequisites
 
 ```bash
-pip install lightgbm pandas numpy scikit-learn matplotlib requests tabulate joblib python-dotenv
+pip install lightgbm pandas numpy scikit-learn matplotlib requests tabulate joblib python-dotenv fastapi uvicorn
 ```
 
 ### API Key Configuration
@@ -671,6 +676,196 @@ VC rows appear in the table only after `vc_model.py` has successfully trained (r
 ```
 
 The table rows are sorted alphabetically by Group, then Series. All FRED groups and sector groups appear together.
+
+---
+
+## REST API — api.py
+
+`api.py` is a read-only FastAPI server that exposes all pre-computed LightGBM forecast results as queryable HTTP endpoints. It reads directly from the `outputs/results_*.json` files produced by the pipeline — no database, no retraining, no authentication required.
+
+### Starting the Server
+
+```bash
+# Direct execution (recommended)
+python3 api.py
+
+# Development mode with auto-reload
+uvicorn api:app --reload --port 8100 --no-server-header
+```
+
+The server binds to `127.0.0.1:8100` (localhost only). Interactive documentation is available at:
+- **Swagger UI:** `http://localhost:8100/docs`
+- **ReDoc:** `http://localhost:8100/redoc`
+
+### Security Controls
+
+The API enforces the following hardening measures:
+
+| Control | Detail |
+|---|---|
+| **Localhost-only binding** | Server binds to `127.0.0.1` — not reachable from other hosts |
+| **CORS policy** | Only `localhost` and `127.0.0.1` origins are allowed; all external origins are blocked |
+| **Security headers** | Every response includes `X-Content-Type-Options: nosniff`, `X-Frame-Options: DENY`, `Cache-Control: no-store`, `Content-Security-Policy: default-src 'none'`, `Referrer-Policy: no-referrer` |
+| **Server banner suppressed** | `server: uvicorn` header is not emitted |
+| **Input validation** | `series_id` path parameters are validated against `^[A-Z0-9_]{1,30}$`; invalid inputs return HTTP 400 |
+| **No internal error leakage** | Parse errors return a generic HTTP 500 message; full detail is logged server-side only |
+| **Read-only** | No write, delete, or model-triggering endpoints exist |
+
+### Response Format
+
+All group endpoints return the same structure:
+
+```json
+{
+  "group": "Business Environment",
+  "run_at": "2026-04-08T08:46:30",
+  "series_count": 3,
+  "series": [
+    {
+      "series_id": "INDPRO",
+      "label": "Industrial Production",
+      "unit": "Index 2017=100",
+      "last_date": "2026-02",
+      "last_value": 102.551,
+      "validation": { "mae": 0.856, "rmse": 1.037, "r2": -0.521 },
+      "forecast": [
+        { "month": "2026-03", "mid": 101.29, "lo": 99.33, "hi": 101.84 },
+        ...12 months total...
+      ]
+    }
+  ]
+}
+```
+
+Single-series endpoints return the inner `series` object directly (without the group wrapper).
+
+Optional endpoints (sector, VC) return HTTP 404 with an instructive message when their backing results file has not yet been generated, including the exact `fred_refresh.py` command needed to produce it.
+
+### Endpoint Reference
+
+#### Meta
+
+| Method | Path | Description |
+|---|---|---|
+| GET | `/api/summary` | Lists every endpoint, its description, the series IDs it covers, and whether its backing results file currently exists on disk. Use this as a discovery and health-check endpoint. |
+| GET | `/docs` | Interactive Swagger UI — try any endpoint directly from the browser |
+| GET | `/redoc` | ReDoc documentation |
+
+#### Core Model Endpoints (always available after pipeline run)
+
+| Method | Path | Series | What It Returns |
+|---|---|---|---|
+| GET | `/api/business-env` | INDPRO, TCU, PAYEMS | 12-month LightGBM forecasts for Industrial Production Index (2017=100), Total Capacity Utilization (%), and Nonfarm Payroll Employment (thousands). Includes last observed value, 24-month MAE/RMSE/R² validation metrics, and monthly median + 80% prediction interval for 12 months. |
+| GET | `/api/business-env/{series_id}` | — | Single series from Business Environment. Valid `series_id`: `INDPRO`, `TCU`, `PAYEMS` |
+| GET | `/api/consumer-demand` | DSPIC96, PCE, PCEPILFE, RSAFS, RRSFS, UMCSENT | 12-month forecasts for Real Disposable Personal Income (B chained $), Personal Consumption Expenditures (B $), Core PCE Price Index (ex food & energy, 2017=100), Nominal Retail & Food Services Sales (M $), Real Retail & Food Services Sales (M chained $), and U. of Michigan Consumer Sentiment (1966:Q1=100). |
+| GET | `/api/consumer-demand/{series_id}` | — | Single series from Consumer Demand. Valid `series_id`: `DSPIC96`, `PCE`, `PCEPILFE`, `RSAFS`, `RRSFS`, `UMCSENT` |
+| GET | `/api/cost-of-capital` | DFF, DPRIME, T10Y3M, T10Y2Y | 12-month forecasts for the Federal Funds Effective Rate (%), Bank Prime Loan Rate (%), 10Y−3M Treasury yield-curve spread (%pts), and 10Y−2Y yield-curve spread (%pts). Yield-curve spreads are key recession leading indicators — negative values signal inversion. |
+| GET | `/api/cost-of-capital/{series_id}` | — | Single series from Cost of Capital. Valid `series_id`: `DFF`, `DPRIME`, `T10Y3M`, `T10Y2Y` |
+| GET | `/api/risk` | RECPROUSM156N, UMCSENT | 12-month forecasts for the Chauvet-Piger Smoothed Recession Probability (%) and U. of Michigan Consumer Sentiment (1966:Q1=100) as leading risk indicators. Recession probability above 20% is historically associated with elevated downturn risk. |
+| GET | `/api/risk/{series_id}` | — | Single series from Risk. Valid `series_id`: `RECPROUSM156N`, `UMCSENT` |
+
+#### Optional Sector Endpoints
+
+These return HTTP 404 until the pipeline has been run with the corresponding `--sector` flag.
+
+| Method | Path | Requires | What It Returns |
+|---|---|---|---|
+| GET | `/api/sector/bls` | `--sector bls` | 12-month LightGBM forecasts for BLS industry-level employment series (manufacturing, trade, financial, professional services, education & health, leisure & hospitality). |
+| GET | `/api/sector/bea` | `--sector bea` + `BEA_API_KEY` | 12-month forecasts for BEA GDP-by-Industry gross output series (manufacturing, finance & real estate, wholesale & retail trade, professional & business services). |
+| GET | `/api/sector/worldbank` | `--sector worldbank` | 12-month forecasts for World Bank U.S. sector share-of-GDP indicators (manufacturing, services, industry). Annual data forward-filled to monthly. |
+
+#### Optional Venture Capital Endpoints
+
+These return HTTP 404 until approximately 13 months of weekly Crunchbase data has been collected and `vc_model.py` has successfully trained.
+
+| Method | Path | Requires | What It Returns |
+|---|---|---|---|
+| GET | `/api/vc/ai` | `--crunchbase` (≥13 months) | 12-month forecasts for the Crunchbase AI segment: company count, 90-day rolling round count, capital raised (USD), median round size (USD), and lead investor count. |
+| GET | `/api/vc/fintech` | `--crunchbase` (≥13 months) | Same five metrics for the Crunchbase Fintech segment. |
+| GET | `/api/vc/healthcare` | `--crunchbase` (≥13 months) | Same five metrics for the Crunchbase Healthcare segment. |
+
+### No Restart Required After Pipeline Runs
+
+Because `api.py` reads results files from disk on every request, running `fred_refresh.py` while the server is up automatically makes fresh forecasts available on the next API call — no server restart needed.
+
+---
+
+## API Testing
+
+Two test scripts are provided to verify the API is running correctly and all security controls are in place.
+
+### Quick Smoke Test — `test_api_quick.py`
+
+Hits the five most important endpoints and prints one pass/fail line each. Run this after starting the server or after any `fred_refresh.py` run.
+
+```bash
+python3 test_api_quick.py
+```
+
+Expected output:
+
+```
+[PASS] GET /api/summary                          — 15 endpoints listed
+[PASS] GET /api/business-env                     — 3 series, run_at=2026-04-08T08:46:30
+[PASS] GET /api/consumer-demand                  — 6 series, run_at=2026-04-08T08:47:01
+[PASS] GET /api/cost-of-capital                  — 4 series, run_at=2026-04-08T08:47:12
+[PASS] GET /api/risk                             — 2 series, run_at=2026-04-08T08:47:19
+
+All 5 checks passed.
+```
+
+Use `--url` to target a different host or port:
+
+```bash
+python3 test_api_quick.py --url http://localhost:8100
+```
+
+Exits with code `0` on success, `1` if any check fails.
+
+### Comprehensive Test Suite — `test_api.py`
+
+Tests all 15 endpoints, prints detailed response values for every series, and verifies all security controls. Covers 26 checks total.
+
+```bash
+python3 test_api.py
+```
+
+**What is tested:**
+
+| Category | Checks |
+|---|---|
+| `/api/summary` | Returns ≥15 endpoints; lists available series per endpoint |
+| Business Environment | Group endpoint (series count + IDs), individual series for INDPRO, TCU, PAYEMS |
+| Consumer Demand | Group endpoint, individual series for PCE and UMCSENT |
+| Cost of Capital | Group endpoint, individual series for DFF and T10Y3M |
+| Risk | Group endpoint, individual series for RECPROUSM156N |
+| Sector endpoints | Each returns SKIP with an instructive message if results file not yet generated |
+| VC endpoints | Each returns SKIP with an instructive message if results file not yet generated |
+| Security headers | All five required headers present and correct on every response |
+| Server banner | `server` header must be absent |
+| Input validation | Special characters in `series_id` → HTTP 400 |
+| Input validation | `series_id` exceeding 30 characters → HTTP 400 |
+| Unknown series | Nonexistent `series_id` → HTTP 404 with available-series list |
+| CORS — blocked | External origin (`http://evil.com`) receives no CORS header |
+| CORS — allowed | `localhost` origin receives correct `Access-Control-Allow-Origin` header |
+
+**For each series, the output shows:**
+
+```
+INDPRO  Industrial Production
+  unit      : Index 2017=100
+  last obs  : 2026-02 = 102.6
+  validation: MAE=0.8558  R²=-0.5213
+  forecast  : 2026-03 mid=101.3 [99.33–101.8]  →  2027-02 mid=98.03 [95.1–98.41]  (12 months)
+```
+
+Use `--url` to target a non-default host:
+
+```bash
+python3 test_api.py --url http://localhost:8100
+```
+
+Exits with code `0` if all required checks pass (SKIPs do not count as failures), `1` if any required check fails.
 
 ---
 
