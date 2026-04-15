@@ -22,6 +22,7 @@ from contextlib import asynccontextmanager
 from datetime import datetime, timezone
 from pathlib import Path
 
+import pandas as pd
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import Response
@@ -41,6 +42,7 @@ log = logging.getLogger(__name__)
 # ── Paths ─────────────────────────────────────────────────────────────────────
 BASE_DIR   = Path(__file__).parent
 OUTPUT_DIR = BASE_DIR / "outputs"
+DATA_DIR   = BASE_DIR / "data"
 
 REQUIRED_RESULTS: dict[str, Path] = {
     "business_env":    OUTPUT_DIR / "results_business_env.json",
@@ -50,15 +52,63 @@ REQUIRED_RESULTS: dict[str, Path] = {
 }
 
 OPTIONAL_RESULTS: dict[str, Path] = {
-    "sector_bls":       OUTPUT_DIR / "results_sector_bls.json",
-    "sector_bea":       OUTPUT_DIR / "results_sector_bea.json",
-    "sector_worldbank": OUTPUT_DIR / "results_sector_worldbank.json",
-    "vc_ai":            OUTPUT_DIR / "results_vc_ai.json",
-    "vc_fintech":       OUTPUT_DIR / "results_vc_fintech.json",
-    "vc_healthcare":    OUTPUT_DIR / "results_vc_healthcare.json",
+    "sector_bls":        OUTPUT_DIR / "results_sector_bls.json",
+    "sector_bea":        OUTPUT_DIR / "results_sector_bea.json",
+    "sector_worldbank":  OUTPUT_DIR / "results_sector_worldbank.json",
+    "vc_ai":             OUTPUT_DIR / "results_vc_ai.json",
+    "vc_fintech":        OUTPUT_DIR / "results_vc_fintech.json",
+    "vc_healthcare":     OUTPUT_DIR / "results_vc_healthcare.json",
+    # Phase 0 — free FRED extensions
+    "market_risk":       OUTPUT_DIR / "results_market_risk.json",
+    "commodities":       OUTPUT_DIR / "results_commodities.json",
+    "yield_curve":       OUTPUT_DIR / "results_yield_curve.json",
+    "financial_stress":  OUTPUT_DIR / "results_financial_stress.json",
+    "regime":            OUTPUT_DIR / "regime_history.json",
 }
 
 ALL_RESULTS: dict[str, Path] = {**REQUIRED_RESULTS, **OPTIONAL_RESULTS}
+
+# Map series_id → CSV path (for /api/series/{id}/history)
+_HISTORY_FILE_MAP: dict[str, Path] = {
+    # BusinessEnvironment
+    "INDPRO":          DATA_DIR / "BusinessEnvironment" / "INDPRO.csv",
+    "TCU":             DATA_DIR / "BusinessEnvironment" / "TCU_capacityutilization.csv",
+    "PAYEMS":          DATA_DIR / "BusinessEnvironment" / "Payroll_PAYEMS.csv",
+    "CAPUTLB50001SQ":  DATA_DIR / "BusinessEnvironment" / "CAPUTLB50001SQ.csv",
+    # ConsumerDemand
+    "DSPIC96":         DATA_DIR / "ConsumerDemand" / "DSPIC96.csv",
+    "PCE":             DATA_DIR / "ConsumerDemand" / "PCE.csv",
+    "PCEPILFE":        DATA_DIR / "ConsumerDemand" / "PersConsume_noFoodEnergyPCEPILFE.csv",
+    "RSAFS":           DATA_DIR / "ConsumerDemand" / "RSAFS.csv",
+    "RRSFS":           DATA_DIR / "ConsumerDemand" / "RealRetailandFoodSalesRRSFS.csv",
+    "UMCSENT":         DATA_DIR / "ConsumerDemand" / "UMCSENT.csv",
+    # CostOfCapital
+    "DFF":             DATA_DIR / "CostOfCapital" / "DFF.csv",
+    "DPRIME":          DATA_DIR / "CostOfCapital" / "DPRIME.csv",
+    "FEDFUNDS":        DATA_DIR / "CostOfCapital" / "FEDFUNDS.csv",
+    "PRIME":           DATA_DIR / "CostOfCapital" / "PRIME.csv",
+    "T10Y2Y":          DATA_DIR / "CostOfCapital" / "T10Y2Y.csv",
+    "T10Y3M":          DATA_DIR / "CostOfCapital" / "T10Y3M.csv",
+    # RiskLeadingInd
+    "RECPROUSM156N":   DATA_DIR / "RiskLeadingInd" / "RECPROUSM156N.csv",
+    # MarketRisk
+    "VIXCLS":          DATA_DIR / "MarketRisk" / "VIXCLS.csv",
+    "BAMLH0A0HYM2":    DATA_DIR / "MarketRisk" / "BAMLH0A0HYM2.csv",
+    "BAMLC0A0CM":      DATA_DIR / "MarketRisk" / "BAMLC0A0CM.csv",
+    "DTWEXBGS":        DATA_DIR / "MarketRisk" / "DTWEXBGS.csv",
+    # Commodities
+    "DCOILWTICO":      DATA_DIR / "Commodities" / "DCOILWTICO.csv",
+    "GOLDAMGBD228NLBM":DATA_DIR / "Commodities" / "GOLDAMGBD228NLBM.csv",
+    # YieldCurve
+    "DGS1MO":          DATA_DIR / "YieldCurve" / "DGS1MO.csv",
+    "DGS3MO":          DATA_DIR / "YieldCurve" / "DGS3MO.csv",
+    "DGS6MO":          DATA_DIR / "YieldCurve" / "DGS6MO.csv",
+    "DGS1":            DATA_DIR / "YieldCurve" / "DGS1.csv",
+    "DGS2":            DATA_DIR / "YieldCurve" / "DGS2.csv",
+    "DGS5":            DATA_DIR / "YieldCurve" / "DGS5.csv",
+    "DGS10":           DATA_DIR / "YieldCurve" / "DGS10.csv",
+    "DGS30":           DATA_DIR / "YieldCurve" / "DGS30.csv",
+}
 
 # ── Pydantic models ───────────────────────────────────────────────────────────
 
@@ -103,6 +153,43 @@ class EndpointInfo(BaseModel):
 class SummaryResponse(BaseModel):
     generated_at: str
     endpoints: list[EndpointInfo]
+
+
+class HealthResponse(BaseModel):
+    status: str
+    ts: str
+
+
+class RegimeForecastPoint(BaseModel):
+    month: str
+    fsi: float
+    regime: str
+
+
+class RegimeHistoryPoint(BaseModel):
+    date: str
+    fsi: float
+    regime: str
+
+
+class RegimeResponse(BaseModel):
+    generated_at: str
+    current_regime: str
+    current_fsi: float
+    regime_distribution: dict[str, float]
+    forecast: list[RegimeForecastPoint]
+    history: list[RegimeHistoryPoint]
+
+
+class HistoryPoint(BaseModel):
+    observation_date: str
+    value: float | None
+
+
+class HistoryResponse(BaseModel):
+    series_id: str
+    row_count: int
+    observations: list[HistoryPoint]
 
 
 # ── Endpoint descriptor table ─────────────────────────────────────────────────
@@ -215,6 +302,92 @@ _ENDPOINT_DESCRIPTORS: list[dict] = [
         ),
         "group": "Venture Capital — Healthcare",
         "key": "vc_healthcare",
+        "optional": True,
+    },
+    # ── Phase 0: Free FRED Extensions ────────────────────────────────────────
+    {
+        "path": "/api/market/vix",
+        "description": (
+            "12-month LightGBM forecast for the CBOE Volatility Index (VIX). "
+            "Generated automatically by fred_refresh.py (no extra API keys required)."
+        ),
+        "group": "Market Risk",
+        "key": "market_risk",
+        "optional": True,
+    },
+    {
+        "path": "/api/market/spreads",
+        "description": (
+            "12-month LightGBM forecasts for US credit spreads: "
+            "ICE BofA High Yield OAS (BAMLH0A0HYM2) and IG Corporate OAS (BAMLC0A0CM). "
+            "Generated automatically by fred_refresh.py."
+        ),
+        "group": "Market Risk",
+        "key": "market_risk",
+        "optional": True,
+    },
+    {
+        "path": "/api/market/dollar",
+        "description": (
+            "12-month LightGBM forecast for the Nominal Broad USD Index (DTWEXBGS). "
+            "Generated automatically by fred_refresh.py."
+        ),
+        "group": "Market Risk",
+        "key": "market_risk",
+        "optional": True,
+    },
+    {
+        "path": "/api/commodities/oil",
+        "description": (
+            "12-month LightGBM forecast for WTI Crude Oil price (DCOILWTICO, $/bbl). "
+            "Generated automatically by fred_refresh.py."
+        ),
+        "group": "Commodities",
+        "key": "commodities",
+        "optional": True,
+    },
+    {
+        "path": "/api/commodities/gold",
+        "description": (
+            "12-month LightGBM forecast for Gold price (GOLDAMGBD228NLBM, $/oz). "
+            "Generated automatically by fred_refresh.py."
+        ),
+        "group": "Commodities",
+        "key": "commodities",
+        "optional": True,
+    },
+    {
+        "path": "/api/market/yield-curve",
+        "description": (
+            "Full US Treasury yield curve: 8 constant-maturity tenors "
+            "(1M, 3M, 6M, 1Y, 2Y, 5Y, 10Y, 30Y) with 12-month LightGBM forecasts. "
+            "Generated automatically by fred_refresh.py."
+        ),
+        "group": "Treasury Yield Curve",
+        "key": "yield_curve",
+        "optional": True,
+    },
+    {
+        "path": "/api/market/stress",
+        "description": (
+            "Financial Stress Index (FSI): composite of VIX, HY/IG credit spreads, "
+            "recession probability, and yield curve inversion. "
+            "Scale 0 (calm) to 1 (extreme stress). Includes 12-month forecast. "
+            "Generated automatically by fred_refresh.py."
+        ),
+        "group": "Financial Stress Index",
+        "key": "financial_stress",
+        "optional": True,
+    },
+    {
+        "path": "/api/market/regime",
+        "description": (
+            "Market Regime classifier: current label (expansion/slowdown/contraction/stress/recovery), "
+            "FSI value, regime distribution, 12-month forecast, and 10-year history. "
+            "Generated automatically by fred_refresh.py."
+        ),
+        "group": "Market Regime",
+        "key": "regime",
         "optional": True,
     },
 ]
@@ -651,6 +824,293 @@ def get_vc_healthcare() -> GroupResponse:
     **Requires prior run:** `python fred_refresh.py --crunchbase`
     """
     return _load_result(OPTIONAL_RESULTS["vc_healthcare"], "vc_healthcare", optional=True)
+
+
+# ── Health check ─────────────────────────────────────────────────────────────
+
+@app.get(
+    "/api/health",
+    response_model=HealthResponse,
+    tags=["Meta"],
+    summary="Liveness health check",
+)
+def get_health() -> HealthResponse:
+    """Lightweight liveness check — no file I/O, always fast."""
+    return HealthResponse(
+        status="ok",
+        ts=datetime.now(timezone.utc).isoformat(timespec="seconds"),
+    )
+
+
+# ── Shared helpers for Phase 0 endpoints ──────────────────────────────────────
+
+def _load_optional(key: str) -> GroupResponse:
+    """Load an optional results file, returning 404 with instructions if missing."""
+    path = OPTIONAL_RESULTS[key]
+    return _load_result(path, key, optional=True)
+
+
+def _filter_series(group: GroupResponse, series_ids: list[str]) -> GroupResponse:
+    """Return a GroupResponse containing only the requested series_ids."""
+    matched = [s for s in group.series if s.series_id in series_ids]
+    if not matched:
+        raise HTTPException(
+            status_code=404,
+            detail=f"None of {series_ids} found in group '{group.group}'.",
+        )
+    return GroupResponse(
+        group=group.group,
+        run_at=group.run_at,
+        series_count=len(matched),
+        series=matched,
+    )
+
+
+# ── Market Risk ───────────────────────────────────────────────────────────────
+
+@app.get(
+    "/api/market/vix",
+    response_model=SeriesResult,
+    tags=["Market Risk (Phase 0)"],
+    summary="VIX volatility index forecast",
+)
+def get_market_vix() -> SeriesResult:
+    """
+    12-month LightGBM forecast for **VIXCLS** (CBOE Volatility Index).
+
+    Generated automatically by `python fred_refresh.py` — no additional API keys required.
+    Returns 404 if `outputs/results_market_risk.json` has not been generated yet.
+    """
+    group = _load_optional("market_risk")
+    return _find_series(group, "VIXCLS")
+
+
+@app.get(
+    "/api/market/spreads",
+    response_model=GroupResponse,
+    tags=["Market Risk (Phase 0)"],
+    summary="HY and IG credit spread forecasts",
+)
+def get_market_spreads() -> GroupResponse:
+    """
+    12-month LightGBM forecasts for US credit spreads:
+    - **BAMLH0A0HYM2** — ICE BofA US High Yield OAS (%)
+    - **BAMLC0A0CM** — ICE BofA US Investment Grade Corporate OAS (%)
+
+    Wider spreads indicate credit stress. Generated automatically by `python fred_refresh.py`.
+    """
+    group = _load_optional("market_risk")
+    return _filter_series(group, ["BAMLH0A0HYM2", "BAMLC0A0CM"])
+
+
+@app.get(
+    "/api/market/dollar",
+    response_model=SeriesResult,
+    tags=["Market Risk (Phase 0)"],
+    summary="USD broad index forecast",
+)
+def get_market_dollar() -> SeriesResult:
+    """
+    12-month LightGBM forecast for **DTWEXBGS** (Nominal Broad U.S. Dollar Index, Jan 2006=100).
+
+    Generated automatically by `python fred_refresh.py`.
+    """
+    group = _load_optional("market_risk")
+    return _find_series(group, "DTWEXBGS")
+
+
+# ── Commodities ───────────────────────────────────────────────────────────────
+
+@app.get(
+    "/api/commodities/oil",
+    response_model=SeriesResult,
+    tags=["Commodities (Phase 0)"],
+    summary="WTI crude oil price forecast",
+)
+def get_commodities_oil() -> SeriesResult:
+    """
+    12-month LightGBM forecast for **DCOILWTICO** (WTI Crude Oil, $/bbl).
+
+    Generated automatically by `python fred_refresh.py`.
+    """
+    group = _load_optional("commodities")
+    return _find_series(group, "DCOILWTICO")
+
+
+@app.get(
+    "/api/commodities/gold",
+    response_model=SeriesResult,
+    tags=["Commodities (Phase 0)"],
+    summary="Gold price forecast",
+)
+def get_commodities_gold() -> SeriesResult:
+    """
+    12-month LightGBM forecast for **GOLDAMGBD228NLBM** (Gold, London AM fixing, $/oz).
+
+    Generated automatically by `python fred_refresh.py`.
+    """
+    group = _load_optional("commodities")
+    return _find_series(group, "GOLDAMGBD228NLBM")
+
+
+# ── Yield Curve ───────────────────────────────────────────────────────────────
+
+@app.get(
+    "/api/market/yield-curve",
+    response_model=GroupResponse,
+    tags=["Market Risk (Phase 0)"],
+    summary="Full Treasury yield curve forecasts (8 tenors)",
+)
+def get_yield_curve() -> GroupResponse:
+    """
+    12-month LightGBM forecasts for all 8 Treasury constant-maturity tenors:
+    **DGS1MO**, **DGS3MO**, **DGS6MO**, **DGS1**, **DGS2**, **DGS5**, **DGS10**, **DGS30**.
+
+    Generated automatically by `python fred_refresh.py`.
+    """
+    return _load_optional("yield_curve")
+
+
+@app.get(
+    "/api/market/yield-curve/{series_id}",
+    response_model=SeriesResult,
+    tags=["Market Risk (Phase 0)"],
+    summary="Single Treasury tenor forecast",
+)
+def get_yield_curve_series(series_id: str) -> SeriesResult:
+    """
+    Retrieve the forecast for one Treasury tenor.
+
+    Valid `series_id` values: **DGS1MO**, **DGS3MO**, **DGS6MO**, **DGS1**,
+    **DGS2**, **DGS5**, **DGS10**, **DGS30**
+    """
+    group = _load_optional("yield_curve")
+    return _find_series(group, series_id)
+
+
+# ── Financial Stress Index ────────────────────────────────────────────────────
+
+@app.get(
+    "/api/market/stress",
+    response_model=SeriesResult,
+    tags=["Market Risk (Phase 0)"],
+    summary="Financial Stress Index forecast",
+)
+def get_market_stress() -> SeriesResult:
+    """
+    12-month LightGBM forecast for the **Financial Stress Index (FSI)**.
+
+    FSI = equal-weighted percentile-rank composite of VIX, HY spread, IG spread,
+    recession probability, and yield curve inversion.
+    Scale: 0 (calm) → 1 (extreme stress).
+    Thresholds: < 0.25 expansion | 0.25–0.45 slowdown | 0.45–0.65 contraction | > 0.65 stress.
+
+    Generated automatically by `python fred_refresh.py`.
+    """
+    group = _load_optional("financial_stress")
+    return _find_series(group, "FSI")
+
+
+# ── Market Regime ─────────────────────────────────────────────────────────────
+
+@app.get(
+    "/api/market/regime",
+    response_model=RegimeResponse,
+    tags=["Market Risk (Phase 0)"],
+    summary="Market regime classification + history",
+)
+def get_market_regime() -> RegimeResponse:
+    """
+    Current market regime label, FSI value, 12-month regime forecast,
+    and last 10 years of monthly regime history.
+
+    Regime labels: **expansion** | **slowdown** | **contraction** | **stress** | **recovery**
+
+    Generated automatically by `python fred_refresh.py`.
+    """
+    path = OPTIONAL_RESULTS["regime"]
+    if not path.exists():
+        raise HTTPException(
+            status_code=404,
+            detail=(
+                "regime_history.json not found. "
+                "Run `python fred_refresh.py` to generate it."
+            ),
+        )
+    try:
+        raw = json.loads(path.read_text())
+        return RegimeResponse(
+            generated_at=raw["generated_at"],
+            current_regime=raw["current_regime"],
+            current_fsi=raw["current_fsi"],
+            regime_distribution=raw["regime_distribution"],
+            forecast=[RegimeForecastPoint(**p) for p in raw["forecast"]],
+            history=[RegimeHistoryPoint(**h) for h in raw["history"]],
+        )
+    except Exception:
+        log.exception("Failed to parse regime_history.json")
+        raise HTTPException(
+            status_code=500,
+            detail="regime_history.json could not be parsed. Check server logs.",
+        )
+
+
+# ── Raw series history ────────────────────────────────────────────────────────
+
+@app.get(
+    "/api/series/{series_id}/history",
+    response_model=HistoryResponse,
+    tags=["Meta"],
+    summary="Raw historical observations for any fetched series",
+)
+def get_series_history(series_id: str) -> HistoryResponse:
+    """
+    Return raw historical observations from the local CSV for any series that has
+    been fetched by `fred_refresh.py`.
+
+    Supported series: all FRED series (INDPRO, TCU, PAYEMS, DFF, VIXCLS, BAMLH0A0HYM2,
+    DCOILWTICO, GOLDAMGBD228NLBM, DGS1MO … DGS30, etc.)
+    """
+    sid  = _validate_series_id(series_id)
+    path = _HISTORY_FILE_MAP.get(sid)
+    if path is None:
+        raise HTTPException(
+            status_code=404,
+            detail=(
+                f"Series '{sid}' is not in the history file map. "
+                "Supported series: " + ", ".join(sorted(_HISTORY_FILE_MAP))
+            ),
+        )
+    if not path.exists():
+        raise HTTPException(
+            status_code=404,
+            detail=(
+                f"CSV file for '{sid}' not found ({path}). "
+                "Run `python fred_refresh.py` to fetch data."
+            ),
+        )
+    try:
+        df    = pd.read_csv(path, parse_dates=["observation_date"])
+        col   = sid if sid in df.columns else df.columns[1]
+        def _to_val(v: object) -> float | None:
+            try:
+                f = float(v)  # type: ignore[arg-type]
+                return None if pd.isna(f) else round(f, 6)
+            except (TypeError, ValueError):
+                return None
+
+        dates: list = df["observation_date"].dt.strftime("%Y-%m-%d").tolist()
+        obs = [
+            HistoryPoint(observation_date=str(d), value=_to_val(v))
+            for d, v in zip(dates, df[col])
+        ]
+        return HistoryResponse(series_id=sid, row_count=len(obs), observations=obs)
+    except Exception:
+        log.exception("Failed to read history for %s", sid)
+        raise HTTPException(
+            status_code=500,
+            detail=f"Could not read history for '{sid}'. Check server logs.",
+        )
 
 
 # ── Entry point ───────────────────────────────────────────────────────────────

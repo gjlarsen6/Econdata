@@ -2,6 +2,8 @@
 
 A production-ready pipeline that refreshes U.S. economic data from public APIs, retrains LightGBM forecasting models, and prints a unified summary table of 12-month outlooks — designed to run weekly with a single command.
 
+**Phase 0** extensions (no additional API keys required) add market risk indicators (VIX, credit spreads, USD index), commodity prices (WTI oil, gold), the full Treasury yield curve (8 tenors), and a composite Financial Stress Index with market regime classification — all sourced from FRED.
+
 Optional modules extend coverage to industry-level employment and GDP data (BLS, BEA, World Bank) and Venture Capital activity by sector (Crunchbase — AI, Fintech, Healthcare).
 
 The project also includes a separate Tennessee Eastman Process (TEP) fault-detection benchmark that compares four classification models.
@@ -27,6 +29,7 @@ The project also includes a separate Tennessee Eastman Process (TEP) fault-detec
 15. [Data Files Reference](#data-files-reference)
 16. [Scheduling with Cron](#scheduling-with-cron)
 17. [Adding New Series](#adding-new-series)
+18. [Phase Roadmap](#phase-roadmap)
 
 ---
 
@@ -39,7 +42,7 @@ The macroeconomic side of this project answers one question every week: **where 
 3. Generating 12-month recursive forecasts with 80% prediction intervals
 4. Displaying everything in a single tabular summary
 
-Four model groups cover distinct areas of the economy:
+Seven model groups cover distinct areas of the economy:
 
 | Group | Series Modeled | Source Directory |
 |---|---|---|
@@ -47,6 +50,11 @@ Four model groups cover distinct areas of the economy:
 | Consumer Demand | Disposable income, PCE, core inflation, retail sales, consumer sentiment | `data/ConsumerDemand/` |
 | Cost of Capital | Fed funds rate, prime rate, yield curve spreads | `data/CostOfCapital/` |
 | Risk & Leading Indicators | Recession probability, consumer sentiment | `data/RiskLeadingInd/` |
+| Market Risk *(Phase 0)* | VIX, HY credit spread, IG credit spread, USD index | `data/MarketRisk/` |
+| Commodities *(Phase 0)* | WTI crude oil, gold | `data/Commodities/` |
+| Yield Curve *(Phase 0)* | 8 Treasury tenors: 1M, 3M, 6M, 1Y, 2Y, 5Y, 10Y, 30Y | `data/YieldCurve/` |
+
+Phase 0 also produces a **Financial Stress Index (FSI)** and a **Market Regime** label (`expansion / slowdown / contraction / stress / recovery`) from `composite_model.py` using the expanded FRED data — no additional API keys required.
 
 Optional sector modules extend coverage to industry-level data from BLS (employment by sector), BEA (GDP by industry), and the World Bank (sector shares of GDP).
 
@@ -69,9 +77,12 @@ tep-ml/
 ├── consumer_demand_model.py   # Consumer Demand model (6 series)
 ├── cost_of_capital_model.py   # Cost of Capital model (DFF, DPRIME, T10Y3M, T10Y2Y)
 ├── risk_model.py              # Risk model (recession probability, consumer sentiment)
+├── market_model.py            # Phase 0: Market Risk (VIX, HY/IG spreads, USD) + Commodities (WTI, gold)
+├── yield_curve_model.py       # Phase 0: 8-tenor Treasury yield curve (DGS1MO → DGS30)
+├── composite_model.py         # Phase 0: Financial Stress Index + Market Regime classifier
 ├── data_summary.py            # Data inventory and feature engineering recommendations
 ├── api.py                     # Read-only REST API server (FastAPI, port 8100)
-├── test_api.py                # Comprehensive API test suite (26 checks incl. security)
+├── test_api.py                # Comprehensive API test suite (40+ checks incl. Phase 0 + security)
 ├── test_api_quick.py          # Quick smoke test (5 checks, one line each)
 ├── train.py                   # TEP binary fault detection (LR, RF, LightGBM, MLP)
 │
@@ -83,6 +94,9 @@ tep-ml/
 │   ├── ConsumerDemand/        # DSPIC96, PCE, PCEPILFE, RSAFS, RRSFS, UMCSENT CSVs
 │   ├── CostOfCapital/         # DFF, DPRIME, FEDFUNDS, PRIME, T10Y2Y, T10Y3M CSVs
 │   ├── RiskLeadingInd/        # RECPROUSM156N, UMCSENT CSVs
+│   ├── MarketRisk/            # VIXCLS, BAMLH0A0HYM2, BAMLC0A0CM, DTWEXBGS CSVs (Phase 0)
+│   ├── Commodities/           # DCOILWTICO, GOLDAMGBD228NLBM CSVs (Phase 0)
+│   ├── YieldCurve/            # DGS1MO, DGS3MO, DGS6MO, DGS1, DGS2, DGS5, DGS10, DGS30 CSVs (Phase 0)
 │   ├── SectorAPIs/            # JSON API documentation for each sector data source
 │   ├── Sector/                # Created automatically by sector refresh
 │   │   ├── BLS/               #   Employment by industry (monthly)
@@ -100,6 +114,7 @@ tep-ml/
 │
 └── outputs/
     ├── results_*.json         # Forecast + validation results per model group
+    ├── regime_history.json    # FSI time series + current regime label (Phase 0)
     ├── refresh_log.json       # Run history (last 52 weeks)
     ├── *_model_*.joblib       # Serialized LightGBM models
     └── *.png                  # Forecast dashboards, validation plots, feature importance
@@ -138,6 +153,8 @@ Edit `.env`:
 # Mandatory
 FRED_API_KEY=your_fred_api_key_here
 
+# Phase 0 — no additional keys required (uses FRED_API_KEY above)
+
 # Optional — only needed with the --sector flag
 BEA_API_KEY=your_bea_api_key_here
 BLS_API_KEY=your_bls_api_key_here       # BLS works without a key at lower limits
@@ -146,17 +163,29 @@ TE_CLIENT_SECRET=your_te_client_secret_here
 
 # Optional — only needed with the --crunchbase flag
 CRUNCHBASE_API_KEY=your_crunchbase_api_key_here
+
+# Phase 1 — at least one required for news ingestion (planned)
+NEWS_API_KEY=your_newsapi_key_here
+MARKETAUX_API_KEY=your_marketaux_key_here
+FINNHUB_API_KEY=your_finnhub_key_here
+
+# Phase 2 — financial data enrichment (planned)
+FMP_API_KEY=your_fmp_key_here
 ```
 
 **Where to get keys:**
 
-| Key | Source | Cost |
-|---|---|---|
-| `FRED_API_KEY` | https://fred.stlouisfed.org/docs/api/api_key.html | Free |
-| `BEA_API_KEY` | https://apps.bea.gov/api/signup/ | Free |
-| `BLS_API_KEY` | https://www.bls.gov/developers/home.htm | Free (optional) |
-| `TE_CLIENT_KEY/SECRET` | https://tradingeconomics.com/api/ | Commercial |
-| `CRUNCHBASE_API_KEY` | https://data.crunchbase.com/docs/welcome-to-crunchbase-data | Paid (Fundamentals plan or above) |
+| Key | Source | Cost | Required For |
+|---|---|---|---|
+| `FRED_API_KEY` | https://fred.stlouisfed.org/docs/api/api_key.html | Free | Everything (mandatory) |
+| `BEA_API_KEY` | https://apps.bea.gov/api/signup/ | Free | `--sector bea` |
+| `BLS_API_KEY` | https://www.bls.gov/developers/home.htm | Free (optional) | `--sector bls` (works without key at lower limits) |
+| `TE_CLIENT_KEY/SECRET` | https://tradingeconomics.com/api/ | Commercial | `--sector tradingeconomics` |
+| `CRUNCHBASE_API_KEY` | https://data.crunchbase.com/docs/welcome-to-crunchbase-data | Paid | `--crunchbase` |
+| `NEWS_API_KEY` | https://newsapi.org/register | Free tier available | Phase 1 (planned) |
+| `MARKETAUX_API_KEY` | https://www.marketaux.com/ | Free tier available | Phase 1 fallback (planned) |
+| `FINNHUB_API_KEY` | https://finnhub.io/register | Free tier available | Phase 1 fallback (planned) |
+| `FMP_API_KEY` | https://financialmodelingprep.com/developer/docs/ | Free tier available | Phase 2 enrichment (planned) |
 
 You may also export keys directly as environment variables instead of using `.env`.
 
@@ -170,11 +199,12 @@ python3 fred_refresh.py
 
 This single command runs the full pipeline:
 
-1. Fetches the latest observations for all 18 FRED series
+1. Fetches the latest observations for all 32 FRED series (18 core + 14 Phase 0)
 2. Merges new rows into existing CSVs (never overwrites historical data)
-3. Retrains all four LightGBM model groups
-4. Prints a unified summary table with forecasts and validation metrics
-5. Appends a run log entry to `outputs/refresh_log.json`
+3. Retrains all seven LightGBM model groups (4 core + 3 Phase 0)
+4. Prints a **Market Conditions Snapshot** (VIX, FSI, regime, WTI, gold, 10Y−2Y slope)
+5. Prints a unified summary table with forecasts and validation metrics
+6. Appends a run log entry to `outputs/refresh_log.json`
 
 ### Command-Line Options
 
@@ -223,7 +253,7 @@ python3 fred_refresh.py --sector all --crunchbase
 The step count shown in the log (`[1/N]`) adjusts automatically based on which flags are active: each of `--sector` and `--crunchbase` adds 2 steps (data refresh + model training).
 
 ```
-[1/N]  Refresh FRED data (18 series)
+[1/N]  Refresh FRED data (32 series — 18 core + 14 Phase 0)
          → Incremental fetch: only pulls data since last run (30-day lookback for revisions)
          → Rate-limited: 0.6 s between API calls (stays under 120 req/min)
          → Prints a per-series status table
@@ -243,8 +273,9 @@ The step count shown in the log (`[1/N]`) adjusts automatically based on which f
          → Prints a per-segment status table
 
 [N-2]  Retrain FRED LightGBM models
-         → Runs 4 model scripts sequentially as subprocesses
+         → Runs 7 model scripts sequentially as subprocesses (4 core + market_model, yield_curve_model, composite_model)
          → Each script saves .joblib models, PNGs, and a results JSON
+         → composite_model.py additionally writes regime_history.json
 
 [N-1]  Train sector models  (only with --sector + data exists)
          → Discovers all CSVs in data/Sector/
@@ -255,8 +286,9 @@ The step count shown in the log (`[1/N]`) adjusts automatically based on which f
          → Skips gracefully if fewer than 54 monthly rows (needs ~13 months of history)
          → Once sufficient data exists: trains, saves .joblib and results_vc_*.json
 
-[N]    Print unified summary table
-         → Reads all results JSONs (FRED + sector + VC as available)
+[N]    Print output
+         → Prints Market Conditions Snapshot (VIX, FSI, regime label, WTI, gold, 10Y−2Y slope)
+         → Prints unified summary table from all results JSONs (FRED + sector + VC as available)
          → Appends run log entry (keeps last 52 weeks)
 ```
 
@@ -563,6 +595,85 @@ Data starts January 1978. A cross-interaction feature (recession probability × 
 
 ---
 
+### market_model.py *(Phase 0)*
+
+Covers financial market risk indicators and commodity prices. All FRED series are daily; the script resamples to monthly means via `groupby("date").mean()`.
+
+**Market Risk group** (saved to `results_market_risk.json`):
+
+| Series | Description | Unit | Data Start |
+|---|---|---|---|
+| VIXCLS | CBOE Volatility Index (VIX) | Index | 1990-01 |
+| BAMLH0A0HYM2 | ICE BofA US High Yield Option-Adjusted Spread | % | 1996-12 |
+| BAMLC0A0CM | ICE BofA US Corporate (IG) Option-Adjusted Spread | % | 1996-12 |
+| DTWEXBGS | Nominal Broad USD Index | Index | 2006-01 |
+
+**Commodities group** (saved to `results_commodities.json`):
+
+| Series | Description | Unit | Data Start |
+|---|---|---|---|
+| DCOILWTICO | WTI Crude Oil Price | $/bbl | 1986-01 |
+| GOLDAMGBD228NLBM | Gold London Fixing Price | $/troy oz | 1968-01 |
+
+Cross-features: `hy_ig_diff` (HY−IG spread), `vix_x_hy` (VIX × HY), `gold_oil_ratio`. Data window starts 1996-01 to align with credit spread availability.
+
+**Outputs:** `market_model_{series}.joblib` (×6), `market_risk_{dashboard,validation,importance}.png`, `commodities_{dashboard,validation,importance}.png`, `results_market_risk.json`, `results_commodities.json`
+
+---
+
+### yield_curve_model.py *(Phase 0)*
+
+Trains a joint LightGBM model on 8 Treasury yield tenors simultaneously. Daily FRED rates are resampled to monthly means.
+
+| Series | Tenor | Data Start |
+|---|---|---|
+| DGS1MO | 1-month | 2001-07 |
+| DGS3MO | 3-month | 1982-01 |
+| DGS6MO | 6-month | 1982-01 |
+| DGS1 | 1-year | 1962-01 |
+| DGS2 | 2-year | 1976-06 |
+| DGS5 | 5-year | 1962-01 |
+| DGS10 | 10-year | 1962-01 |
+| DGS30 | 30-year | 1977-02 |
+
+Cross-features: `slope_10y_2y` (DGS10−DGS2), `curvature` (2×DGS5−DGS1−DGS10), `spread_10y_3m`, `spread_2y_1m`. The joint data window starts 2001-07 when DGS1MO becomes available.
+
+**Outputs:** `yield_curve_model_{series}.joblib` (×8), `yield_curve_{dashboard,validation,importance}.png`, `results_yield_curve.json`
+
+---
+
+### composite_model.py *(Phase 0)*
+
+Computes a **Financial Stress Index (FSI)** and classifies the current **Market Regime**. No additional FRED keys required — reads from files already written by the Phase 0 data fetch.
+
+**FSI computation:**
+
+FSI is the expanding-window percentile rank average of 5 components:
+
+| Component | Source |
+|---|---|
+| VIX | `data/MarketRisk/VIXCLS.csv` |
+| HY spread | `data/MarketRisk/BAMLH0A0HYM2.csv` |
+| IG spread | `data/MarketRisk/BAMLC0A0CM.csv` |
+| Recession probability | `data/RiskLeadingInd/RECPROUSM156N.csv` |
+| Inverted yield curve | `data/CostOfCapital/T10Y2Y.csv` (negated) |
+
+**Market Regime thresholds:**
+
+| FSI Range | Trend Condition | Label |
+|---|---|---|
+| < 0.25 | any | `expansion` |
+| 0.25 – 0.45 | any | `slowdown` |
+| 0.45 – 0.65 | trending down | `recovery` |
+| 0.45 – 0.65 | flat or rising | `contraction` |
+| ≥ 0.65 | any | `stress` |
+
+Trains a LightGBM regressor on the FSI time series for a 12-month forecast.
+
+**Outputs:** `composite_model_fsi.joblib`, `composite_{dashboard,validation,importance}.png`, `results_financial_stress.json` (GroupResponse format with FSI series), `regime_history.json` (FSI history + current regime label + regime forecast)
+
+---
+
 ### vc_model.py
 
 Generic model script that trains LightGBM forecasters for Crunchbase VC segment data. Invoked automatically by `fred_refresh.py` when `--crunchbase` is used, or directly:
@@ -643,6 +754,22 @@ Serializes group results to JSON. The output file is what `fred_refresh.py` read
 ---
 
 ## Summary Table Output
+
+### Market Conditions Snapshot
+
+Before the main table, a compact snapshot of Phase 0 market signals is printed:
+
+```
+══════════════════════════════════════════════════════════════════
+  MARKET CONDITIONS SNAPSHOT
+  VIX: 18.4   Dollar: 106.2
+  FSI: 0.214 (expansion)   WTI: $72.4/bbl   Gold: $3,180/oz   10Y−2Y: +0.42%
+══════════════════════════════════════════════════════════════════
+```
+
+All values are read from the most-recently written Phase 0 results files. The block is silently omitted if the Phase 0 models haven't been run yet.
+
+### Main Summary Table
 
 After every run, a formatted table is printed to stdout. The title reflects which modules were active:
 
@@ -747,7 +874,8 @@ Optional endpoints (sector, VC) return HTTP 404 with an instructive message when
 
 | Method | Path | Description |
 |---|---|---|
-| GET | `/api/summary` | Lists every endpoint, its description, the series IDs it covers, and whether its backing results file currently exists on disk. Use this as a discovery and health-check endpoint. |
+| GET | `/api/health` | Liveness check — returns `{"status": "ok", "ts": "<ISO timestamp>"}`. Always available; does not require any results files. |
+| GET | `/api/summary` | Lists every endpoint, its description, the series IDs it covers, and whether its backing results file currently exists on disk. Use this as a discovery endpoint. |
 | GET | `/docs` | Interactive Swagger UI — try any endpoint directly from the browser |
 | GET | `/redoc` | ReDoc documentation |
 
@@ -763,6 +891,43 @@ Optional endpoints (sector, VC) return HTTP 404 with an instructive message when
 | GET | `/api/cost-of-capital/{series_id}` | — | Single series from Cost of Capital. Valid `series_id`: `DFF`, `DPRIME`, `T10Y3M`, `T10Y2Y` |
 | GET | `/api/risk` | RECPROUSM156N, UMCSENT | 12-month forecasts for the Chauvet-Piger Smoothed Recession Probability (%) and U. of Michigan Consumer Sentiment (1966:Q1=100) as leading risk indicators. Recession probability above 20% is historically associated with elevated downturn risk. |
 | GET | `/api/risk/{series_id}` | — | Single series from Risk. Valid `series_id`: `RECPROUSM156N`, `UMCSENT` |
+
+#### Phase 0 Endpoints (available after standard pipeline run)
+
+These return HTTP 404 until `fred_refresh.py` has completed a run that includes the Phase 0 model scripts (`market_model.py`, `yield_curve_model.py`, `composite_model.py`).
+
+| Method | Path | Series | What It Returns |
+|---|---|---|---|
+| GET | `/api/market/vix` | VIXCLS | CBOE VIX — last value, 24-month validation, and 12-month forecast. |
+| GET | `/api/market/spreads` | BAMLH0A0HYM2, BAMLC0A0CM | ICE BofA US High Yield and Investment Grade option-adjusted spreads (%). |
+| GET | `/api/market/dollar` | DTWEXBGS | Nominal Broad USD Index — last value and 12-month forecast. |
+| GET | `/api/commodities/oil` | DCOILWTICO | WTI crude oil price ($/bbl) — last value and 12-month forecast. |
+| GET | `/api/commodities/gold` | GOLDAMGBD228NLBM | Gold London fixing price ($/troy oz) — last value and 12-month forecast. |
+| GET | `/api/market/yield-curve` | DGS1MO … DGS30 | Full 8-tenor Treasury yield curve — last value and 12-month forecast per tenor. |
+| GET | `/api/market/yield-curve/{series_id}` | — | Single tenor. Valid `series_id`: `DGS1MO`, `DGS3MO`, `DGS6MO`, `DGS1`, `DGS2`, `DGS5`, `DGS10`, `DGS30`. Returns HTTP 400 for invalid IDs. |
+| GET | `/api/market/stress` | FSI | Financial Stress Index time series — last value and 12-month forecast. |
+| GET | `/api/market/regime` | — | Current regime label, current FSI value, full FSI history, and 12-month regime forecast. See [Regime Response format](#regime-response-format) below. |
+| GET | `/api/series/{series_id}/history` | — | Raw observation history for any of the 31 FRED series in the pipeline. Returns `series_id`, `row_count`, and `observations` list with `observation_date` + `value` pairs. Returns HTTP 404 for unknown IDs, HTTP 400 for invalid IDs. |
+
+##### Regime Response Format
+
+```json
+{
+  "current_regime": "expansion",
+  "current_fsi": 0.214,
+  "as_of": "2026-03",
+  "history": [
+    { "date": "1996-12", "fsi": 0.183, "regime": "expansion" },
+    ...
+  ],
+  "forecast": [
+    { "month": "2026-04", "fsi_mid": 0.219, "fsi_lo": 0.181, "fsi_hi": 0.258, "regime": "expansion" },
+    ...12 months total...
+  ]
+}
+```
+
+---
 
 #### Optional Sector Endpoints
 
@@ -824,7 +989,7 @@ Exits with code `0` on success, `1` if any check fails.
 
 ### Comprehensive Test Suite — `test_api.py`
 
-Tests all 15 endpoints, prints detailed response values for every series, and verifies all security controls. Covers 26 checks total.
+Tests all endpoints, prints detailed response values for every series, and verifies all security controls. Covers 40+ checks total (Phase 0 tests SKIP gracefully if results files haven't been generated yet).
 
 ```bash
 python3 test_api.py
@@ -834,11 +999,18 @@ python3 test_api.py
 
 | Category | Checks |
 |---|---|
-| `/api/summary` | Returns ≥15 endpoints; lists available series per endpoint |
+| `/api/health` | Returns `status="ok"` and `ts` field (hard fail — always required) |
+| `/api/summary` | Returns ≥25 endpoints; lists available series per endpoint |
 | Business Environment | Group endpoint (series count + IDs), individual series for INDPRO, TCU, PAYEMS |
 | Consumer Demand | Group endpoint, individual series for PCE and UMCSENT |
 | Cost of Capital | Group endpoint, individual series for DFF and T10Y3M |
 | Risk | Group endpoint, individual series for RECPROUSM156N |
+| Phase 0: Market Risk | `/api/market/vix`, `/api/market/spreads`, `/api/market/dollar` — SKIP if not yet generated |
+| Phase 0: Commodities | `/api/commodities/oil`, `/api/commodities/gold` — SKIP if not yet generated |
+| Phase 0: Yield Curve | Full group + individual DGS10 — SKIP if not yet generated |
+| Phase 0: FSI + Regime | `/api/market/stress`, `/api/market/regime` — SKIP if not yet generated |
+| Phase 0: Raw history | `/api/series/VIXCLS/history`, `/api/series/DGS10/history` — SKIP if not generated |
+| Phase 0: Error cases | `INVALID!!` series_id → HTTP 400; `DOESNOTEXIST` → HTTP 404 |
 | Sector endpoints | Each returns SKIP with an instructive message if results file not yet generated |
 | VC endpoints | Each returns SKIP with an instructive message if results file not yet generated |
 | Security headers | All five required headers present and correct on every response |
@@ -914,6 +1086,9 @@ Outputs: `outputs/{metrics_comparison,roc_curves,confusion_matrices,training_tim
 | `consumer_demand_model_{series}.joblib` (×6) | Consumer Demand LightGBM regressors |
 | `cost_of_capital_model_{DFF,DPRIME,T10Y3M,T10Y2Y}.joblib` | Cost of Capital LightGBM regressors |
 | `risk_model_{recpro,sentiment}.joblib` | Risk model LightGBM regressors |
+| `market_model_{series}.joblib` (×6) | Phase 0: Market Risk + Commodities regressors |
+| `yield_curve_model_{series}.joblib` (×8) | Phase 0: Yield curve tenor regressors |
+| `composite_model_fsi.joblib` | Phase 0: FSI LightGBM regressor |
 | `sector_{source}_model_{series}.joblib` | Sector model regressors (created on first sector run) |
 | `vc_model_{segment}_{metric}.joblib` | VC segment model regressors (created after ~13 months of data collection) |
 | `lgbm_model.joblib` | TEP fault detection LightGBM classifier |
@@ -928,6 +1103,11 @@ All models are saved with `joblib.dump()` and can be loaded with `joblib.load()`
 | `results_consumer_demand.json` | Forecasts + validation metrics for Consumer Demand |
 | `results_cost_of_capital.json` | Forecasts + validation metrics for Cost of Capital |
 | `results_risk.json` | Forecasts + validation metrics for Risk & Leading Indicators |
+| `results_market_risk.json` | Phase 0: Forecasts for VIX, HY spread, IG spread, USD index |
+| `results_commodities.json` | Phase 0: Forecasts for WTI crude oil and gold |
+| `results_yield_curve.json` | Phase 0: Forecasts for all 8 Treasury yield tenors |
+| `results_financial_stress.json` | Phase 0: Financial Stress Index (FSI) forecast (GroupResponse format) |
+| `regime_history.json` | Phase 0: Full FSI history + current regime label + 12-month regime forecast |
 | `results_sector_bls.json` | BLS Employment forecasts (created after first `--sector bls` run) |
 | `results_sector_bea.json` | BEA GDP forecasts (created after first `--sector bea` run) |
 | `results_sector_worldbank.json` | World Bank sector forecasts (created after first `--sector worldbank` run) |
@@ -997,6 +1177,10 @@ Appended after every `fred_refresh.py` run. The last 52 entries are kept.
 | `risk_validation.png` | Validation for risk series |
 | `risk_feature_importance.png` | Top-15 features for risk models |
 | `risk_snapshot.png` | Distribution gauges with current value and 12-month forecast |
+| `market_risk_*.png` | Phase 0: Dashboard, validation, importance for VIX/spreads/USD |
+| `commodities_*.png` | Phase 0: Dashboard, validation, importance for WTI and gold |
+| `yield_curve_*.png` | Phase 0: Dashboard, validation, importance for 8-tenor yield curve |
+| `composite_*.png` | Phase 0: Dashboard, validation, importance for FSI model |
 | `sector_bls_*.png` | Dashboard, validation, importance for BLS series |
 | `sector_bea_*.png` | Dashboard, validation, importance for BEA series |
 | `sector_worldbank_*.png` | Dashboard, validation, importance for World Bank series |
@@ -1033,8 +1217,22 @@ Appended after every `fred_refresh.py` run. The last 52 entries are kept.
 | T10Y2Y | Yield Curve 10Y-2Y | Daily | CostOfCapital |
 | T10Y3M | Yield Curve 10Y-3M | Daily | CostOfCapital |
 | RECPROUSM156N | Chauvet-Piger Recession Probability | Monthly | RiskLeadingInd |
+| VIXCLS | CBOE Volatility Index (VIX) | Daily | MarketRisk |
+| BAMLH0A0HYM2 | ICE BofA US High Yield OAS | Daily | MarketRisk |
+| BAMLC0A0CM | ICE BofA US Corporate (IG) OAS | Daily | MarketRisk |
+| DTWEXBGS | Nominal Broad USD Index | Daily | MarketRisk |
+| DCOILWTICO | WTI Crude Oil Price | Daily | Commodities |
+| GOLDAMGBD228NLBM | Gold London Fixing Price | Daily | Commodities |
+| DGS1MO | Treasury 1-Month Yield | Daily | YieldCurve |
+| DGS3MO | Treasury 3-Month Yield | Daily | YieldCurve |
+| DGS6MO | Treasury 6-Month Yield | Daily | YieldCurve |
+| DGS1 | Treasury 1-Year Yield | Daily | YieldCurve |
+| DGS2 | Treasury 2-Year Yield | Daily | YieldCurve |
+| DGS5 | Treasury 5-Year Yield | Daily | YieldCurve |
+| DGS10 | Treasury 10-Year Yield | Daily | YieldCurve |
+| DGS30 | Treasury 30-Year Yield | Daily | YieldCurve |
 
-UMCSENT is saved to both `ConsumerDemand/` and `RiskLeadingInd/` on every refresh. Daily series (DFF, DPRIME, T10Y2Y, T10Y3M) are stored in daily format; model scripts resample to monthly means internally.
+UMCSENT is saved to both `ConsumerDemand/` and `RiskLeadingInd/` on every refresh. Daily series are stored in daily format; model scripts resample to monthly means internally.
 
 ---
 
@@ -1101,3 +1299,15 @@ Create a new model script following the 8-step structure of `business_env_model.
 8. Save models + plots + results JSON (`macro_utils.save_model_results`)
 
 Then add the script to `MODEL_SCRIPTS` and its results file to `RESULTS_FILES` in `fred_refresh.py`.
+
+---
+
+## Phase Roadmap
+
+| Phase | Status | Description | New API Keys Required |
+|---|---|---|---|
+| **Phase 0** | ✅ Complete | Free FRED extensions: VIX, credit spreads, USD index, WTI oil, gold, 8-tenor yield curve, FSI, Market Regime | None |
+| **Phase 1** | Planned | News ingestion pipeline (NewsAPI, Marketaux, Finnhub) — daily economic news briefings, top-stories endpoint, threshold-based alerts | `NEWS_API_KEY`, `MARKETAUX_API_KEY`, `FINNHUB_API_KEY` |
+| **Phase 2** | Planned | Sentiment ML layer — LightGBM trained on article sentiment scores after ≥30 days of Phase 1 data; `/api/sentiment` and `/api/news/volume` endpoints; FMP financial data enrichment | `FMP_API_KEY` |
+
+Phase 1 requires at least one news API key (the others are optional fallbacks). Phase 2 depends on Phase 1 having run for at least 30 days. All phase-specific keys are pre-documented in `.env.example`.

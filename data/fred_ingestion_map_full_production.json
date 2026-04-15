@@ -419,6 +419,279 @@
         "supports_standard_monthly_ingestion": true,
         "revision_sensitive": true
       }
+    },
+    "VIXCLS": {
+      "title": "CBOE Volatility Index: VIX",
+      "source": "Chicago Board Options Exchange",
+      "release": "CBOE Market Statistics",
+      "frequency": "Daily",
+      "units": "Index",
+      "seasonal_adjustment": "Not Seasonally Adjusted",
+      "series_page_url": "https://fred.stlouisfed.org/series/VIXCLS",
+      "data_download_url": "https://fred.stlouisfed.org/data/VIXCLS",
+      "api_series_url": "https://api.stlouisfed.org/fred/series?series_id=VIXCLS&api_key={api_key}&file_type=json",
+      "api_observations_url": "https://api.stlouisfed.org/fred/series/observations?series_id=VIXCLS&api_key={api_key}&file_type=json",
+      "api_release_url": "https://api.stlouisfed.org/fred/series/release?series_id=VIXCLS&api_key={api_key}&file_type=json",
+      "api_vintages_url": "https://api.stlouisfed.org/fred/series/vintagedates?series_id=VIXCLS&api_key={api_key}&file_type=json",
+      "pipeline_flags": {
+        "supports_standard_daily_ingestion": true,
+        "model_group": "MarketRisk",
+        "resample_to_monthly": "mean"
+      }
+    },
+    "BAMLH0A0HYM2": {
+      "title": "ICE BofA US High Yield Index Option-Adjusted Spread",
+      "source": "ICE Benchmark Administration Limited (IBA)",
+      "release": "ICE BofA Indices",
+      "frequency": "Daily",
+      "units": "Percent",
+      "seasonal_adjustment": "Not Seasonally Adjusted",
+      "series_page_url": "https://fred.stlouisfed.org/series/BAMLH0A0HYM2",
+      "data_download_url": "https://fred.stlouisfed.org/data/BAMLH0A0HYM2",
+      "api_series_url": "https://api.stlouisfed.org/fred/series?series_id=BAMLH0A0HYM2&api_key={api_key}&file_type=json",
+      "api_observations_url": "https://api.stlouisfed.org/fred/series/observations?series_id=BAMLH0A0HYM2&api_key={api_key}&file_type=json",
+      "api_release_url": "https://api.stlouisfed.org/fred/series/release?series_id=BAMLH0A0HYM2&api_key={api_key}&file_type=json",
+      "api_vintages_url": "https://api.stlouisfed.org/fred/series/vintagedates?series_id=BAMLH0A0HYM2&api_key={api_key}&file_type=json",
+      "companion_series": ["BAMLC0A0CM"],
+      "pipeline_flags": {
+        "supports_standard_daily_ingestion": true,
+        "model_group": "MarketRisk",
+        "resample_to_monthly": "mean"
+      }
+    },
+    "BAMLC0A0CM": {
+      "title": "ICE BofA US Corporate Index Option-Adjusted Spread",
+      "source": "ICE Benchmark Administration Limited (IBA)",
+      "release": "ICE BofA Indices",
+      "frequency": "Daily",
+      "units": "Percent",
+      "seasonal_adjustment": "Not Seasonally Adjusted",
+      "series_page_url": "https://fred.stlouisfed.org/series/BAMLC0A0CM",
+      "data_download_url": "https://fred.stlouisfed.org/data/BAMLC0A0CM",
+      "api_series_url": "https://api.stlouisfed.org/fred/series?series_id=BAMLC0A0CM&api_key={api_key}&file_type=json",
+      "api_observations_url": "https://api.stlouisfed.org/fred/series/observations?series_id=BAMLC0A0CM&api_key={api_key}&file_type=json",
+      "api_release_url": "https://api.stlouisfed.org/fred/series/release?series_id=BAMLC0A0CM&api_key={api_key}&file_type=json",
+      "api_vintages_url": "https://api.stlouisfed.org/fred/series/vintagedates?series_id=BAMLC0A0CM&api_key={api_key}&file_type=json",
+      "companion_series": ["BAMLH0A0HYM2"],
+      "pipeline_flags": {
+        "supports_standard_daily_ingestion": true,
+        "model_group": "MarketRisk",
+        "resample_to_monthly": "mean"
+      }
+    },
+    "DTWEXBGS": {
+      "title": "Nominal Broad U.S. Dollar Index",
+      "source": "Board of Governors of the Federal Reserve System (US)",
+      "release": "H.10 Foreign Exchange Rates",
+      "frequency": "Daily",
+      "units": "Index Jan 2006=100",
+      "seasonal_adjustment": "Not Seasonally Adjusted",
+      "series_page_url": "https://fred.stlouisfed.org/series/DTWEXBGS",
+      "data_download_url": "https://fred.stlouisfed.org/data/DTWEXBGS",
+      "api_series_url": "https://api.stlouisfed.org/fred/series?series_id=DTWEXBGS&api_key={api_key}&file_type=json",
+      "api_observations_url": "https://api.stlouisfed.org/fred/series/observations?series_id=DTWEXBGS&api_key={api_key}&file_type=json",
+      "api_release_url": "https://api.stlouisfed.org/fred/series/release?series_id=DTWEXBGS&api_key={api_key}&file_type=json",
+      "api_vintages_url": "https://api.stlouisfed.org/fred/series/vintagedates?series_id=DTWEXBGS&api_key={api_key}&file_type=json",
+      "pipeline_flags": {
+        "supports_standard_daily_ingestion": true,
+        "model_group": "MarketRisk",
+        "resample_to_monthly": "mean",
+        "notes": "Starts 2006-01-02; ~19 years of data"
+      }
+    },
+    "DCOILWTICO": {
+      "title": "Crude Oil Prices: West Texas Intermediate (WTI) - Cushing, Oklahoma",
+      "source": "U.S. Energy Information Administration",
+      "release": "Spot Prices",
+      "frequency": "Daily",
+      "units": "Dollars per Barrel",
+      "seasonal_adjustment": "Not Seasonally Adjusted",
+      "series_page_url": "https://fred.stlouisfed.org/series/DCOILWTICO",
+      "data_download_url": "https://fred.stlouisfed.org/data/DCOILWTICO",
+      "api_series_url": "https://api.stlouisfed.org/fred/series?series_id=DCOILWTICO&api_key={api_key}&file_type=json",
+      "api_observations_url": "https://api.stlouisfed.org/fred/series/observations?series_id=DCOILWTICO&api_key={api_key}&file_type=json",
+      "api_release_url": "https://api.stlouisfed.org/fred/series/release?series_id=DCOILWTICO&api_key={api_key}&file_type=json",
+      "api_vintages_url": "https://api.stlouisfed.org/fred/series/vintagedates?series_id=DCOILWTICO&api_key={api_key}&file_type=json",
+      "companion_series": ["GOLDAMGBD228NLBM"],
+      "pipeline_flags": {
+        "supports_standard_daily_ingestion": true,
+        "model_group": "Commodities",
+        "resample_to_monthly": "mean"
+      }
+    },
+    "GOLDAMGBD228NLBM": {
+      "title": "Gold Fixing Price 10:30 A.M. (London time) in London Bullion Market",
+      "source": "ICE Benchmark Administration Limited (IBA)",
+      "release": "LBMA Gold Price",
+      "frequency": "Daily",
+      "units": "U.S. Dollars per Troy Ounce",
+      "seasonal_adjustment": "Not Seasonally Adjusted",
+      "series_page_url": "https://fred.stlouisfed.org/series/GOLDAMGBD228NLBM",
+      "data_download_url": "https://fred.stlouisfed.org/data/GOLDAMGBD228NLBM",
+      "api_series_url": "https://api.stlouisfed.org/fred/series?series_id=GOLDAMGBD228NLBM&api_key={api_key}&file_type=json",
+      "api_observations_url": "https://api.stlouisfed.org/fred/series/observations?series_id=GOLDAMGBD228NLBM&api_key={api_key}&file_type=json",
+      "api_release_url": "https://api.stlouisfed.org/fred/series/release?series_id=GOLDAMGBD228NLBM&api_key={api_key}&file_type=json",
+      "api_vintages_url": "https://api.stlouisfed.org/fred/series/vintagedates?series_id=GOLDAMGBD228NLBM&api_key={api_key}&file_type=json",
+      "companion_series": ["DCOILWTICO"],
+      "pipeline_flags": {
+        "supports_standard_daily_ingestion": true,
+        "model_group": "Commodities",
+        "resample_to_monthly": "mean"
+      }
+    },
+    "DGS1MO": {
+      "title": "1-Month Treasury Constant Maturity Rate",
+      "source": "Board of Governors of the Federal Reserve System (US)",
+      "release": "H.15 Selected Interest Rates",
+      "frequency": "Daily",
+      "units": "Percent",
+      "seasonal_adjustment": "Not Seasonally Adjusted",
+      "series_page_url": "https://fred.stlouisfed.org/series/DGS1MO",
+      "data_download_url": "https://fred.stlouisfed.org/data/DGS1MO",
+      "api_series_url": "https://api.stlouisfed.org/fred/series?series_id=DGS1MO&api_key={api_key}&file_type=json",
+      "api_observations_url": "https://api.stlouisfed.org/fred/series/observations?series_id=DGS1MO&api_key={api_key}&file_type=json",
+      "api_release_url": "https://api.stlouisfed.org/fred/series/release?series_id=DGS1MO&api_key={api_key}&file_type=json",
+      "api_vintages_url": "https://api.stlouisfed.org/fred/series/vintagedates?series_id=DGS1MO&api_key={api_key}&file_type=json",
+      "pipeline_flags": {
+        "supports_standard_daily_ingestion": true,
+        "model_group": "YieldCurve",
+        "resample_to_monthly": "mean",
+        "notes": "Starts 2001-07-31; limits joint yield curve model start date"
+      }
+    },
+    "DGS3MO": {
+      "title": "3-Month Treasury Constant Maturity Rate",
+      "source": "Board of Governors of the Federal Reserve System (US)",
+      "release": "H.15 Selected Interest Rates",
+      "frequency": "Daily",
+      "units": "Percent",
+      "seasonal_adjustment": "Not Seasonally Adjusted",
+      "series_page_url": "https://fred.stlouisfed.org/series/DGS3MO",
+      "data_download_url": "https://fred.stlouisfed.org/data/DGS3MO",
+      "api_series_url": "https://api.stlouisfed.org/fred/series?series_id=DGS3MO&api_key={api_key}&file_type=json",
+      "api_observations_url": "https://api.stlouisfed.org/fred/series/observations?series_id=DGS3MO&api_key={api_key}&file_type=json",
+      "api_release_url": "https://api.stlouisfed.org/fred/series/release?series_id=DGS3MO&api_key={api_key}&file_type=json",
+      "api_vintages_url": "https://api.stlouisfed.org/fred/series/vintagedates?series_id=DGS3MO&api_key={api_key}&file_type=json",
+      "pipeline_flags": {
+        "supports_standard_daily_ingestion": true,
+        "model_group": "YieldCurve",
+        "resample_to_monthly": "mean"
+      }
+    },
+    "DGS6MO": {
+      "title": "6-Month Treasury Constant Maturity Rate",
+      "source": "Board of Governors of the Federal Reserve System (US)",
+      "release": "H.15 Selected Interest Rates",
+      "frequency": "Daily",
+      "units": "Percent",
+      "seasonal_adjustment": "Not Seasonally Adjusted",
+      "series_page_url": "https://fred.stlouisfed.org/series/DGS6MO",
+      "data_download_url": "https://fred.stlouisfed.org/data/DGS6MO",
+      "api_series_url": "https://api.stlouisfed.org/fred/series?series_id=DGS6MO&api_key={api_key}&file_type=json",
+      "api_observations_url": "https://api.stlouisfed.org/fred/series/observations?series_id=DGS6MO&api_key={api_key}&file_type=json",
+      "api_release_url": "https://api.stlouisfed.org/fred/series/release?series_id=DGS6MO&api_key={api_key}&file_type=json",
+      "api_vintages_url": "https://api.stlouisfed.org/fred/series/vintagedates?series_id=DGS6MO&api_key={api_key}&file_type=json",
+      "pipeline_flags": {
+        "supports_standard_daily_ingestion": true,
+        "model_group": "YieldCurve",
+        "resample_to_monthly": "mean"
+      }
+    },
+    "DGS1": {
+      "title": "1-Year Treasury Constant Maturity Rate",
+      "source": "Board of Governors of the Federal Reserve System (US)",
+      "release": "H.15 Selected Interest Rates",
+      "frequency": "Daily",
+      "units": "Percent",
+      "seasonal_adjustment": "Not Seasonally Adjusted",
+      "series_page_url": "https://fred.stlouisfed.org/series/DGS1",
+      "data_download_url": "https://fred.stlouisfed.org/data/DGS1",
+      "api_series_url": "https://api.stlouisfed.org/fred/series?series_id=DGS1&api_key={api_key}&file_type=json",
+      "api_observations_url": "https://api.stlouisfed.org/fred/series/observations?series_id=DGS1&api_key={api_key}&file_type=json",
+      "api_release_url": "https://api.stlouisfed.org/fred/series/release?series_id=DGS1&api_key={api_key}&file_type=json",
+      "api_vintages_url": "https://api.stlouisfed.org/fred/series/vintagedates?series_id=DGS1&api_key={api_key}&file_type=json",
+      "pipeline_flags": {
+        "supports_standard_daily_ingestion": true,
+        "model_group": "YieldCurve",
+        "resample_to_monthly": "mean"
+      }
+    },
+    "DGS2": {
+      "title": "2-Year Treasury Constant Maturity Rate",
+      "source": "Board of Governors of the Federal Reserve System (US)",
+      "release": "H.15 Selected Interest Rates",
+      "frequency": "Daily",
+      "units": "Percent",
+      "seasonal_adjustment": "Not Seasonally Adjusted",
+      "series_page_url": "https://fred.stlouisfed.org/series/DGS2",
+      "data_download_url": "https://fred.stlouisfed.org/data/DGS2",
+      "api_series_url": "https://api.stlouisfed.org/fred/series?series_id=DGS2&api_key={api_key}&file_type=json",
+      "api_observations_url": "https://api.stlouisfed.org/fred/series/observations?series_id=DGS2&api_key={api_key}&file_type=json",
+      "api_release_url": "https://api.stlouisfed.org/fred/series/release?series_id=DGS2&api_key={api_key}&file_type=json",
+      "api_vintages_url": "https://api.stlouisfed.org/fred/series/vintagedates?series_id=DGS2&api_key={api_key}&file_type=json",
+      "pipeline_flags": {
+        "supports_standard_daily_ingestion": true,
+        "model_group": "YieldCurve",
+        "resample_to_monthly": "mean"
+      }
+    },
+    "DGS5": {
+      "title": "5-Year Treasury Constant Maturity Rate",
+      "source": "Board of Governors of the Federal Reserve System (US)",
+      "release": "H.15 Selected Interest Rates",
+      "frequency": "Daily",
+      "units": "Percent",
+      "seasonal_adjustment": "Not Seasonally Adjusted",
+      "series_page_url": "https://fred.stlouisfed.org/series/DGS5",
+      "data_download_url": "https://fred.stlouisfed.org/data/DGS5",
+      "api_series_url": "https://api.stlouisfed.org/fred/series?series_id=DGS5&api_key={api_key}&file_type=json",
+      "api_observations_url": "https://api.stlouisfed.org/fred/series/observations?series_id=DGS5&api_key={api_key}&file_type=json",
+      "api_release_url": "https://api.stlouisfed.org/fred/series/release?series_id=DGS5&api_key={api_key}&file_type=json",
+      "api_vintages_url": "https://api.stlouisfed.org/fred/series/vintagedates?series_id=DGS5&api_key={api_key}&file_type=json",
+      "pipeline_flags": {
+        "supports_standard_daily_ingestion": true,
+        "model_group": "YieldCurve",
+        "resample_to_monthly": "mean"
+      }
+    },
+    "DGS10": {
+      "title": "10-Year Treasury Constant Maturity Rate",
+      "source": "Board of Governors of the Federal Reserve System (US)",
+      "release": "H.15 Selected Interest Rates",
+      "frequency": "Daily",
+      "units": "Percent",
+      "seasonal_adjustment": "Not Seasonally Adjusted",
+      "series_page_url": "https://fred.stlouisfed.org/series/DGS10",
+      "data_download_url": "https://fred.stlouisfed.org/data/DGS10",
+      "api_series_url": "https://api.stlouisfed.org/fred/series?series_id=DGS10&api_key={api_key}&file_type=json",
+      "api_observations_url": "https://api.stlouisfed.org/fred/series/observations?series_id=DGS10&api_key={api_key}&file_type=json",
+      "api_release_url": "https://api.stlouisfed.org/fred/series/release?series_id=DGS10&api_key={api_key}&file_type=json",
+      "api_vintages_url": "https://api.stlouisfed.org/fred/series/vintagedates?series_id=DGS10&api_key={api_key}&file_type=json",
+      "pipeline_flags": {
+        "supports_standard_daily_ingestion": true,
+        "model_group": "YieldCurve",
+        "resample_to_monthly": "mean"
+      }
+    },
+    "DGS30": {
+      "title": "30-Year Treasury Constant Maturity Rate",
+      "source": "Board of Governors of the Federal Reserve System (US)",
+      "release": "H.15 Selected Interest Rates",
+      "frequency": "Daily",
+      "units": "Percent",
+      "seasonal_adjustment": "Not Seasonally Adjusted",
+      "series_page_url": "https://fred.stlouisfed.org/series/DGS30",
+      "data_download_url": "https://fred.stlouisfed.org/data/DGS30",
+      "api_series_url": "https://api.stlouisfed.org/fred/series?series_id=DGS30&api_key={api_key}&file_type=json",
+      "api_observations_url": "https://api.stlouisfed.org/fred/series/observations?series_id=DGS30&api_key={api_key}&file_type=json",
+      "api_release_url": "https://api.stlouisfed.org/fred/series/release?series_id=DGS30&api_key={api_key}&file_type=json",
+      "api_vintages_url": "https://api.stlouisfed.org/fred/series/vintagedates?series_id=DGS30&api_key={api_key}&file_type=json",
+      "pipeline_flags": {
+        "supports_standard_daily_ingestion": true,
+        "model_group": "YieldCurve",
+        "resample_to_monthly": "mean",
+        "notes": "Discontinued 2002-02-19 to 2006-02-09; interpolated over that gap"
+      }
     }
   },
   "release_buckets": {
@@ -443,7 +716,15 @@
       "FEDFUNDS",
       "DFF",
       "PRIME",
-      "DPRIME"
+      "DPRIME",
+      "DGS1MO",
+      "DGS3MO",
+      "DGS6MO",
+      "DGS1",
+      "DGS2",
+      "DGS5",
+      "DGS10",
+      "DGS30"
     ],
     "Interest_Rate_Spreads": [
       "T10Y2Y",
@@ -454,6 +735,22 @@
     ],
     "Employment_Situation": [
       "PAYEMS"
+    ],
+    "CBOE_Market_Statistics": [
+      "VIXCLS"
+    ],
+    "ICE_BofA_Indices": [
+      "BAMLH0A0HYM2",
+      "BAMLC0A0CM"
+    ],
+    "H10_Foreign_Exchange_Rates": [
+      "DTWEXBGS"
+    ],
+    "Spot_Prices": [
+      "DCOILWTICO"
+    ],
+    "LBMA_Gold_Price": [
+      "GOLDAMGBD228NLBM"
     ]
   },
   "recommended_pull_order": [

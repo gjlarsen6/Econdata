@@ -76,6 +76,23 @@ SERIES_FILE_MAP: dict[str, tuple[str, str]] = {
     "T10Y3M":          ("CostOfCapital", "T10Y3M.csv"),
     # RiskLeadingInd
     "RECPROUSM156N":   ("RiskLeadingInd", "RECPROUSM156N.csv"),
+    # MarketRisk (daily → monthly mean resampled in market_model.py)
+    "VIXCLS":          ("MarketRisk", "VIXCLS.csv"),
+    "BAMLH0A0HYM2":    ("MarketRisk", "BAMLH0A0HYM2.csv"),
+    "BAMLC0A0CM":      ("MarketRisk", "BAMLC0A0CM.csv"),
+    "DTWEXBGS":        ("MarketRisk", "DTWEXBGS.csv"),
+    # Commodities (daily → monthly mean resampled in market_model.py)
+    "DCOILWTICO":      ("Commodities", "DCOILWTICO.csv"),
+    "GOLDAMGBD228NLBM":("Commodities", "GOLDAMGBD228NLBM.csv"),
+    # YieldCurve (daily → monthly mean resampled in yield_curve_model.py)
+    "DGS1MO":          ("YieldCurve", "DGS1MO.csv"),
+    "DGS3MO":          ("YieldCurve", "DGS3MO.csv"),
+    "DGS6MO":          ("YieldCurve", "DGS6MO.csv"),
+    "DGS1":            ("YieldCurve", "DGS1.csv"),
+    "DGS2":            ("YieldCurve", "DGS2.csv"),
+    "DGS5":            ("YieldCurve", "DGS5.csv"),
+    "DGS10":           ("YieldCurve", "DGS10.csv"),
+    "DGS30":           ("YieldCurve", "DGS30.csv"),
 }
 
 # Series that appear in two directories (UMCSENT is in both ConsumerDemand and RiskLeadingInd)
@@ -99,6 +116,10 @@ MODEL_SCRIPTS = [
     "consumer_demand_model.py",
     "cost_of_capital_model.py",
     "risk_model.py",
+    # Phase 0 — free FRED extensions (no new API keys required)
+    "market_model.py",
+    "yield_curve_model.py",
+    "composite_model.py",
 ]
 
 # Results JSON written by each model script
@@ -107,6 +128,10 @@ RESULTS_FILES = [
     OUTPUT_DIR / "results_consumer_demand.json",
     OUTPUT_DIR / "results_cost_of_capital.json",
     OUTPUT_DIR / "results_risk.json",
+    OUTPUT_DIR / "results_market_risk.json",
+    OUTPUT_DIR / "results_commodities.json",
+    OUTPUT_DIR / "results_yield_curve.json",
+    OUTPUT_DIR / "results_financial_stress.json",
 ]
 
 # ── API key ───────────────────────────────────────────────────────────────────
@@ -493,6 +518,73 @@ def _fmt(val, decimals=2) -> str:
         return f"{val:,.{decimals}f}"
     return f"{val:.{decimals}f}"
 
+def _get_last_value(path: Path, series_id: str) -> float | None:
+    """Read a GroupResponse JSON and return the last_value for series_id, or None."""
+    try:
+        with open(path) as fh:
+            payload = json.load(fh)
+        for s in payload.get("series", []):
+            if s.get("series_id") == series_id:
+                v = s.get("last_value")
+                return float(v) if v is not None else None
+    except Exception:
+        pass
+    return None
+
+
+def print_market_snapshot(output_dir: Path) -> None:
+    """Print a compact market conditions snapshot before the full summary table."""
+    # VIX and Dollar index from market risk results
+    mr_path = output_dir / "results_market_risk.json"
+    vix    = _get_last_value(mr_path, "VIXCLS")
+    dollar = _get_last_value(mr_path, "DTWEXBGS")
+
+    # WTI oil and Gold from commodities results
+    co_path = output_dir / "results_commodities.json"
+    wti  = _get_last_value(co_path, "DCOILWTICO")
+    gold = _get_last_value(co_path, "GOLDAMGBD228NLBM")
+
+    # 10Y−2Y slope from yield curve results
+    yc_path = output_dir / "results_yield_curve.json"
+    dgs10 = _get_last_value(yc_path, "DGS10")
+    dgs2  = _get_last_value(yc_path, "DGS2")
+    slope: float | None = (round(dgs10 - dgs2, 4) if dgs10 is not None and dgs2 is not None else None)
+
+    # FSI and regime from regime_history.json
+    current_fsi: float | None    = None
+    current_regime: str | None   = None
+    rh_path = output_dir / "regime_history.json"
+    try:
+        with open(rh_path) as fh:
+            rh = json.load(fh)
+        current_fsi    = rh.get("current_fsi")
+        current_regime = rh.get("current_regime")
+    except Exception:
+        pass
+
+    # Only print if at least some data is available
+    any_data = any(v is not None for v in [vix, dollar, wti, gold, slope, current_fsi])
+    if not any_data:
+        return
+
+    def _fmt_opt(v: float | None, fmt: str, prefix: str = "", suffix: str = "") -> str:
+        return f"{prefix}{v:{fmt}}{suffix}" if v is not None else "N/A"
+
+    bar = "═" * 62
+    vix_s    = _fmt_opt(vix,    ".1f")
+    dol_s    = _fmt_opt(dollar, ".1f")
+    wti_s    = _fmt_opt(wti,    ".1f", prefix="$", suffix="/bbl")
+    gold_s   = _fmt_opt(gold,   ",.0f", prefix="$", suffix="/oz")
+    slope_s  = (f"{slope:+.2f}%" if slope is not None else "N/A")
+    fsi_s    = (f"{current_fsi:.3f} ({current_regime})" if current_fsi is not None else "N/A")
+
+    print(f"\n{bar}")
+    print("  MARKET CONDITIONS SNAPSHOT")
+    print(f"  VIX: {vix_s}   Dollar: {dol_s}")
+    print(f"  FSI: {fsi_s}   WTI: {wti_s}   Gold: {gold_s}   10Y−2Y: {slope_s}")
+    print(f"{bar}\n")
+
+
 def print_summary_table(results_files: list[Path], title: str = "MACRO MODEL SUMMARY — FRED Weekly Refresh"):
     rows = []
     for rf in results_files:
@@ -586,7 +678,8 @@ def main():
 
     # Detect FRED series with no model group mapping
     known_dirs = {"BusinessEnvironment", "ConsumerDemand",
-                   "CostOfCapital", "RiskLeadingInd"}
+                   "CostOfCapital", "RiskLeadingInd",
+                   "MarketRisk", "Commodities", "YieldCurve"}
     for series_id in series_catalogue:
         directory, _ = SERIES_FILE_MAP.get(series_id, ("NewSeries", ""))
         if directory not in known_dirs:
@@ -745,6 +838,7 @@ def main():
         table_title = "MACRO + VC MODEL SUMMARY — FRED Weekly Refresh"
     else:
         table_title = "MACRO MODEL SUMMARY — FRED Weekly Refresh"
+    print_market_snapshot(OUTPUT_DIR)
     print_summary_table(all_results_files, title=table_title)
 
     # Final status

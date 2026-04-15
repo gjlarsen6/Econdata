@@ -125,12 +125,12 @@ def test_summary() -> None:
         sids  = ", ".join(ep.get("series") or []) or "—"
         print(f"    {ep['path']:<45} {avail}  [{sids}]")
 
-    ok = len(eps) >= 15
+    ok = len(eps) >= 25
     if ok:
         print(_pass(f"{label}: {len(eps)} endpoints listed"))
         _record(label, "PASS")
     else:
-        print(_fail(f"{label}: expected ≥15 endpoints, got {len(eps)}"))
+        print(_fail(f"{label}: expected ≥25 endpoints, got {len(eps)}"))
         _record(label, "FAIL")
 
 
@@ -196,6 +196,149 @@ def test_series(path: str, expected_id: str, expected_status: int = 200) -> None
         detail = r.json().get("detail", "")
         print(_pass(f"{label}: HTTP {expected_status} — {detail}"))
         _record(label, "PASS")
+
+
+# ── Health check ─────────────────────────────────────────────────────────────
+
+def test_health() -> None:
+    label = "GET /api/health"
+    print(_head(label))
+    try:
+        r = _get("/api/health")
+    except requests.ConnectionError:
+        print(_fail(f"Cannot connect to {BASE_URL}"))
+        _record(label, "FAIL")
+        return
+
+    if not _assert_status(label, r, 200):
+        return
+
+    data = r.json()
+    status = data.get("status")
+    ts     = data.get("ts")
+    if status == "ok" and ts:
+        print(f"  status: {status}   ts: {ts}")
+        print(_pass(f"{label}: status=ok, ts present"))
+        _record(label, "PASS")
+    else:
+        print(_fail(f"{label}: expected status='ok' and ts present, got status={status!r} ts={ts!r}"))
+        _record(label, "FAIL")
+
+
+# ── Optional single-series tester ─────────────────────────────────────────────
+
+def test_series_optional(path: str, expected_id: str) -> None:
+    """Like test_series() but SKIPs (rather than FAILs) when the server returns 404."""
+    label = f"GET {path}"
+    print(_head(label))
+    try:
+        r = _get(path)
+    except requests.ConnectionError:
+        print(_fail(f"Cannot connect to {BASE_URL}"))
+        _record(label, "FAIL")
+        return
+
+    if r.status_code == 404:
+        detail = r.json().get("detail", "")
+        print(_skip(f"{label}: not yet generated — {detail}"))
+        _record(label, "SKIP")
+        return
+
+    if not _assert_status(label, r, 200):
+        return
+
+    data = r.json()
+    _print_series(data)
+    actual_id = data.get("series_id", "")
+    if actual_id == expected_id:
+        print(_pass(f"{label}: series_id={actual_id}"))
+        _record(label, "PASS")
+    else:
+        print(_fail(f"{label}: expected series_id={expected_id}, got {actual_id}"))
+        _record(label, "FAIL")
+
+
+# ── Regime endpoint tester ────────────────────────────────────────────────────
+
+def test_regime() -> None:
+    label = "GET /api/market/regime"
+    print(_head(label))
+    try:
+        r = _get("/api/market/regime")
+    except requests.ConnectionError:
+        print(_fail(f"Cannot connect to {BASE_URL}"))
+        _record(label, "FAIL")
+        return
+
+    if r.status_code == 404:
+        detail = r.json().get("detail", "")
+        print(_skip(f"{label}: not yet generated — {detail}"))
+        _record(label, "SKIP")
+        return
+
+    if not _assert_status(label, r, 200):
+        return
+
+    data = r.json()
+    regime  = data.get("current_regime")
+    fsi     = data.get("current_fsi")
+    history = data.get("history", [])
+    forecast = data.get("forecast", [])
+    print(f"  current_regime : {regime}")
+    print(f"  current_fsi    : {fsi}")
+    print(f"  history rows   : {len(history)}")
+    print(f"  forecast months: {len(forecast)}")
+
+    missing = [k for k in ("current_regime", "current_fsi", "history", "forecast") if k not in data]
+    if not missing and len(history) > 0 and len(forecast) > 0:
+        print(_pass(f"{label}: regime={regime}, FSI={fsi}"))
+        _record(label, "PASS")
+    else:
+        print(_fail(f"{label}: missing or empty fields: {missing or 'history/forecast empty'}"))
+        _record(label, "FAIL")
+
+
+# ── History endpoint tester ───────────────────────────────────────────────────
+
+def test_history(series_id: str) -> None:
+    path  = f"/api/series/{series_id}/history"
+    label = f"GET {path}"
+    print(_head(label))
+    try:
+        r = _get(path)
+    except requests.ConnectionError:
+        print(_fail(f"Cannot connect to {BASE_URL}"))
+        _record(label, "FAIL")
+        return
+
+    if r.status_code == 404:
+        detail = r.json().get("detail", "")
+        print(_skip(f"{label}: not yet generated — {detail}"))
+        _record(label, "SKIP")
+        return
+
+    if not _assert_status(label, r, 200):
+        return
+
+    data = r.json()
+    sid       = data.get("series_id")
+    row_count = data.get("row_count", 0)
+    obs       = data.get("observations", [])
+    print(f"  series_id : {sid}")
+    print(f"  row_count : {row_count}")
+    if obs:
+        first = obs[0]
+        print(f"  first obs : {first.get('observation_date')} = {first.get('value')}")
+
+    ok = (sid == series_id and row_count > 0 and len(obs) > 0
+          and "observation_date" in (obs[0] if obs else {})
+          and "value" in (obs[0] if obs else {}))
+    if ok:
+        print(_pass(f"{label}: {row_count} rows, observations well-formed"))
+        _record(label, "PASS")
+    else:
+        print(_fail(f"{label}: validation failed — sid={sid}, rows={row_count}, obs_count={len(obs)}"))
+        _record(label, "FAIL")
 
 
 # ── Security checks ───────────────────────────────────────────────────────────
@@ -372,6 +515,36 @@ def main() -> int:
     test_group("/api/vc/ai",         [], optional=True)
     test_group("/api/vc/fintech",    [], optional=True)
     test_group("/api/vc/healthcare", [], optional=True)
+
+    # ── /api/health ───────────────────────────────────────────────────────────
+    test_health()
+
+    # ── Phase 0: Market Risk ──────────────────────────────────────────────────
+    test_series_optional("/api/market/vix",    "VIXCLS")
+    test_group(          "/api/market/spreads", ["BAMLH0A0HYM2", "BAMLC0A0CM"], optional=True)
+    test_series_optional("/api/market/dollar", "DTWEXBGS")
+
+    # ── Phase 0: Commodities ──────────────────────────────────────────────────
+    test_series_optional("/api/commodities/oil",  "DCOILWTICO")
+    test_series_optional("/api/commodities/gold", "GOLDAMGBD228NLBM")
+
+    # ── Phase 0: Yield Curve ──────────────────────────────────────────────────
+    test_group("/api/market/yield-curve",
+               ["DGS1MO", "DGS3MO", "DGS6MO", "DGS1", "DGS2", "DGS5", "DGS10", "DGS30"],
+               optional=True)
+    test_series_optional("/api/market/yield-curve/DGS10", "DGS10")
+
+    # ── Phase 0: FSI + Regime ─────────────────────────────────────────────────
+    test_series_optional("/api/market/stress", "FSI")
+    test_regime()
+
+    # ── Phase 0: Raw history ──────────────────────────────────────────────────
+    test_history("VIXCLS")
+    test_history("DGS10")
+
+    # ── Phase 0: Error cases ──────────────────────────────────────────────────
+    test_series("/api/market/yield-curve/INVALID!!", "—", expected_status=400)
+    test_series("/api/series/DOESNOTEXIST/history",  "—", expected_status=404)
 
     # ── Security ──────────────────────────────────────────────────────────────
     test_security()
