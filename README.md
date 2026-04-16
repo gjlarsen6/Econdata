@@ -18,18 +18,20 @@ Quick-reference workflow — run these scripts in order for a full data refresh,
 
 ### Data Refresh & Model Training
 
-| Step | Command | Purpose | Frequency |
-|------|---------|---------|-----------|
-| 1 | `python3 fred_refresh.py` | Fetch all FRED macro series + retrain core LightGBM models (7 groups) | Weekly |
-| 2 | `python3 fred_refresh.py --sector` | Fetch BLS/BEA/World Bank sector data + retrain sector models *(optional)* | Weekly |
-| 3 | `python3 fred_refresh.py --crunchbase` | Fetch Crunchbase VC data + retrain VC model *(optional, requires API key)* | Weekly |
-| 4 | `python3 fred_refresh.py --news daily` | Ingest latest financial news articles (Phase 1) *(requires ≥1 news API key)* | Daily |
-| 5 | `python3 fred_refresh.py --enrich` | Enrich news articles with yfinance/FMP signals (Phase 2) *(optional)* | Daily |
-| 6 | `python3 news_model.py` | Train sentiment & volume forecast models on 30+ days of news data (Phase 2) | Weekly (after ≥30 days of news) |
+Steps 1–5 are **flags on the same script** and can be combined into a single call. Only `news_model.py` (step 6) must be run as a separate command.
 
-> **Combined example** — run all steps in one command:
+| Step | Flag / Command | What it adds | Frequency |
+|------|----------------|--------------|-----------|
+| 1 | `python3 fred_refresh.py` | *(base)* Fetch all FRED macro series + retrain core LightGBM models (7 groups) | Weekly |
+| 2 | `+ --sector` | Also fetch BLS/BEA/World Bank sector data + retrain sector models *(optional)* | Weekly |
+| 3 | `+ --crunchbase` | Also fetch Crunchbase VC data + retrain VC model *(optional, requires API key)* | Weekly |
+| 4 | `+ --news daily` | Also ingest latest financial news articles (Phase 1) *(requires ≥1 news API key)* | Daily |
+| 5 | `+ --enrich` | Also enrich news articles with yfinance/FMP signals (Phase 2) *(optional)* | Daily |
+| 6 | `python3 news_model.py` | Separate script — train sentiment & volume forecast models on 30+ days of news data (Phase 2) | Weekly (after ≥30 days of news) |
+
+> **Full refresh in one command** (combine any flags you need):
 > ```bash
-> python3 fred_refresh.py --sector --news daily --enrich && python3 news_model.py
+> python3 fred_refresh.py --sector --crunchbase --news daily --enrich && python3 news_model.py
 > ```
 
 ### Query Models & Get Insights
