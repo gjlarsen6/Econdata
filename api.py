@@ -64,6 +64,9 @@ OPTIONAL_RESULTS: dict[str, Path] = {
     "yield_curve":       OUTPUT_DIR / "results_yield_curve.json",
     "financial_stress":  OUTPUT_DIR / "results_financial_stress.json",
     "regime":            OUTPUT_DIR / "regime_history.json",
+    # Phase 2 — Financial News ML
+    "news_sentiment":    OUTPUT_DIR / "results_news_sentiment.json",
+    "news_volume":       OUTPUT_DIR / "results_news_volume.json",
 }
 
 ALL_RESULTS: dict[str, Path] = {**REQUIRED_RESULTS, **OPTIONAL_RESULTS}
@@ -215,6 +218,21 @@ class BriefingResponse(BaseModel):
     macro_signals: list[str]
     alerts: list[str]
     stale: bool = False   # True if briefing file is older than BRIEFING_STALE_HOURS (36h)
+
+
+# ── Phase 2: Financial News ML models ─────────────────────────────────────────
+
+class NewsColdStartResponse(BaseModel):
+    status: str = "cold_start"
+    days_collected: int
+    min_required: int
+    series: list = []
+
+
+class NewsGroupResponse(BaseModel):
+    group: str
+    run_at: str
+    series: list[SeriesResult]
 
 
 # ── Endpoint descriptor table ─────────────────────────────────────────────────
@@ -445,6 +463,41 @@ _ENDPOINT_DESCRIPTORS: list[dict] = [
         ),
         "group": "Financial News (Phase 1)",
         "key": None,
+        "optional": True,
+    },
+    # ── Phase 2: Financial News ML ────────────────────────────────────────────
+    {
+        "path": "/api/financial-news/sentiment",
+        "description": (
+            "Sector sentiment trends + 12-month LightGBM forecast. "
+            "Series: MACRO_SENT, EQUITIES_SENT, FINTECH_SENT, VC_SENT. "
+            "Returns cold_start status until ≥30 days of news data are collected. "
+            "Generate with: python news_model.py"
+        ),
+        "group": "Financial News ML (Phase 2)",
+        "key": "news_sentiment",
+        "optional": True,
+    },
+    {
+        "path": "/api/financial-news/sentiment/{id}",
+        "description": (
+            "Single sentiment series (MACRO_SENT, EQUITIES_SENT, FINTECH_SENT, VC_SENT). "
+            "Returns 404 if series_id not found or results not yet generated."
+        ),
+        "group": "Financial News ML (Phase 2)",
+        "key": "news_sentiment",
+        "optional": True,
+    },
+    {
+        "path": "/api/financial-news/volume",
+        "description": (
+            "Article volume trends by sector + 12-month forecast. "
+            "Series: TOTAL_VOL, MACRO_VOL, EQUITIES_VOL, FINTECH_VOL. "
+            "Returns cold_start status until ≥30 days of news data are collected. "
+            "Generate with: python news_model.py"
+        ),
+        "group": "Financial News ML (Phase 2)",
+        "key": "news_volume",
         "optional": True,
     },
 ]
@@ -989,6 +1042,123 @@ def get_alerts() -> list[str]:
         )
     data = _load_briefing_json(path)
     return data.get("alerts", [])
+
+
+# ── Phase 2: Financial News ML helpers ────────────────────────────────────────
+
+def _load_news_result(key: str) -> dict:
+    """Load a Phase 2 news results JSON. Raises HTTPException 404 if missing."""
+    path = OPTIONAL_RESULTS[key]
+    if not path.exists():
+        raise HTTPException(
+            status_code=404,
+            detail=(
+                f"Results for '{key}' not found ({path.name}). "
+                "Run: python news_model.py"
+            ),
+        )
+    try:
+        return json.loads(path.read_text())
+    except Exception:
+        log.exception("Failed to parse %s", path)
+        raise HTTPException(
+            status_code=500,
+            detail=f"Results file for '{key}' could not be parsed. Check server logs.",
+        )
+
+
+# ── Phase 2: Financial News ML endpoints ──────────────────────────────────────
+
+@app.get(
+    "/api/financial-news/sentiment",
+    tags=["Financial News ML (Phase 2)"],
+    summary="Sector sentiment trends + 12-month LightGBM forecast",
+)
+def get_news_sentiment() -> NewsGroupResponse | NewsColdStartResponse:
+    """
+    12-month LightGBM forecasts for financial news sector sentiment:
+    **MACRO_SENT**, **EQUITIES_SENT**, **FINTECH_SENT**, **VC_SENT**.
+
+    Returns `{"status": "cold_start", ...}` until ≥30 days of news data have been
+    collected. Run `python news_model.py` after accumulating sufficient data.
+
+    Returns 404 if `outputs/results_news_sentiment.json` has not been generated.
+    """
+    raw = _load_news_result("news_sentiment")
+    if raw.get("status") == "cold_start":
+        return NewsColdStartResponse(
+            days_collected=raw.get("days_collected", 0),
+            min_required=raw.get("min_required", 30),
+        )
+    return NewsGroupResponse(
+        group=raw["group"],
+        run_at=raw["run_at"],
+        series=raw.get("series", []),
+    )
+
+
+@app.get(
+    "/api/financial-news/sentiment/{series_id}",
+    response_model=SeriesResult,
+    tags=["Financial News ML (Phase 2)"],
+    summary="Single sentiment series forecast",
+)
+def get_news_sentiment_series(series_id: str) -> SeriesResult:
+    """
+    Single series from the sentiment group.
+
+    Valid `series_id` values: **MACRO_SENT**, **EQUITIES_SENT**,
+    **FINTECH_SENT**, **VC_SENT**
+
+    Returns 404 if the series is not found or results have not been generated.
+    """
+    sid = _validate_series_id(series_id)
+    raw = _load_news_result("news_sentiment")
+    if raw.get("status") == "cold_start":
+        raise HTTPException(
+            status_code=404,
+            detail=(
+                f"News sentiment model is in cold_start state "
+                f"({raw.get('days_collected', 0)}/{raw.get('min_required', 30)} days). "
+                "Run: python news_model.py after ≥30 days of data."
+            ),
+        )
+    match = next((s for s in raw.get("series", []) if s.get("series_id") == sid), None)
+    if match is None:
+        available = [s.get("series_id") for s in raw.get("series", [])]
+        raise HTTPException(
+            status_code=404,
+            detail=f"Series '{sid}' not found. Available: {available}",
+        )
+    return SeriesResult(**match)
+
+
+@app.get(
+    "/api/financial-news/volume",
+    tags=["Financial News ML (Phase 2)"],
+    summary="Article volume by sector + 12-month forecast",
+)
+def get_news_volume() -> NewsGroupResponse | NewsColdStartResponse:
+    """
+    12-month LightGBM forecasts for article volume by sector:
+    **TOTAL_VOL**, **MACRO_VOL**, **EQUITIES_VOL**, **FINTECH_VOL**.
+
+    Returns `{"status": "cold_start", ...}` until ≥30 days of news data have been
+    collected. Run `python news_model.py` after accumulating sufficient data.
+
+    Returns 404 if `outputs/results_news_volume.json` has not been generated.
+    """
+    raw = _load_news_result("news_volume")
+    if raw.get("status") == "cold_start":
+        return NewsColdStartResponse(
+            days_collected=raw.get("days_collected", 0),
+            min_required=raw.get("min_required", 30),
+        )
+    return NewsGroupResponse(
+        group=raw["group"],
+        run_at=raw["run_at"],
+        series=raw.get("series", []),
+    )
 
 
 # ── Health check ─────────────────────────────────────────────────────────────

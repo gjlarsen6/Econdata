@@ -125,12 +125,12 @@ def test_summary() -> None:
         sids  = ", ".join(ep.get("series") or []) or "—"
         print(f"    {ep['path']:<45} {avail}  [{sids}]")
 
-    ok = len(eps) >= 28
+    ok = len(eps) >= 31
     if ok:
         print(_pass(f"{label}: {len(eps)} endpoints listed"))
         _record(label, "PASS")
     else:
-        print(_fail(f"{label}: expected ≥28 endpoints, got {len(eps)}"))
+        print(_fail(f"{label}: expected ≥31 endpoints, got {len(eps)}"))
         _record(label, "FAIL")
 
 
@@ -468,6 +468,90 @@ def test_alerts() -> None:
     _record(label, "PASS")
 
 
+# ── Phase 2: Financial News ML ───────────────────────────────────────────────
+
+def test_news_sentiment() -> None:
+    """GET /api/financial-news/sentiment — optional, SKIPs on 404, accepts cold_start."""
+    label = "GET /api/financial-news/sentiment"
+    print(_head(label))
+    try:
+        r = _get("/api/financial-news/sentiment")
+    except requests.ConnectionError:
+        print(_fail(f"Cannot connect to {BASE_URL}"))
+        _record(label, "FAIL")
+        return
+
+    if r.status_code == 404:
+        print(_skip(f"{label}: no results yet — run: python news_model.py"))
+        _record(label, "SKIP")
+        return
+
+    if not _assert_status(label, r, 200):
+        return
+
+    data = r.json()
+    if data.get("status") == "cold_start":
+        dc = data.get("days_collected", "?")
+        mr = data.get("min_required", "?")
+        assert "days_collected" in data and "min_required" in data
+        assert isinstance(data.get("series"), list)
+        print(f"  cold_start    : {dc}/{mr} days")
+        print(_pass(f"{label}: cold_start response well-formed"))
+        _record(label, "PASS")
+        return
+
+    assert "series" in data and isinstance(data["series"], list), \
+        f"Expected 'series' list, got: {list(data.keys())}"
+    print(f"  group        : {data.get('group')}")
+    print(f"  run_at       : {data.get('run_at')}")
+    print(f"  series_count : {len(data['series'])}")
+    if data["series"]:
+        _print_series(data["series"][0])
+    print(_pass(f"{label}: {len(data['series'])} series"))
+    _record(label, "PASS")
+
+
+def test_news_volume() -> None:
+    """GET /api/financial-news/volume — optional, SKIPs on 404, accepts cold_start."""
+    label = "GET /api/financial-news/volume"
+    print(_head(label))
+    try:
+        r = _get("/api/financial-news/volume")
+    except requests.ConnectionError:
+        print(_fail(f"Cannot connect to {BASE_URL}"))
+        _record(label, "FAIL")
+        return
+
+    if r.status_code == 404:
+        print(_skip(f"{label}: no results yet — run: python news_model.py"))
+        _record(label, "SKIP")
+        return
+
+    if not _assert_status(label, r, 200):
+        return
+
+    data = r.json()
+    if data.get("status") == "cold_start":
+        dc = data.get("days_collected", "?")
+        mr = data.get("min_required", "?")
+        assert "days_collected" in data and "min_required" in data
+        assert isinstance(data.get("series"), list)
+        print(f"  cold_start    : {dc}/{mr} days")
+        print(_pass(f"{label}: cold_start response well-formed"))
+        _record(label, "PASS")
+        return
+
+    assert "series" in data and isinstance(data["series"], list), \
+        f"Expected 'series' list, got: {list(data.keys())}"
+    print(f"  group        : {data.get('group')}")
+    print(f"  run_at       : {data.get('run_at')}")
+    print(f"  series_count : {len(data['series'])}")
+    if data["series"]:
+        _print_series(data["series"][0])
+    print(_pass(f"{label}: {len(data['series'])} series"))
+    _record(label, "PASS")
+
+
 # ── Security checks ───────────────────────────────────────────────────────────
 
 def test_security() -> None:
@@ -677,6 +761,10 @@ def main() -> int:
     test_briefing()
     test_top_stories()
     test_alerts()
+
+    # ── Phase 2: Financial News ML ────────────────────────────────────────────
+    test_news_sentiment()
+    test_news_volume()
 
     # ── Security ──────────────────────────────────────────────────────────────
     test_security()

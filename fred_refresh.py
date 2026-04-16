@@ -326,6 +326,16 @@ def _parse_args() -> argparse.Namespace:
             "Requires at least one of NEWS_API_KEY, MARKETAUX_API_KEY, FINNHUB_API_KEY."
         ),
     )
+    p.add_argument(
+        "--enrich",
+        action="store_true",
+        default=False,
+        help=(
+            "Enrich news articles with yfinance and FMP signals (Phase 2). "
+            "Requires yfinance installed. FMP fundamentals require FMP_API_KEY. "
+            "Writes data/FinancialNews/enriched/news_enriched.csv."
+        ),
+    )
     return p.parse_args()
 
 # ── Model runner ──────────────────────────────────────────────────────────────
@@ -676,6 +686,9 @@ def main():
     MARKETAUX_API_KEY = os.getenv("MARKETAUX_API_KEY", "").strip()
     FINNHUB_API_KEY   = os.getenv("FINNHUB_API_KEY", "").strip()
 
+    # ── Phase 2: Enrichment API key ───────────────────────────────────────────
+    FMP_API_KEY = os.getenv("FMP_API_KEY", "").strip()
+
     # Load ingestion map
     with open(INGESTION_MAP_PATH) as fh:
         ingestion_map_raw = json.load(fh)
@@ -689,6 +702,8 @@ def main():
         total_steps += 2
     if args.news:
         total_steps += 2 if not args.skip_models else 1
+    if args.enrich:
+        total_steps += 1
 
     # ── Step 1: Refresh all FRED series ──────────────────────────────────────
     log.info("\n[1/%d] Refreshing FRED data (%d series) ...",
@@ -823,10 +838,35 @@ def main():
                     log.info("\n[%d/%d] Generating daily briefing ...", briefing_step, total_steps)
                     briefing_mod.main()
 
+    # ── Step 1e: Optional article enrichment (Phase 2) ───────────────────────
+    if args.enrich:
+        enrich_step = (
+            2
+            + (1 if args.sector else 0)
+            + (1 if args.crunchbase else 0)
+            + ((2 if not args.skip_models else 1) if args.news else 0)
+        )
+        log.info("\n[%d/%d] Enriching news articles with yfinance/FMP signals ...",
+                 enrich_step, total_steps)
+        try:
+            import enrichment_apis  # lazy import — not required for non-enrich runs
+        except ImportError as exc:
+            log.error("enrichment_apis.py not found: %s", exc)
+        else:
+            enrich_articles_list = enrichment_apis.load_raw_articles()
+            if not enrich_articles_list:
+                log.warning("[ENRICH] No articles found — run --news daily first")
+            else:
+                enriched = enrichment_apis.enrich_articles(
+                    enrich_articles_list, {"fmp": FMP_API_KEY}
+                )
+                enrichment_apis.save_enriched(enriched)
+                log.info("[ENRICH] %d articles enriched", len(enriched))
+
     # ── Step 2: Re-train FRED LightGBM models ────────────────────────────────
     fred_step = 2 + (1 if args.sector else 0) + (1 if args.crunchbase else 0) + (
         (2 if not args.skip_models else 1) if args.news else 0
-    )
+    ) + (1 if args.enrich else 0)
     model_results: list[dict] = []
 
     if args.skip_models:
