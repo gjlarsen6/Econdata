@@ -1,4 +1,4 @@
-# tep-ml — Macroeconomic Forecasting & Process Monitoring
+# econdata — Macroeconomic Forecasting & Process Monitoring
 
 A production-ready pipeline that refreshes U.S. economic data from public APIs, retrains LightGBM forecasting models, and prints a unified summary table of 12-month outlooks — designed to run weekly with a single command.
 
@@ -10,30 +10,67 @@ A production-ready pipeline that refreshes U.S. economic data from public APIs, 
 
 Optional modules extend coverage to industry-level employment and GDP data (BLS, BEA, World Bank) and Venture Capital activity by sector (Crunchbase — AI, Fintech, Healthcare).
 
-The project also includes a separate Tennessee Eastman Process (TEP) fault-detection benchmark that compares four classification models.
+---
+
+## Usage
+
+Quick-reference workflow — run these scripts in order for a full data refresh, model build, and insight query cycle.
+
+### Data Refresh & Model Training
+
+| Step | Command | Purpose | Frequency |
+|------|---------|---------|-----------|
+| 1 | `python3 fred_refresh.py` | Fetch all FRED macro series + retrain core LightGBM models (7 groups) | Weekly |
+| 2 | `python3 fred_refresh.py --sector` | Fetch BLS/BEA/World Bank sector data + retrain sector models *(optional)* | Weekly |
+| 3 | `python3 fred_refresh.py --crunchbase` | Fetch Crunchbase VC data + retrain VC model *(optional, requires API key)* | Weekly |
+| 4 | `python3 fred_refresh.py --news daily` | Ingest latest financial news articles (Phase 1) *(requires ≥1 news API key)* | Daily |
+| 5 | `python3 fred_refresh.py --enrich` | Enrich news articles with yfinance/FMP signals (Phase 2) *(optional)* | Daily |
+| 6 | `python3 news_model.py` | Train sentiment & volume forecast models on 30+ days of news data (Phase 2) | Weekly (after ≥30 days of news) |
+
+> **Combined example** — run all steps in one command:
+> ```bash
+> python3 fred_refresh.py --sector --news daily --enrich && python3 news_model.py
+> ```
+
+### Query Models & Get Insights
+
+| Step | Command | Purpose |
+|------|---------|---------|
+| 7 | `python3 api.py` | Start the REST API server on `http://localhost:8100` |
+| 8 | `curl http://localhost:8100/api/summary` | List all available endpoints and their status |
+| 9 | `curl http://localhost:8100/api/macro/{group_id}` | Fetch 12-month forecast for a core macro group |
+| 10 | `curl http://localhost:8100/api/macro/{group_id}/{series_id}` | Fetch a single macro series forecast |
+| 11 | `curl http://localhost:8100/api/financial-news/briefing/latest` | Get today's AI-generated news briefing (Phase 1) |
+| 12 | `curl http://localhost:8100/api/financial-news/alerts` | Get threshold-based news impact alerts (Phase 1) |
+| 13 | `curl http://localhost:8100/api/financial-news/sentiment` | Get 12-month sector sentiment forecast (Phase 2) |
+| 14 | `curl http://localhost:8100/api/financial-news/volume` | Get 12-month article volume forecast by sector (Phase 2) |
+| 15 | `python3 test_api.py` | Run full API test suite to verify all endpoints |
+
+> **Tip:** Replace `{group_id}` with IDs like `business_environment`, `consumer_demand`, `cost_of_capital`, `market_risk`, etc. Replace `{series_id}` with a series column name (e.g., `INDPRO`, `MACRO_SENT`). See [REST API — api.py](#rest-api--apipy) for the full endpoint list.
 
 ---
 
 ## Table of Contents
 
-1. [Project Overview](#project-overview)
-2. [Directory Structure](#directory-structure)
-3. [Setup](#setup)
-4. [Running the Weekly Refresh](#running-the-weekly-refresh)
-5. [Sector API Integration](#sector-api-integration)
-6. [Crunchbase VC Integration](#crunchbase-vc-integration)
-7. [LightGBM Forecasting Models](#lightgbm-forecasting-models)
-8. [Model Scripts](#model-scripts)
-9. [Shared Utilities — macro_utils.py](#shared-utilities--macro_utilspy)
-10. [Summary Table Output](#summary-table-output)
-11. [REST API — api.py](#rest-api--apipy)
-12. [API Testing](#api-testing)
-13. [TEP Fault Detection — train.py](#tep-fault-detection--trainpy)
-14. [Output Files Reference](#output-files-reference)
-15. [Data Files Reference](#data-files-reference)
-16. [Scheduling with Cron](#scheduling-with-cron)
-17. [Adding New Series](#adding-new-series)
-18. [Phase Roadmap](#phase-roadmap)
+1. [Usage](#usage)
+2. [Project Overview](#project-overview)
+3. [Directory Structure](#directory-structure)
+4. [Setup](#setup)
+5. [Running the Weekly Refresh](#running-the-weekly-refresh)
+6. [Sector API Integration](#sector-api-integration)
+7. [Crunchbase VC Integration](#crunchbase-vc-integration)
+8. [LightGBM Forecasting Models](#lightgbm-forecasting-models)
+9. [Model Scripts](#model-scripts)
+10. [Shared Utilities — macro_utils.py](#shared-utilities--macro_utilspy)
+11. [Summary Table Output](#summary-table-output)
+12. [REST API — api.py](#rest-api--apipy)
+13. [API Testing](#api-testing)
+14. [TEP Fault Detection — train.py](#tep-fault-detection--trainpy)
+15. [Output Files Reference](#output-files-reference)
+16. [Data Files Reference](#data-files-reference)
+17. [Scheduling with Cron](#scheduling-with-cron)
+18. [Adding New Series](#adding-new-series)
+19. [Phase Roadmap](#phase-roadmap)
 
 ---
 
@@ -69,7 +106,7 @@ An additional Crunchbase module (`--crunchbase`) tracks weekly VC investment act
 ## Directory Structure
 
 ```
-tep-ml/
+econdata/
 │
 ├── fred_refresh.py            # Main orchestrator — run this weekly
 ├── sector_apis.py             # Sector API fetchers (BLS, BEA, World Bank, Trading Economics)
@@ -1477,35 +1514,35 @@ UMCSENT is saved to both `ConsumerDemand/` and `RiskLeadingInd/` on every refres
 To run the refresh automatically every Monday at 8 AM:
 
 ```cron
-0 8 * * 1 cd /path/to/tep-ml && /path/to/python3 fred_refresh.py >> logs/refresh.log 2>&1
+0 8 * * 1 cd /path/to/econdata && /path/to/python3 fred_refresh.py >> logs/refresh.log 2>&1
 ```
 
 With sector APIs (BLS and World Bank are free):
 
 ```cron
-0 8 * * 1 cd /path/to/tep-ml && /path/to/python3 fred_refresh.py --sector bls worldbank >> logs/refresh.log 2>&1
+0 8 * * 1 cd /path/to/econdata && /path/to/python3 fred_refresh.py --sector bls worldbank >> logs/refresh.log 2>&1
 ```
 
 With Crunchbase VC data:
 
 ```cron
-0 8 * * 1 cd /path/to/tep-ml && /path/to/python3 fred_refresh.py --crunchbase >> logs/refresh.log 2>&1
+0 8 * * 1 cd /path/to/econdata && /path/to/python3 fred_refresh.py --crunchbase >> logs/refresh.log 2>&1
 ```
 
 Full pipeline — FRED + free sector APIs + Crunchbase VC:
 
 ```cron
-0 8 * * 1 cd /path/to/tep-ml && /path/to/python3 fred_refresh.py --sector bls worldbank --crunchbase >> logs/refresh.log 2>&1
+0 8 * * 1 cd /path/to/econdata && /path/to/python3 fred_refresh.py --sector bls worldbank --crunchbase >> logs/refresh.log 2>&1
 ```
 
 **Phase 1 — Financial News (recommended schedule):**
 
 ```cron
 # Daily full news pull at 8 AM (all configured sources)
-0 8 * * * cd /path/to/tep-ml && /path/to/python3 fred_refresh.py --news daily >> logs/news.log 2>&1
+0 8 * * * cd /path/to/econdata && /path/to/python3 fred_refresh.py --news daily >> logs/news.log 2>&1
 
 # Intraday Finnhub updates — 4× per day (noon, 4pm, 8pm, midnight)
-0 0,12,16,20 * * * cd /path/to/tep-ml && /path/to/python3 fred_refresh.py --news realtime >> logs/news.log 2>&1
+0 0,12,16,20 * * * cd /path/to/econdata && /path/to/python3 fred_refresh.py --news realtime >> logs/news.log 2>&1
 ```
 
 Note: `--news daily` and `--news realtime` are safe to overlap — `news_apis.py` uses a file lock on the CSV to prevent concurrent write corruption.
@@ -1514,10 +1551,10 @@ Note: `--news daily` and `--news realtime` are safe to overlap — `news_apis.py
 
 ```cron
 # Daily enrichment run (after news pull)
-30 8 * * * cd /path/to/tep-ml && /path/to/python3 fred_refresh.py --news daily --enrich >> logs/news.log 2>&1
+30 8 * * * cd /path/to/econdata && /path/to/python3 fred_refresh.py --news daily --enrich >> logs/news.log 2>&1
 
 # Weekly ML model retrain (every Monday, after enrichment)
-0 9 * * 1 cd /path/to/tep-ml && /path/to/python3 news_model.py >> logs/news_model.log 2>&1
+0 9 * * 1 cd /path/to/econdata && /path/to/python3 news_model.py >> logs/news_model.log 2>&1
 ```
 
 `news_model.py` exits cleanly with a cold-start message until 30 days of news data exist — safe to schedule from day 1. Rate limits: NewsAPI and Marketaux are capped at 100 req/day (daily only); Finnhub supports up to 60 req/min (used for realtime).
