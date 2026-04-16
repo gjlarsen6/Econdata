@@ -4,6 +4,8 @@ A production-ready pipeline that refreshes U.S. economic data from public APIs, 
 
 **Phase 0** extensions (no additional API keys required) add market risk indicators (VIX, credit spreads, USD index), commodity prices (WTI oil, gold), the full Treasury yield curve (8 tenors), and a composite Financial Stress Index with market regime classification — all sourced from FRED.
 
+**Phase 1** adds a financial news ingestion pipeline — daily briefings, top-stories ranking, and threshold-based impact alerts — sourced from NewsAPI, Marketaux, and Finnhub. At least one news API key is required; all three have free tiers. Enable with `--news daily`.
+
 Optional modules extend coverage to industry-level employment and GDP data (BLS, BEA, World Bank) and Venture Capital activity by sector (Crunchbase — AI, Fintech, Healthcare).
 
 The project also includes a separate Tennessee Eastman Process (TEP) fault-detection benchmark that compares four classification models.
@@ -80,6 +82,8 @@ tep-ml/
 ├── market_model.py            # Phase 0: Market Risk (VIX, HY/IG spreads, USD) + Commodities (WTI, gold)
 ├── yield_curve_model.py       # Phase 0: 8-tenor Treasury yield curve (DGS1MO → DGS30)
 ├── composite_model.py         # Phase 0: Financial Stress Index + Market Regime classifier
+├── news_apis.py               # Phase 1: News ingestion + normalization (NewsAPI, Marketaux, Finnhub)
+├── briefing.py                # Phase 1: Daily briefing generator + rule-based impact scoring
 ├── data_summary.py            # Data inventory and feature engineering recommendations
 ├── api.py                     # Read-only REST API server (FastAPI, port 8100)
 ├── test_api.py                # Comprehensive API test suite (40+ checks incl. Phase 0 + security)
@@ -102,6 +106,11 @@ tep-ml/
 │   │   ├── BLS/               #   Employment by industry (monthly)
 │   │   ├── BEA/               #   GDP by industry (quarterly)
 │   │   └── WorldBank/         #   Sector % of GDP (annual → monthly)
+│   ├── FinancialNews/         # Created automatically by --news refresh (Phase 1)
+│   │   ├── raw/
+│   │   │   └── news_articles.csv        # append-only master — all articles, deduped by normalized URL
+│   │   └── daily/
+│   │       └── {YYYY-MM-DD}.csv         # per-day partition written after each refresh
 │   ├── VentureCapital/        # Created automatically by --crunchbase refresh
 │   │   ├── crunchbase_vc_ingestion_map.json  #   API specification
 │   │   ├── dim_category.csv   #   Resolved Crunchbase category UUIDs per segment
@@ -115,6 +124,7 @@ tep-ml/
 └── outputs/
     ├── results_*.json         # Forecast + validation results per model group
     ├── regime_history.json    # FSI time series + current regime label (Phase 0)
+    ├── daily_briefing_{YYYY-MM-DD}.json  # Daily news briefing (Phase 1, written by briefing.py)
     ├── refresh_log.json       # Run history (last 52 weeks)
     ├── *_model_*.joblib       # Serialized LightGBM models
     └── *.png                  # Forecast dashboards, validation plots, feature importance
@@ -137,6 +147,7 @@ observation_date,SERIES_ID
 
 ```bash
 pip install lightgbm pandas numpy scikit-learn matplotlib requests tabulate joblib python-dotenv fastapi uvicorn
+pip install filelock   # Phase 1: prevents CSV corruption when daily + realtime crons overlap
 ```
 
 ### API Key Configuration
@@ -164,7 +175,7 @@ TE_CLIENT_SECRET=your_te_client_secret_here
 # Optional — only needed with the --crunchbase flag
 CRUNCHBASE_API_KEY=your_crunchbase_api_key_here
 
-# Phase 1 — at least one required for news ingestion (planned)
+# Phase 1 — at least one required for --news flag
 NEWS_API_KEY=your_newsapi_key_here
 MARKETAUX_API_KEY=your_marketaux_key_here
 FINNHUB_API_KEY=your_finnhub_key_here
@@ -182,9 +193,9 @@ FMP_API_KEY=your_fmp_key_here
 | `BLS_API_KEY` | https://www.bls.gov/developers/home.htm | Free (optional) | `--sector bls` (works without key at lower limits) |
 | `TE_CLIENT_KEY/SECRET` | https://tradingeconomics.com/api/ | Commercial | `--sector tradingeconomics` |
 | `CRUNCHBASE_API_KEY` | https://data.crunchbase.com/docs/welcome-to-crunchbase-data | Paid | `--crunchbase` |
-| `NEWS_API_KEY` | https://newsapi.org/register | Free tier available | Phase 1 (planned) |
-| `MARKETAUX_API_KEY` | https://www.marketaux.com/ | Free tier available | Phase 1 fallback (planned) |
-| `FINNHUB_API_KEY` | https://finnhub.io/register | Free tier available | Phase 1 fallback (planned) |
+| `NEWS_API_KEY` | https://newsapi.org/register | Free tier available | Phase 1 `--news` — at least one required |
+| `MARKETAUX_API_KEY` | https://www.marketaux.com/ | Free tier available | Phase 1 `--news` — optional additional source |
+| `FINNHUB_API_KEY` | https://finnhub.io/register | Free tier available | Phase 1 `--news` — also used for intraday realtime updates |
 | `FMP_API_KEY` | https://financialmodelingprep.com/developer/docs/ | Free tier available | Phase 2 enrichment (planned) |
 
 You may also export keys directly as environment variables instead of using `.env`.
@@ -209,7 +220,7 @@ This single command runs the full pipeline:
 ### Command-Line Options
 
 ```
-python3 fred_refresh.py [--sector SOURCE ...] [--crunchbase] [--skip-models]
+python3 fred_refresh.py [--sector SOURCE ...] [--crunchbase] [--news MODE] [--skip-models]
 ```
 
 | Option | Description |
@@ -221,7 +232,10 @@ python3 fred_refresh.py [--sector SOURCE ...] [--crunchbase] [--skip-models]
 | `--sector bls bea worldbank` | Multiple sources in one run |
 | `--sector all` | All available sector sources |
 | `--crunchbase` | Also refresh Crunchbase VC data (AI, Fintech, Healthcare) and train VC models (requires `CRUNCHBASE_API_KEY`) |
-| `--skip-models` | Refresh data only — skip all model retraining |
+| `--news daily` | Ingest news from all configured sources (once/day); generate daily briefing JSON *(Phase 1)* |
+| `--news realtime` | Ingest Finnhub only — safe to run every 15 min as a cron *(Phase 1)* |
+| `--news all` | All sources with 7-day backfill window — use for manual catch-up runs *(Phase 1)* |
+| `--skip-models` | Refresh data only — skip all model retraining and briefing generation |
 
 ### Examples
 
@@ -246,6 +260,21 @@ python3 fred_refresh.py --crunchbase --skip-models
 
 # Full run: FRED + all sector APIs + Crunchbase VC
 python3 fred_refresh.py --sector all --crunchbase
+
+# Phase 1: Daily news pull (requires at least one news API key)
+python3 fred_refresh.py --news daily
+
+# Phase 1: Intraday Finnhub update only (safe for 15-min cron)
+python3 fred_refresh.py --news realtime
+
+# Phase 1: One-time backfill — all sources, 7-day lookback, no model retraining
+python3 fred_refresh.py --news all --skip-models
+
+# Full weekly pipeline: FRED + news
+python3 fred_refresh.py --news daily
+
+# Full pipeline: FRED + sector + VC + news
+python3 fred_refresh.py --sector all --crunchbase --news daily
 ```
 
 ### What the Pipeline Does Step by Step
@@ -719,6 +748,68 @@ For each source, it:
 
 ---
 
+### news_apis.py *(Phase 1)*
+
+Fetches and normalizes financial news from up to three sources. Called by `fred_refresh.py` when `--news` is used, or from a cron directly.
+
+**Sources and rate limit budget:**
+
+| Source | Key | Free Tier | Mode |
+|---|---|---|---|
+| NewsAPI | `NEWS_API_KEY` | 100 req/day | `daily` / `all` — 6 queries × 10 articles |
+| Marketaux | `MARKETAUX_API_KEY` | 100 req/day | `daily` / `all` — 3 ticker-group requests |
+| Finnhub | `FINNHUB_API_KEY` | 60 req/min | all modes — single request per run |
+
+At least one key is required. All sources with a key run automatically.
+
+**Key functions:**
+
+- `normalize_url(url)` — strips query params and lowercases scheme/host for reliable deduplication
+- `classify_sector(headline, ticker, entities)` — keyword-match to 8 sectors; default `"macro"`
+- `classify_macro_tag(headline)` — keyword-match to 8 macro tags (`rate_cuts`, `earnings`, `ipo`, etc.)
+- `normalize_article(raw, source_api)` — maps source-specific fields to the standard 14-column schema
+- `load_existing_urls(csv_path)` — returns set of normalized URLs from `news_articles.csv` for dedup
+- `save_articles(articles, csv_path, daily_dir, date)` — appends new-only rows; uses `FileLock` when installed; writes daily partition CSV
+- `refresh_news(api_keys, mode, since_hours)` — orchestrator; `all` mode uses 168h lookback
+
+**`news_articles.csv` schema:** `timestamp`, `ingested_at`, `source_api`, `source_name`, `url`, `headline`, `summary`, `sector`, `ticker`, `entities` (JSON list), `sentiment`, `sentiment_label`, `macro_tag`, `market_impact_score` (backfilled by `briefing.py`)
+
+---
+
+### briefing.py *(Phase 1)*
+
+Generates the daily briefing JSON. No ML required — works from day 1 with keyword-based impact scoring.
+
+Run directly:
+```bash
+python3 briefing.py
+python3 briefing.py --date 2026-04-14
+```
+
+**Market impact scoring** (`score_impact()`):
+
+| Signal | Weight | Notes |
+|---|---|---|
+| Sentiment magnitude (`abs(score)`) | 25% | API-provided; 0 if missing |
+| Source authority | 20% | Reuters/Bloomberg=1.0, default 0.5 |
+| Ticker prominence | 20% | S&P 500=1.0, other ticker=0.5, none=0.2 |
+| Volume spike in sector | 20% | >2σ above 30d avg; defaults to 0.5 if <7 days history |
+| Macro tag type | 15% | `rate_cuts`/`earnings`=1.0, no tag=0.4 |
+
+**Key functions:**
+
+- `score_impact(df)` — adds `market_impact_score` column [0.0–1.0] to the article DataFrame
+- `load_articles(csv_path, date)` — loads CSV, optionally filters to a single date; returns empty DataFrame if absent
+- `compute_sector_mood(df)` — `{sector: avg_sentiment}` for non-null sentiment rows
+- `generate_macro_signals(df, regime_path)` — up to 6 bullets in priority order: regime/FSI first, then tag volume, then sentiment outliers
+- `generate_alerts(df, threshold=0.75)` — up to 5 high-impact headlines formatted as `"{source}: {headline}"`
+- `generate_daily_briefing(...)` — full pipeline; calls `output_dir.mkdir(parents=True, exist_ok=True)`
+- `main()` — CLI entry; writes `outputs/daily_briefing_{YYYY-MM-DD}.json`
+
+**Outputs:** `outputs/daily_briefing_{YYYY-MM-DD}.json`
+
+---
+
 ## Shared Utilities — macro_utils.py
 
 `macro_utils.py` is imported by all model scripts and `sector_model.py`. Key functions:
@@ -929,6 +1020,28 @@ These return HTTP 404 until `fred_refresh.py` has completed a run that includes 
 
 ---
 
+#### Phase 1 Financial News Endpoints *(requires `--news daily` run)*
+
+These return HTTP 404 until `fred_refresh.py --news daily` has completed at least once. All three return HTTP 500 with a log entry if the briefing JSON is corrupt. The `briefing` response includes a `stale: true` flag if the most recent briefing file is older than 36 hours (cron failure indicator).
+
+| Method | Path | What It Returns |
+|---|---|---|
+| GET | `/api/financial-news/briefing` | Today's full briefing: date, article count, top 10 stories by impact score, sector mood scores (avg sentiment per sector), macro signal bullets (regime, tag volume, sentiment outliers), high-impact alerts, and `stale` flag. |
+| GET | `/api/financial-news/top-stories` | Top 10 articles sorted by `market_impact_score` — includes headline, source, sector, ticker, sentiment, and score. |
+| GET | `/api/financial-news/alerts` | Headlines where `market_impact_score ≥ 0.75`, formatted as `"{source}: {headline}"`, sorted by score. Returns `[]` if none exceed threshold. |
+
+**Impact score formula** (rule-based, no ML required):
+
+| Signal | Weight |
+|---|---|
+| Sentiment magnitude (`abs(score)`) | 25% |
+| Source authority (Reuters/Bloomberg > blogs) | 20% |
+| Ticker prominence (S&P 500 > unknown ticker > none) | 20% |
+| Volume spike in sector (>2σ above 30d avg) | 20% |
+| Macro tag type (`rate_cuts`/`earnings` > general) | 15% |
+
+---
+
 #### Optional Sector Endpoints
 
 These return HTTP 404 until the pipeline has been run with the corresponding `--sector` flag.
@@ -989,7 +1102,7 @@ Exits with code `0` on success, `1` if any check fails.
 
 ### Comprehensive Test Suite — `test_api.py`
 
-Tests all endpoints, prints detailed response values for every series, and verifies all security controls. Covers 40+ checks total (Phase 0 tests SKIP gracefully if results files haven't been generated yet).
+Tests all endpoints, prints detailed response values for every series, and verifies all security controls. Covers 43+ checks total (Phase 0 and Phase 1 tests SKIP gracefully if results files haven't been generated yet).
 
 ```bash
 python3 test_api.py
@@ -1000,7 +1113,7 @@ python3 test_api.py
 | Category | Checks |
 |---|---|
 | `/api/health` | Returns `status="ok"` and `ts` field (hard fail — always required) |
-| `/api/summary` | Returns ≥25 endpoints; lists available series per endpoint |
+| `/api/summary` | Returns ≥28 endpoints; lists available series per endpoint |
 | Business Environment | Group endpoint (series count + IDs), individual series for INDPRO, TCU, PAYEMS |
 | Consumer Demand | Group endpoint, individual series for PCE and UMCSENT |
 | Cost of Capital | Group endpoint, individual series for DFF and T10Y3M |
@@ -1011,6 +1124,7 @@ python3 test_api.py
 | Phase 0: FSI + Regime | `/api/market/stress`, `/api/market/regime` — SKIP if not yet generated |
 | Phase 0: Raw history | `/api/series/VIXCLS/history`, `/api/series/DGS10/history` — SKIP if not generated |
 | Phase 0: Error cases | `INVALID!!` series_id → HTTP 400; `DOESNOTEXIST` → HTTP 404 |
+| Phase 1: Financial News | `/api/financial-news/briefing`, `/api/financial-news/top-stories`, `/api/financial-news/alerts` — SKIP if no briefing yet; verifies `stale` flag and required fields |
 | Sector endpoints | Each returns SKIP with an instructive message if results file not yet generated |
 | VC endpoints | Each returns SKIP with an instructive message if results file not yet generated |
 | Security headers | All five required headers present and correct on every response |
@@ -1114,6 +1228,7 @@ All models are saved with `joblib.dump()` and can be loaded with `joblib.load()`
 | `results_vc_ai.json` | AI VC segment forecasts (created after ~13 months of `--crunchbase` runs) |
 | `results_vc_fintech.json` | Fintech VC segment forecasts |
 | `results_vc_healthcare.json` | Healthcare VC segment forecasts |
+| `daily_briefing_{YYYY-MM-DD}.json` | Phase 1: Daily news briefing — top stories, sector mood, macro signals, alerts, stale flag. Created by `briefing.py` after each `--news daily` run. Only the most recent file is served by the API. |
 
 Results JSON structure:
 ```json
@@ -1262,6 +1377,18 @@ Full pipeline — FRED + free sector APIs + Crunchbase VC:
 0 8 * * 1 cd /path/to/tep-ml && /path/to/python3 fred_refresh.py --sector bls worldbank --crunchbase >> logs/refresh.log 2>&1
 ```
 
+**Phase 1 — Financial News (recommended schedule):**
+
+```cron
+# Daily full news pull at 8 AM (all configured sources)
+0 8 * * * cd /path/to/tep-ml && /path/to/python3 fred_refresh.py --news daily >> logs/news.log 2>&1
+
+# Intraday Finnhub updates — 4× per day (noon, 4pm, 8pm, midnight)
+0 0,12,16,20 * * * cd /path/to/tep-ml && /path/to/python3 fred_refresh.py --news realtime >> logs/news.log 2>&1
+```
+
+Note: `--news daily` and `--news realtime` are safe to overlap — `news_apis.py` uses a file lock on the CSV to prevent concurrent write corruption. Rate limits: NewsAPI and Marketaux are capped at 100 req/day (daily only); Finnhub supports up to 60 req/min (used for realtime).
+
 FRED data typically releases on weekday mornings. Running on Monday morning captures most prior-week releases. The Crunchbase snapshot date is pinned to the Monday of the current ISO week, so the job is idempotent if re-run later in the same week.
 
 ---
@@ -1307,7 +1434,7 @@ Then add the script to `MODEL_SCRIPTS` and its results file to `RESULTS_FILES` i
 | Phase | Status | Description | New API Keys Required |
 |---|---|---|---|
 | **Phase 0** | ✅ Complete | Free FRED extensions: VIX, credit spreads, USD index, WTI oil, gold, 8-tenor yield curve, FSI, Market Regime | None |
-| **Phase 1** | Planned | News ingestion pipeline (NewsAPI, Marketaux, Finnhub) — daily economic news briefings, top-stories endpoint, threshold-based alerts | `NEWS_API_KEY`, `MARKETAUX_API_KEY`, `FINNHUB_API_KEY` |
-| **Phase 2** | Planned | Sentiment ML layer — LightGBM trained on article sentiment scores after ≥30 days of Phase 1 data; `/api/sentiment` and `/api/news/volume` endpoints; FMP financial data enrichment | `FMP_API_KEY` |
+| **Phase 1** | ✅ Complete | News ingestion pipeline (`news_apis.py` + `briefing.py`): daily briefings, top-stories ranking, rule-based impact alerts. Two new files + targeted changes to `fred_refresh.py`, `api.py`, `test_api.py`. | At least one of `NEWS_API_KEY`, `MARKETAUX_API_KEY`, `FINNHUB_API_KEY` |
+| **Phase 2** | Planned | Sentiment ML layer — LightGBM trained on article sentiment scores after ≥30 days of Phase 1 data; `/api/financial-news/sentiment` and `/api/financial-news/volume` endpoints; yfinance + FMP enrichment | `FMP_API_KEY` |
 
-Phase 1 requires at least one news API key (the others are optional fallbacks). Phase 2 depends on Phase 1 having run for at least 30 days. All phase-specific keys are pre-documented in `.env.example`.
+Phase 1 requires at least one news API key (the others are optional additional sources). Phase 1 works from day 1 — no data accumulation required. Phase 2 depends on Phase 1 having run for at least 30 days. All phase-specific keys are pre-documented in `.env.example`.

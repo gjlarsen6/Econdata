@@ -125,12 +125,12 @@ def test_summary() -> None:
         sids  = ", ".join(ep.get("series") or []) or "—"
         print(f"    {ep['path']:<45} {avail}  [{sids}]")
 
-    ok = len(eps) >= 25
+    ok = len(eps) >= 28
     if ok:
         print(_pass(f"{label}: {len(eps)} endpoints listed"))
         _record(label, "PASS")
     else:
-        print(_fail(f"{label}: expected ≥25 endpoints, got {len(eps)}"))
+        print(_fail(f"{label}: expected ≥28 endpoints, got {len(eps)}"))
         _record(label, "FAIL")
 
 
@@ -341,6 +341,133 @@ def test_history(series_id: str) -> None:
         _record(label, "FAIL")
 
 
+# ── Phase 1: Financial News ───────────────────────────────────────────────────
+
+def test_briefing() -> None:
+    """GET /api/financial-news/briefing — optional, SKIPs on 404."""
+    label = "GET /api/financial-news/briefing"
+    print(_head(label))
+    try:
+        r = _get("/api/financial-news/briefing")
+    except requests.ConnectionError:
+        print(_fail(f"Cannot connect to {BASE_URL}"))
+        _record(label, "FAIL")
+        return
+
+    if r.status_code == 404:
+        detail = r.json().get("detail", "")
+        print(_skip(f"{label}: no briefing yet — {detail}"))
+        _record(label, "SKIP")
+        return
+
+    if not _assert_status(label, r, 200):
+        return
+
+    d = r.json()
+    required_keys = ("date", "generated_at", "article_count",
+                     "top_stories", "sector_mood", "macro_signals", "alerts", "stale")
+    missing = [k for k in required_keys if k not in d]
+    if missing:
+        print(_fail(f"{label}: missing keys: {missing}"))
+        _record(label, "FAIL")
+        return
+    if not isinstance(d["top_stories"], list):
+        print(_fail(f"{label}: top_stories is not a list"))
+        _record(label, "FAIL")
+        return
+    if not isinstance(d["sector_mood"], dict):
+        print(_fail(f"{label}: sector_mood is not a dict"))
+        _record(label, "FAIL")
+        return
+    if not isinstance(d["stale"], bool):
+        print(_fail(f"{label}: stale is not a bool"))
+        _record(label, "FAIL")
+        return
+
+    print(f"  date          : {d['date']}")
+    print(f"  article_count : {d['article_count']}")
+    print(f"  top_stories   : {len(d['top_stories'])}")
+    print(f"  alerts        : {len(d['alerts'])}")
+    print(f"  stale         : {d['stale']}")
+    print(_pass(f"{label}: all required fields present"))
+    _record(label, "PASS")
+
+
+def test_top_stories() -> None:
+    """GET /api/financial-news/top-stories — optional, SKIPs on 404."""
+    label = "GET /api/financial-news/top-stories"
+    print(_head(label))
+    try:
+        r = _get("/api/financial-news/top-stories")
+    except requests.ConnectionError:
+        print(_fail(f"Cannot connect to {BASE_URL}"))
+        _record(label, "FAIL")
+        return
+
+    if r.status_code == 404:
+        print(_skip(f"{label}: no briefing yet"))
+        _record(label, "SKIP")
+        return
+
+    if not _assert_status(label, r, 200):
+        return
+
+    stories = r.json()
+    if not isinstance(stories, list):
+        print(_fail(f"{label}: expected list, got {type(stories).__name__}"))
+        _record(label, "FAIL")
+        return
+
+    if stories:
+        first = stories[0]
+        required = ("headline", "sector", "source_name", "timestamp")
+        missing  = [k for k in required if k not in first]
+        if missing:
+            print(_fail(f"{label}: first story missing keys: {missing}"))
+            _record(label, "FAIL")
+            return
+
+    print(f"  stories returned: {len(stories)}")
+    if stories:
+        print(f"  top headline    : {stories[0].get('headline', '')[:80]}")
+    print(_pass(f"{label}: {len(stories)} stories"))
+    _record(label, "PASS")
+
+
+def test_alerts() -> None:
+    """GET /api/financial-news/alerts — optional, SKIPs on 404. Always 200 once briefing exists."""
+    label = "GET /api/financial-news/alerts"
+    print(_head(label))
+    try:
+        r = _get("/api/financial-news/alerts")
+    except requests.ConnectionError:
+        print(_fail(f"Cannot connect to {BASE_URL}"))
+        _record(label, "FAIL")
+        return
+
+    if r.status_code == 404:
+        print(_skip(f"{label}: no briefing yet"))
+        _record(label, "SKIP")
+        return
+
+    if not _assert_status(label, r, 200):
+        return
+
+    alerts = r.json()
+    if not isinstance(alerts, list):
+        print(_fail(f"{label}: expected list[str], got {type(alerts).__name__}"))
+        _record(label, "FAIL")
+        return
+    if alerts and not isinstance(alerts[0], str):
+        print(_fail(f"{label}: items must be str, got {type(alerts[0]).__name__}"))
+        _record(label, "FAIL")
+        return
+
+    print(f"  alerts returned: {len(alerts)}")
+    print(_pass(f"{label}: {len(alerts)} alert(s)"))
+    _record(label, "PASS")
+
+
 # ── Security checks ───────────────────────────────────────────────────────────
 
 def test_security() -> None:
@@ -545,6 +672,11 @@ def main() -> int:
     # ── Phase 0: Error cases ──────────────────────────────────────────────────
     test_series("/api/market/yield-curve/INVALID!!", "—", expected_status=400)
     test_series("/api/series/DOESNOTEXIST/history",  "—", expected_status=404)
+
+    # ── Phase 1: Financial News ───────────────────────────────────────────────
+    test_briefing()
+    test_top_stories()
+    test_alerts()
 
     # ── Security ──────────────────────────────────────────────────────────────
     test_security()

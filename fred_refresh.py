@@ -313,6 +313,19 @@ def _parse_args() -> argparse.Namespace:
             "FRED refresh always runs regardless of this flag."
         ),
     )
+    p.add_argument(
+        "--news",
+        choices=["daily", "realtime", "all"],
+        default=None,
+        metavar="MODE",
+        help=(
+            "Refresh financial news (daily|realtime|all). "
+            "daily: NewsAPI + Marketaux + Finnhub, 24h lookback. "
+            "realtime: Finnhub only, safe for 15-min cron. "
+            "all: all sources, 7-day backfill window. "
+            "Requires at least one of NEWS_API_KEY, MARKETAUX_API_KEY, FINNHUB_API_KEY."
+        ),
+    )
     return p.parse_args()
 
 # ── Model runner ──────────────────────────────────────────────────────────────
@@ -650,11 +663,18 @@ def main():
         log.info("Sector APIs enabled: %s", args.sector)
     if args.crunchbase:
         log.info("Crunchbase VC refresh enabled (AI, Fintech, Healthcare)")
+    if args.news:
+        log.info("Financial news refresh enabled: %s", args.news)
     if args.skip_models:
-        log.info("--skip-models: model re-training disabled")
+        log.info("--skip-models: model re-training and briefing generation disabled")
     log.info("=" * 65)
 
     api_key = _load_api_key()
+
+    # ── Phase 1: News API keys (loaded from env/.env, same as FRED key) ──────
+    NEWS_API_KEY      = os.getenv("NEWS_API_KEY", "").strip()
+    MARKETAUX_API_KEY = os.getenv("MARKETAUX_API_KEY", "").strip()
+    FINNHUB_API_KEY   = os.getenv("FINNHUB_API_KEY", "").strip()
 
     # Load ingestion map
     with open(INGESTION_MAP_PATH) as fh:
@@ -667,6 +687,8 @@ def main():
         total_steps += 2
     if args.crunchbase:
         total_steps += 2
+    if args.news:
+        total_steps += 2 if not args.skip_models else 1
 
     # ── Step 1: Refresh all FRED series ──────────────────────────────────────
     log.info("\n[1/%d] Refreshing FRED data (%d series) ...",
@@ -765,8 +787,46 @@ def main():
         log.info("Crunchbase VC refresh complete: %d OK  %d errors/skipped",
                  cb_ok, cb_err)
 
+    # ── Step 1d: Optional financial news refresh ─────────────────────────────
+    news_stats: dict | None = None
+    if args.news:
+        news_step = 2 + (1 if args.sector else 0) + (1 if args.crunchbase else 0)
+        log.info("\n[%d/%d] Refreshing financial news (%s) ...", news_step, total_steps, args.news)
+        try:
+            import news_apis  # lazy import — not required for non-news runs
+            import briefing as briefing_mod
+        except ImportError as exc:
+            log.error("news_apis.py or briefing.py not found: %s", exc)
+        else:
+            news_api_keys = {
+                "newsapi":   NEWS_API_KEY,
+                "marketaux": MARKETAUX_API_KEY,
+                "finnhub":   FINNHUB_API_KEY,
+            }
+            available_keys = [k for k, v in news_api_keys.items() if v]
+            if not available_keys:
+                log.warning(
+                    "[NEWS] No news API keys set — skipping. "
+                    "Set at least one of NEWS_API_KEY, MARKETAUX_API_KEY, FINNHUB_API_KEY in .env"
+                )
+            else:
+                log.info("  Sources with keys: %s", available_keys)
+                news_result = news_apis.refresh_news(news_api_keys, mode=args.news)
+                news_stats  = news_result
+                log.info(
+                    "  fetched=%d  new=%d  sources=%s",
+                    news_result["fetched"], news_result["new"], news_result["sources"],
+                )
+
+                if not args.skip_models:
+                    briefing_step = news_step + 1
+                    log.info("\n[%d/%d] Generating daily briefing ...", briefing_step, total_steps)
+                    briefing_mod.main()
+
     # ── Step 2: Re-train FRED LightGBM models ────────────────────────────────
-    fred_step = 2 + (1 if args.sector else 0) + (1 if args.crunchbase else 0)
+    fred_step = 2 + (1 if args.sector else 0) + (1 if args.crunchbase else 0) + (
+        (2 if not args.skip_models else 1) if args.news else 0
+    )
     model_results: list[dict] = []
 
     if args.skip_models:
