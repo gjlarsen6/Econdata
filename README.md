@@ -194,9 +194,36 @@ observation_date,SERIES_ID
 
 ```bash
 pip install lightgbm pandas numpy scikit-learn matplotlib requests tabulate joblib python-dotenv fastapi uvicorn
-pip install filelock   # Phase 1: prevents CSV corruption when daily + realtime crons overlap
-pip install yfinance   # Phase 2: article enrichment with market signals (no API key required)
+pip install filelock        # Phase 1: prevents CSV corruption when daily + realtime crons overlap
+pip install newsapi-python  # Phase 1: official NewsAPI client (fetch_newsapi uses NewsApiClient)
+pip install yfinance        # Phase 2: article enrichment with market signals (no API key required)
 ```
+
+**newsapi-python** replaces raw `requests` calls to NewsAPI. `news_apis.py` imports it as:
+
+```python
+from newsapi import NewsApiClient
+
+newsapi = NewsApiClient(api_key="YOUR_KEY")
+
+# Fetch everything matching a query from a given date
+result = newsapi.get_everything(
+    q="federal reserve",
+    from_param="2024-01-01T00:00:00Z",
+    language="en",
+    sort_by="publishedAt",
+    page_size=10,
+)
+articles = result.get("articles", [])
+
+# Fetch top headlines
+top = newsapi.get_top_headlines(category="business", language="en", country="us")
+
+# List available sources
+sources = newsapi.get_sources()
+```
+
+If `newsapi-python` is not installed, `news_apis.py` automatically falls back to raw `requests` calls so the pipeline continues to work.
 
 ### API Key Configuration
 

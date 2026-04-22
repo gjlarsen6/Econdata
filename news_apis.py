@@ -21,6 +21,11 @@ from urllib.parse import urlparse, urlunparse
 import requests
 
 try:
+    from newsapi import NewsApiClient as _NewsApiClient  # type: ignore[import]
+except ImportError:
+    _NewsApiClient = None  # type: ignore[assignment,misc]
+
+try:
     from filelock import FileLock as _FileLock
 except ImportError:
     _FileLock = None  # type: ignore[assignment,misc]
@@ -207,9 +212,11 @@ def normalize_article(raw: dict, source_api: str) -> dict | None:
 
 def fetch_newsapi(api_key: str, from_dt: datetime) -> list[dict]:
     """
-    GET https://newsapi.org/v2/everything
+    Fetch from NewsAPI /v2/everything using the newsapi-python client when
+    available, falling back to raw requests if the library is not installed.
+
     6 queries × 10 articles each. Sleeps 1s between calls.
-    On HTTP error: logs warning and returns partial results.
+    On error: logs warning and returns partial results.
     """
     queries = [
         "federal reserve", "stock market", "economic outlook",
@@ -217,28 +224,52 @@ def fetch_newsapi(api_key: str, from_dt: datetime) -> list[dict]:
     ]
     articles: list[dict] = []
     from_str = from_dt.strftime("%Y-%m-%dT%H:%M:%SZ")
-    for q in queries:
-        try:
-            resp = requests.get(
-                "https://newsapi.org/v2/everything",
-                params={
-                    "q":        q,
-                    "from":     from_str,
-                    "pageSize": 10,
-                    "language": "en",
-                    "sortBy":   "publishedAt",
-                    "apiKey":   api_key,
-                },
-                timeout=15,
-            )
-            resp.raise_for_status()
-            for raw in resp.json().get("articles", []):
-                art = normalize_article(raw, "newsapi")
-                if art:
-                    articles.append(art)
-        except Exception as exc:
-            log.warning("[NEWS] NewsAPI query %r failed: %s", q, exc)
-        time.sleep(1)
+
+    if _NewsApiClient is not None:
+        # ── newsapi-python client path ────────────────────────────────────────
+        client = _NewsApiClient(api_key=api_key)
+        for q in queries:
+            try:
+                result = client.get_everything(
+                    q=q,
+                    from_param=from_str,
+                    language="en",
+                    sort_by="publishedAt",
+                    page_size=10,
+                )
+                for raw in (result or {}).get("articles", []):
+                    art = normalize_article(raw, "newsapi")
+                    if art:
+                        articles.append(art)
+            except Exception as exc:
+                log.warning("[NEWS] NewsAPI (client) query %r failed: %s", q, exc)
+            time.sleep(1)
+    else:
+        # ── Raw requests fallback ─────────────────────────────────────────────
+        log.warning("[NEWS] newsapi-python not installed — falling back to raw requests")
+        for q in queries:
+            try:
+                resp = requests.get(
+                    "https://newsapi.org/v2/everything",
+                    params={
+                        "q":        q,
+                        "from":     from_str,
+                        "pageSize": 10,
+                        "language": "en",
+                        "sortBy":   "publishedAt",
+                        "apiKey":   api_key,
+                    },
+                    timeout=15,
+                )
+                resp.raise_for_status()
+                for raw in resp.json().get("articles", []):
+                    art = normalize_article(raw, "newsapi")
+                    if art:
+                        articles.append(art)
+            except Exception as exc:
+                log.warning("[NEWS] NewsAPI (requests) query %r failed: %s", q, exc)
+            time.sleep(1)
+
     log.info("[NEWS] NewsAPI: %d articles fetched", len(articles))
     return articles
 
