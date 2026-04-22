@@ -277,32 +277,36 @@ def fetch_newsapi(api_key: str, from_dt: datetime) -> list[dict]:
 def fetch_marketaux(api_key: str, from_dt: datetime) -> list[dict]:
     """
     GET https://api.marketaux.com/v1/news/all
-    3 ticker groups. Sleeps 1s between calls.
+    Fetches US financial news with entity filtering across 3 pages (10 articles
+    each). published_after uses %Y-%m-%dT%H:%M format as required by the API.
     On HTTP error: logs warning and returns partial results.
     """
-    ticker_groups = ["AAPL,MSFT,NVDA", "JPM,BAC,GS", "TSLA,XOM,CVX"]
     articles: list[dict] = []
-    from_str = from_dt.isoformat()
-    for tickers in ticker_groups:
+    from_str = from_dt.strftime("%Y-%m-%dT%H:%M")
+    for page in range(1, 4):
         try:
             resp = requests.get(
                 "https://api.marketaux.com/v1/news/all",
                 params={
-                    "symbols":         tickers,
+                    "countries":       "us",
                     "filter_entities": "true",
-                    "language":        "en",
+                    "limit":           10,
+                    "page":            page,
                     "published_after": from_str,
                     "api_token":       api_key,
                 },
                 timeout=15,
             )
             resp.raise_for_status()
-            for raw in resp.json().get("data", []):
+            batch = resp.json().get("data", [])
+            for raw in batch:
                 art = normalize_article(raw, "marketaux")
                 if art:
                     articles.append(art)
+            if len(batch) < 10:
+                break   # no more pages
         except Exception as exc:
-            log.warning("[NEWS] Marketaux tickers %r failed: %s", tickers, exc)
+            log.warning("[NEWS] Marketaux page %d failed: %s", page, exc)
         time.sleep(1)
     log.info("[NEWS] Marketaux: %d articles fetched", len(articles))
     return articles
