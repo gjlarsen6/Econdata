@@ -32,9 +32,12 @@ except ImportError:
 
 log = logging.getLogger(__name__)
 
-BASE_DIR      = Path(__file__).parent
-NEWS_DATA_DIR = BASE_DIR / "data" / "FinancialNews"
-RAW_CSV       = NEWS_DATA_DIR / "raw" / "news_articles.csv"
+BASE_DIR          = Path(__file__).parent
+NEWS_DATA_DIR     = BASE_DIR / "data" / "FinancialNews"
+RAW_CSV           = NEWS_DATA_DIR / "raw" / "news_articles.csv"
+SENTIMENT_AGG_JSON = NEWS_DATA_DIR / "raw" / "marketaux_sentiment_agg.json"
+
+MARKETAUX_AGG_URL = "https://api.marketaux.com/v1/entity/stats/aggregation"
 
 # Ordered CSV column schema
 CSV_COLUMNS = [
@@ -434,6 +437,64 @@ def save_articles(articles: list[dict], csv_path: Path,
     return _do_write()
 
 
+# ── Marketaux sentiment aggregation ───────────────────────────────────────────
+
+def fetch_marketaux_sentiment_agg(
+    api_key: str,
+    from_dt: datetime,
+    group_by: str = "country",
+    limit: int = 10,
+) -> dict:
+    """
+    GET https://api.marketaux.com/v1/entity/stats/aggregation
+
+    Returns pre-aggregated sentiment stats from Marketaux (meta + data list).
+    Saves the raw response to SENTIMENT_AGG_JSON so downstream consumers
+    (news_model.py, api.py) can read it without re-fetching.
+
+    Parameters
+    ----------
+    group_by : Marketaux aggregation dimension — "country", "industry",
+               "entity_type", etc. Default "country".
+    limit    : Max rows returned per request. Default 10.
+
+    Returns {} on any error (never raises).
+    """
+    from_str = from_dt.strftime("%Y-%m-%dT%H:%M")
+    try:
+        resp = requests.get(
+            MARKETAUX_AGG_URL,
+            params={
+                "countries":       "us",
+                "group_by":        group_by,
+                "limit":           limit,
+                "published_after": from_str,
+                "api_token":       api_key,
+            },
+            timeout=15,
+        )
+        resp.raise_for_status()
+        payload = resp.json()
+    except Exception as exc:
+        log.warning("[NEWS] Marketaux sentiment aggregation failed: %s", exc)
+        return {}
+
+    # Persist raw payload so other modules can read it offline
+    try:
+        SENTIMENT_AGG_JSON.parent.mkdir(parents=True, exist_ok=True)
+        SENTIMENT_AGG_JSON.write_text(
+            json.dumps(payload, indent=2), encoding="utf-8"
+        )
+        log.info(
+            "[NEWS] Marketaux sentiment agg (%s): %d rows → %s",
+            group_by, len(payload.get("data", [])), SENTIMENT_AGG_JSON,
+        )
+    except Exception as exc:
+        log.warning("[NEWS] Could not save sentiment agg JSON: %s", exc)
+
+    return payload
+
+
 # ── Orchestrator ───────────────────────────────────────────────────────────────
 
 def refresh_news(api_keys: dict[str, str], mode: str = "daily",
@@ -463,6 +524,8 @@ def refresh_news(api_keys: dict[str, str], mode: str = "daily",
     marketaux_key = api_keys.get("marketaux", "")
     finnhub_key   = api_keys.get("finnhub", "")
 
+    sentiment_agg: dict = {}
+
     if mode in ("daily", "all"):
         if newsapi_key:
             active_sources.append("newsapi")
@@ -470,6 +533,7 @@ def refresh_news(api_keys: dict[str, str], mode: str = "daily",
         if marketaux_key:
             active_sources.append("marketaux")
             articles.extend(fetch_marketaux(marketaux_key, from_dt))
+            sentiment_agg = fetch_marketaux_sentiment_agg(marketaux_key, from_dt)
 
     if finnhub_key:
         active_sources.append("finnhub")
@@ -483,4 +547,9 @@ def refresh_news(api_keys: dict[str, str], mode: str = "daily",
         "[NEWS] refresh_news(%s): fetched=%d  new=%d  sources=%s",
         mode, fetched, new_count, active_sources,
     )
-    return {"fetched": fetched, "new": new_count, "sources": active_sources}
+    return {
+        "fetched":        fetched,
+        "new":            new_count,
+        "sources":        active_sources,
+        "sentiment_agg":  sentiment_agg,
+    }
