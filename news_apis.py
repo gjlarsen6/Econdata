@@ -35,7 +35,8 @@ log = logging.getLogger(__name__)
 BASE_DIR          = Path(__file__).parent
 NEWS_DATA_DIR     = BASE_DIR / "data" / "FinancialNews"
 RAW_CSV           = NEWS_DATA_DIR / "raw" / "news_articles.csv"
-SENTIMENT_AGG_JSON = NEWS_DATA_DIR / "raw" / "marketaux_sentiment_agg.json"
+SENTIMENT_AGG_JSON        = NEWS_DATA_DIR / "raw" / "marketaux_sentiment_agg.json"
+SENTIMENT_AGG_PARSED_JSON = NEWS_DATA_DIR / "raw" / "marketaux_sentiment_parsed.json"
 
 MARKETAUX_AGG_URL = "https://api.marketaux.com/v1/entity/stats/aggregation"
 
@@ -439,6 +440,47 @@ def save_articles(articles: list[dict], csv_path: Path,
 
 # ── Marketaux sentiment aggregation ───────────────────────────────────────────
 
+def parse_marketaux_sentiment_agg(payload: dict) -> list[dict]:
+    """
+    Parse a Marketaux /v1/entity/stats/aggregation response.
+
+    Expected structure:
+        {
+            "meta": {"returned": 1, "limit": 10},
+            "data": [
+                {"key": "us", "total_documents": 1581, "sentiment_avg": 0.2347}
+            ]
+        }
+
+    Returns a list of clean dicts with keys:
+        key               — aggregation group value (e.g. "us", "Technology")
+        total_documents   — article count in the window
+        sentiment_avg     — average sentiment score [-1, 1]
+        sentiment_label   — "positive" / "negative" / "neutral"
+    """
+    rows = []
+    for item in payload.get("data", []):
+        key        = item.get("key", "")
+        total_docs = int(item.get("total_documents") or 0)
+        sent_avg   = item.get("sentiment_avg")
+        if sent_avg is not None:
+            sent_avg = float(sent_avg)
+            label = (
+                "positive" if sent_avg > 0.05
+                else "negative" if sent_avg < -0.05
+                else "neutral"
+            )
+        else:
+            label = None
+        rows.append({
+            "key":             key,
+            "total_documents": total_docs,
+            "sentiment_avg":   sent_avg,
+            "sentiment_label": label,
+        })
+    return rows
+
+
 def fetch_marketaux_sentiment_agg(
     api_key: str,
     from_dt: datetime,
@@ -448,17 +490,22 @@ def fetch_marketaux_sentiment_agg(
     """
     GET https://api.marketaux.com/v1/entity/stats/aggregation
 
-    Returns pre-aggregated sentiment stats from Marketaux (meta + data list).
-    Saves the raw response to SENTIMENT_AGG_JSON so downstream consumers
-    (news_model.py, api.py) can read it without re-fetching.
+    Fetches pre-aggregated sentiment stats, parses the response, and writes
+    two files:
+      - SENTIMENT_AGG_JSON        — raw API response (meta + data)
+      - SENTIMENT_AGG_PARSED_JSON — parsed list of {key, total_documents,
+                                     sentiment_avg, sentiment_label}
+
+    Response structure:
+        {"meta": {"returned": N, "limit": 10},
+         "data": [{"key": "us", "total_documents": 1581, "sentiment_avg": 0.23}]}
 
     Parameters
     ----------
-    group_by : Marketaux aggregation dimension — "country", "industry",
-               "entity_type", etc. Default "country".
-    limit    : Max rows returned per request. Default 10.
+    group_by : Aggregation dimension — "country", "industry", "entity_type", etc.
+    limit    : Max rows returned. Default 10.
 
-    Returns {} on any error (never raises).
+    Returns the raw payload dict, or {} on any error (never raises).
     """
     from_str = from_dt.strftime("%Y-%m-%dT%H:%M")
     try:
@@ -479,15 +526,24 @@ def fetch_marketaux_sentiment_agg(
         log.warning("[NEWS] Marketaux sentiment aggregation failed: %s", exc)
         return {}
 
-    # Persist raw payload so other modules can read it offline
+    # Parse into clean records
+    parsed = parse_marketaux_sentiment_agg(payload)
+    for row in parsed:
+        log.info(
+            "[NEWS] Marketaux sentiment agg — key=%s  docs=%d  sentiment_avg=%.4f (%s)",
+            row["key"], row["total_documents"],
+            row["sentiment_avg"] if row["sentiment_avg"] is not None else 0.0,
+            row["sentiment_label"],
+        )
+
+    # Persist raw + parsed
     try:
         SENTIMENT_AGG_JSON.parent.mkdir(parents=True, exist_ok=True)
-        SENTIMENT_AGG_JSON.write_text(
-            json.dumps(payload, indent=2), encoding="utf-8"
-        )
+        SENTIMENT_AGG_JSON.write_text(json.dumps(payload, indent=2), encoding="utf-8")
+        SENTIMENT_AGG_PARSED_JSON.write_text(json.dumps(parsed, indent=2), encoding="utf-8")
         log.info(
-            "[NEWS] Marketaux sentiment agg (%s): %d rows → %s",
-            group_by, len(payload.get("data", [])), SENTIMENT_AGG_JSON,
+            "[NEWS] Marketaux sentiment agg (%s): %d rows saved → %s",
+            group_by, len(parsed), SENTIMENT_AGG_PARSED_JSON,
         )
     except Exception as exc:
         log.warning("[NEWS] Could not save sentiment agg JSON: %s", exc)
