@@ -251,7 +251,7 @@ def fetch_newsapi(api_key: str, from_dt: datetime) -> list[dict]:
         "inflation rate", "earnings report", "venture capital",
     ]
     articles: list[dict] = []
-    from_str = from_dt.strftime("%Y-%m-%dT%H:%M:%SZ")
+    from_str = from_dt.strftime("%Y-%m-%d")
 
     if _NewsApiClient is not None:
         # ── newsapi-python client path ────────────────────────────────────────

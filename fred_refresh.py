@@ -83,7 +83,7 @@ SERIES_FILE_MAP: dict[str, tuple[str, str]] = {
     "DTWEXBGS":        ("MarketRisk", "DTWEXBGS.csv"),
     # Commodities (daily → monthly mean resampled in market_model.py)
     "DCOILWTICO":      ("Commodities", "DCOILWTICO.csv"),
-    "GOLDAMGBD228NLBM":("Commodities", "GOLDAMGBD228NLBM.csv"),
+    "NASDAQQGLDI":     ("Commodities", "NASDAQQGLDI.csv"),
     # YieldCurve (daily → monthly mean resampled in yield_curve_model.py)
     "DGS1MO":          ("YieldCurve", "DGS1MO.csv"),
     "DGS3MO":          ("YieldCurve", "DGS3MO.csv"),
@@ -565,7 +565,7 @@ def print_market_snapshot(output_dir: Path) -> None:
     # WTI oil and Gold from commodities results
     co_path = output_dir / "results_commodities.json"
     wti  = _get_last_value(co_path, "DCOILWTICO")
-    gold = _get_last_value(co_path, "GOLDAMGBD228NLBM")
+    gold = _get_last_value(co_path, "NASDAQQGLDI")
 
     # 10Y−2Y slope from yield curve results
     yc_path = output_dir / "results_yield_curve.json"

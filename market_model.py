@@ -3,7 +3,7 @@ market_model.py — LightGBM forecasts for Market Risk and Commodity series.
 
 Trains on:
   Market Risk:  VIXCLS, BAMLH0A0HYM2, BAMLC0A0CM, DTWEXBGS
-  Commodities:  DCOILWTICO, GOLDAMGBD228NLBM
+  Commodities:  DCOILWTICO, NASDAQQGLDI
 
 All series are daily in FRED; resampled to monthly mean before modeling.
 Cross-features: HY-IG spread differential, VIX × HY spread, gold/oil ratio.
@@ -41,11 +41,11 @@ from macro_utils import save_model_results as _save_model_results
 # ── Constants ──────────────────────────────────────────────────────────────────
 
 FORECAST_HORIZON  = 12
-VALIDATION_MONTHS = 24
+VALIDATION_MONTHS = 12  # BAML credit spread series only available from 2023 on FRED
 HISTORY_DISPLAY   = 120  # months for dashboard plots
 
 MARKET_RISK_COLS = ["VIXCLS", "BAMLH0A0HYM2", "BAMLC0A0CM", "DTWEXBGS"]
-COMMODITY_COLS   = ["DCOILWTICO", "GOLDAMGBD228NLBM"]
+COMMODITY_COLS   = ["DCOILWTICO", "NASDAQQGLDI"]
 ALL_SERIES       = MARKET_RISK_COLS + COMMODITY_COLS
 
 # (label, color, unit, threshold, threshold_label)
@@ -55,7 +55,7 @@ SERIES_META = {
     "BAMLC0A0CM":       ("IG Credit Spread (OAS)",   "#e67e22", "%",     None,  None),
     "DTWEXBGS":         ("USD Broad Index",           "#2980b9", "Index", None,  None),
     "DCOILWTICO":       ("WTI Crude Oil",             "#27ae60", "$/bbl", None,  None),
-    "GOLDAMGBD228NLBM": ("Gold Price",                "#f39c12", "$/oz",  None,  None),
+    "NASDAQQGLDI": ("Gold Price Index (NASDAQ)", "#f39c12", "Index", None,  None),
 }
 
 CLIP_RANGES = {
@@ -64,7 +64,7 @@ CLIP_RANGES = {
     "BAMLC0A0CM":        (0.1,    10.0),
     "DTWEXBGS":          (80.0,  145.0),
     "DCOILWTICO":        (5.0,   200.0),
-    "GOLDAMGBD228NLBM":  (200.0, 5000.0),
+    "NASDAQQGLDI":  (200.0, 5000.0),
 }
 
 LGB_PARAMS = dict(
@@ -167,8 +167,8 @@ def _engineer(df: pd.DataFrame, cols: list[str]) -> pd.DataFrame:
         d["hy_ig_diff"]  = d["BAMLH0A0HYM2_lag1"] - d["BAMLC0A0CM_lag1"]
     if "VIXCLS" in cols and "BAMLH0A0HYM2" in cols:
         d["vix_x_hy"]    = d["VIXCLS_lag1"] * d["BAMLH0A0HYM2_lag1"]
-    if "DCOILWTICO" in cols and "GOLDAMGBD228NLBM" in cols:
-        d["gold_oil_ratio"] = d["GOLDAMGBD228NLBM_lag1"] / (d["DCOILWTICO_lag1"] + 1e-9)
+    if "DCOILWTICO" in cols and "NASDAQQGLDI" in cols:
+        d["gold_oil_ratio"] = d["NASDAQQGLDI_lag1"] / (d["DCOILWTICO_lag1"] + 1e-9)
     return d
 
 

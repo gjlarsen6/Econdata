@@ -737,7 +737,7 @@ def main() -> int:
 
     # ── Phase 0: Commodities ──────────────────────────────────────────────────
     test_series_optional("/api/commodities/oil",  "DCOILWTICO")
-    test_series_optional("/api/commodities/gold", "GOLDAMGBD228NLBM")
+    test_series_optional("/api/commodities/gold", "NASDAQQGLDI")
 
     # ── Phase 0: Yield Curve ──────────────────────────────────────────────────
     test_group("/api/market/yield-curve",

@@ -363,7 +363,7 @@ def main() -> None:
     parser = argparse.ArgumentParser(description="Generate daily financial news briefing")
     parser.add_argument("--date", default=None,
                         help="Date to generate briefing for (YYYY-MM-DD, default: today)")
-    args = parser.parse_args()
+    args = parser.parse_args([] if __name__ != "__main__" else None)
 
     output_dir = BASE_DIR / "outputs"
     output_dir.mkdir(parents=True, exist_ok=True)

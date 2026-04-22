@@ -512,26 +512,26 @@
       "api_observations_url": "https://api.stlouisfed.org/fred/series/observations?series_id=DCOILWTICO&api_key={api_key}&file_type=json",
       "api_release_url": "https://api.stlouisfed.org/fred/series/release?series_id=DCOILWTICO&api_key={api_key}&file_type=json",
       "api_vintages_url": "https://api.stlouisfed.org/fred/series/vintagedates?series_id=DCOILWTICO&api_key={api_key}&file_type=json",
-      "companion_series": ["GOLDAMGBD228NLBM"],
+      "companion_series": ["NASDAQQGLDI"],
       "pipeline_flags": {
         "supports_standard_daily_ingestion": true,
         "model_group": "Commodities",
         "resample_to_monthly": "mean"
       }
     },
-    "GOLDAMGBD228NLBM": {
-      "title": "Gold Fixing Price 10:30 A.M. (London time) in London Bullion Market",
-      "source": "ICE Benchmark Administration Limited (IBA)",
-      "release": "LBMA Gold Price",
+    "NASDAQQGLDI": {
+      "title": "Credit Suisse NASDAQ Gold FLOWS103 Price Index",
+      "source": "NASDAQ OMX Group",
+      "release": "NASDAQ OMX Global Index Data",
       "frequency": "Daily",
-      "units": "U.S. Dollars per Troy Ounce",
+      "units": "Index",
       "seasonal_adjustment": "Not Seasonally Adjusted",
-      "series_page_url": "https://fred.stlouisfed.org/series/GOLDAMGBD228NLBM",
-      "data_download_url": "https://fred.stlouisfed.org/data/GOLDAMGBD228NLBM",
-      "api_series_url": "https://api.stlouisfed.org/fred/series?series_id=GOLDAMGBD228NLBM&api_key={api_key}&file_type=json",
-      "api_observations_url": "https://api.stlouisfed.org/fred/series/observations?series_id=GOLDAMGBD228NLBM&api_key={api_key}&file_type=json",
-      "api_release_url": "https://api.stlouisfed.org/fred/series/release?series_id=GOLDAMGBD228NLBM&api_key={api_key}&file_type=json",
-      "api_vintages_url": "https://api.stlouisfed.org/fred/series/vintagedates?series_id=GOLDAMGBD228NLBM&api_key={api_key}&file_type=json",
+      "series_page_url": "https://fred.stlouisfed.org/series/NASDAQQGLDI",
+      "data_download_url": "https://fred.stlouisfed.org/data/NASDAQQGLDI",
+      "api_series_url": "https://api.stlouisfed.org/fred/series?series_id=NASDAQQGLDI&api_key={api_key}&file_type=json",
+      "api_observations_url": "https://api.stlouisfed.org/fred/series/observations?series_id=NASDAQQGLDI&api_key={api_key}&file_type=json",
+      "api_release_url": "https://api.stlouisfed.org/fred/series/release?series_id=NASDAQQGLDI&api_key={api_key}&file_type=json",
+      "api_vintages_url": "https://api.stlouisfed.org/fred/series/vintagedates?series_id=NASDAQQGLDI&api_key={api_key}&file_type=json",
       "companion_series": ["DCOILWTICO"],
       "pipeline_flags": {
         "supports_standard_daily_ingestion": true,
@@ -749,8 +749,8 @@
     "Spot_Prices": [
       "DCOILWTICO"
     ],
-    "LBMA_Gold_Price": [
-      "GOLDAMGBD228NLBM"
+    "NASDAQ_Gold_Index": [
+      "NASDAQQGLDI"
     ]
   },
   "recommended_pull_order": [

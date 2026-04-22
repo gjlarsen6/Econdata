@@ -101,7 +101,7 @@ _HISTORY_FILE_MAP: dict[str, Path] = {
     "DTWEXBGS":        DATA_DIR / "MarketRisk" / "DTWEXBGS.csv",
     # Commodities
     "DCOILWTICO":      DATA_DIR / "Commodities" / "DCOILWTICO.csv",
-    "GOLDAMGBD228NLBM":DATA_DIR / "Commodities" / "GOLDAMGBD228NLBM.csv",
+    "NASDAQQGLDI":     DATA_DIR / "Commodities" / "NASDAQQGLDI.csv",
     # YieldCurve
     "DGS1MO":          DATA_DIR / "YieldCurve" / "DGS1MO.csv",
     "DGS3MO":          DATA_DIR / "YieldCurve" / "DGS3MO.csv",
@@ -392,7 +392,7 @@ _ENDPOINT_DESCRIPTORS: list[dict] = [
     {
         "path": "/api/commodities/gold",
         "description": (
-            "12-month LightGBM forecast for Gold price (GOLDAMGBD228NLBM, $/oz). "
+            "12-month LightGBM forecast for Gold price index (NASDAQQGLDI). "
             "Generated automatically by fred_refresh.py."
         ),
         "group": "Commodities",
@@ -1280,12 +1280,12 @@ def get_commodities_oil() -> SeriesResult:
 )
 def get_commodities_gold() -> SeriesResult:
     """
-    12-month LightGBM forecast for **GOLDAMGBD228NLBM** (Gold, London AM fixing, $/oz).
+    12-month LightGBM forecast for **NASDAQQGLDI** (Gold Price Index, NASDAQ).
 
     Generated automatically by `python fred_refresh.py`.
     """
     group = _load_optional("commodities")
-    return _find_series(group, "GOLDAMGBD228NLBM")
+    return _find_series(group, "NASDAQQGLDI")
 
 
 # ── Yield Curve ───────────────────────────────────────────────────────────────
@@ -1404,7 +1404,7 @@ def get_series_history(series_id: str) -> HistoryResponse:
     been fetched by `fred_refresh.py`.
 
     Supported series: all FRED series (INDPRO, TCU, PAYEMS, DFF, VIXCLS, BAMLH0A0HYM2,
-    DCOILWTICO, GOLDAMGBD228NLBM, DGS1MO … DGS30, etc.)
+    DCOILWTICO, NASDAQQGLDI, DGS1MO … DGS30, etc.)
     """
     sid  = _validate_series_id(series_id)
     path = _HISTORY_FILE_MAP.get(sid)
