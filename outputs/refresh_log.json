@@ -1,0 +1,470 @@
+[
+  {
+    "run_at": "2026-04-22T15:08:22",
+    "series_ok": 30,
+    "series_errors": 1,
+    "models_ok": 7,
+    "models_failed": 0,
+    "sector_sources_enabled": [],
+    "sector_series_refreshed": 0,
+    "sector_model_ok": null,
+    "crunchbase_enabled": false,
+    "crunchbase_segments_refreshed": 0,
+    "vc_model_ok": null,
+    "refresh_details": [
+      {
+        "series_id": "UMCSENT",
+        "status": "ok",
+        "new_rows": 0,
+        "error": null,
+        "elapsed": 0.9
+      },
+      {
+        "series_id": "RSAFS",
+        "status": "ok",
+        "new_rows": 0,
+        "error": null,
+        "elapsed": 2.0
+      },
+      {
+        "series_id": "PCE",
+        "status": "ok",
+        "new_rows": 0,
+        "error": null,
+        "elapsed": 1.9
+      },
+      {
+        "series_id": "DSPIC96",
+        "status": "ok",
+        "new_rows": 0,
+        "error": null,
+        "elapsed": 0.9
+      },
+      {
+        "series_id": "INDPRO",
+        "status": "ok",
+        "new_rows": 0,
+        "error": null,
+        "elapsed": 0.9
+      },
+      {
+        "series_id": "CAPUTLB50001SQ",
+        "status": "ok",
+        "new_rows": 0,
+        "error": null,
+        "elapsed": 0.9
+      },
+      {
+        "series_id": "TCU",
+        "status": "ok",
+        "new_rows": 0,
+        "error": null,
+        "elapsed": 0.9
+      },
+      {
+        "series_id": "FEDFUNDS",
+        "status": "ok",
+        "new_rows": 0,
+        "error": null,
+        "elapsed": 0.9
+      },
+      {
+        "series_id": "DFF",
+        "status": "ok",
+        "new_rows": 0,
+        "error": null,
+        "elapsed": 0.9
+      },
+      {
+        "series_id": "PRIME",
+        "status": "ok",
+        "new_rows": 0,
+        "error": null,
+        "elapsed": 0.9
+      },
+      {
+        "series_id": "DPRIME",
+        "status": "ok",
+        "new_rows": 0,
+        "error": null,
+        "elapsed": 1.1
+      },
+      {
+        "series_id": "T10Y2Y",
+        "status": "ok",
+        "new_rows": 0,
+        "error": null,
+        "elapsed": 0.9
+      },
+      {
+        "series_id": "T10Y3M",
+        "status": "ok",
+        "new_rows": 0,
+        "error": null,
+        "elapsed": 1.1
+      },
+      {
+        "series_id": "RECPROUSM156N",
+        "status": "ok",
+        "new_rows": 0,
+        "error": null,
+        "elapsed": 0.9
+      },
+      {
+        "series_id": "PCEPILFE",
+        "status": "ok",
+        "new_rows": 0,
+        "error": null,
+        "elapsed": 0.9
+      },
+      {
+        "series_id": "RRSFS",
+        "status": "ok",
+        "new_rows": 0,
+        "error": null,
+        "elapsed": 0.8
+      },
+      {
+        "series_id": "PAYEMS",
+        "status": "ok",
+        "new_rows": 0,
+        "error": null,
+        "elapsed": 0.8
+      },
+      {
+        "series_id": "VIXCLS",
+        "status": "ok",
+        "new_rows": 0,
+        "error": null,
+        "elapsed": 0.9
+      },
+      {
+        "series_id": "BAMLH0A0HYM2",
+        "status": "ok",
+        "new_rows": 0,
+        "error": null,
+        "elapsed": 0.8
+      },
+      {
+        "series_id": "BAMLC0A0CM",
+        "status": "ok",
+        "new_rows": 0,
+        "error": null,
+        "elapsed": 0.9
+      },
+      {
+        "series_id": "DTWEXBGS",
+        "status": "ok",
+        "new_rows": 0,
+        "error": null,
+        "elapsed": 0.9
+      },
+      {
+        "series_id": "DCOILWTICO",
+        "status": "ok",
+        "new_rows": 0,
+        "error": null,
+        "elapsed": 0.8
+      },
+      {
+        "series_id": "GOLDAMGBD228NLBM",
+        "status": "error",
+        "new_rows": 0,
+        "error": "400 Client Error: Bad Request for url: https://api.stlouisfed.org/fred/series/observations?series_id=GOLDAMGBD228NLBM&api_key=ccb5af8da71f5fd69cdecda30a293205&file_type=json",
+        "elapsed": 0.2
+      },
+      {
+        "series_id": "DGS1MO",
+        "status": "ok",
+        "new_rows": 0,
+        "error": null,
+        "elapsed": 0.9
+      },
+      {
+        "series_id": "DGS3MO",
+        "status": "ok",
+        "new_rows": 0,
+        "error": null,
+        "elapsed": 0.9
+      },
+      {
+        "series_id": "DGS6MO",
+        "status": "ok",
+        "new_rows": 0,
+        "error": null,
+        "elapsed": 0.9
+      },
+      {
+        "series_id": "DGS1",
+        "status": "ok",
+        "new_rows": 0,
+        "error": null,
+        "elapsed": 0.9
+      },
+      {
+        "series_id": "DGS2",
+        "status": "ok",
+        "new_rows": 0,
+        "error": null,
+        "elapsed": 0.9
+      },
+      {
+        "series_id": "DGS5",
+        "status": "ok",
+        "new_rows": 0,
+        "error": null,
+        "elapsed": 0.9
+      },
+      {
+        "series_id": "DGS10",
+        "status": "ok",
+        "new_rows": 0,
+        "error": null,
+        "elapsed": 1.3
+      },
+      {
+        "series_id": "DGS30",
+        "status": "ok",
+        "new_rows": 0,
+        "error": null,
+        "elapsed": 1.1
+      }
+    ],
+    "sector_refresh_details": [],
+    "crunchbase_refresh_details": []
+  },
+  {
+    "run_at": "2026-04-22T15:11:17",
+    "series_ok": 31,
+    "series_errors": 0,
+    "models_ok": 7,
+    "models_failed": 0,
+    "sector_sources_enabled": [],
+    "sector_series_refreshed": 0,
+    "sector_model_ok": null,
+    "crunchbase_enabled": false,
+    "crunchbase_segments_refreshed": 0,
+    "vc_model_ok": null,
+    "refresh_details": [
+      {
+        "series_id": "UMCSENT",
+        "status": "ok",
+        "new_rows": 0,
+        "error": null,
+        "elapsed": 0.9
+      },
+      {
+        "series_id": "RSAFS",
+        "status": "ok",
+        "new_rows": 0,
+        "error": null,
+        "elapsed": 0.8
+      },
+      {
+        "series_id": "PCE",
+        "status": "ok",
+        "new_rows": 0,
+        "error": null,
+        "elapsed": 0.9
+      },
+      {
+        "series_id": "DSPIC96",
+        "status": "ok",
+        "new_rows": 0,
+        "error": null,
+        "elapsed": 0.8
+      },
+      {
+        "series_id": "INDPRO",
+        "status": "ok",
+        "new_rows": 0,
+        "error": null,
+        "elapsed": 0.8
+      },
+      {
+        "series_id": "CAPUTLB50001SQ",
+        "status": "ok",
+        "new_rows": 0,
+        "error": null,
+        "elapsed": 0.8
+      },
+      {
+        "series_id": "TCU",
+        "status": "ok",
+        "new_rows": 0,
+        "error": null,
+        "elapsed": 0.8
+      },
+      {
+        "series_id": "FEDFUNDS",
+        "status": "ok",
+        "new_rows": 0,
+        "error": null,
+        "elapsed": 0.9
+      },
+      {
+        "series_id": "DFF",
+        "status": "ok",
+        "new_rows": 0,
+        "error": null,
+        "elapsed": 0.9
+      },
+      {
+        "series_id": "PRIME",
+        "status": "ok",
+        "new_rows": 0,
+        "error": null,
+        "elapsed": 0.8
+      },
+      {
+        "series_id": "DPRIME",
+        "status": "ok",
+        "new_rows": 0,
+        "error": null,
+        "elapsed": 0.9
+      },
+      {
+        "series_id": "T10Y2Y",
+        "status": "ok",
+        "new_rows": 0,
+        "error": null,
+        "elapsed": 0.8
+      },
+      {
+        "series_id": "T10Y3M",
+        "status": "ok",
+        "new_rows": 0,
+        "error": null,
+        "elapsed": 0.8
+      },
+      {
+        "series_id": "RECPROUSM156N",
+        "status": "ok",
+        "new_rows": 0,
+        "error": null,
+        "elapsed": 0.8
+      },
+      {
+        "series_id": "PCEPILFE",
+        "status": "ok",
+        "new_rows": 0,
+        "error": null,
+        "elapsed": 0.8
+      },
+      {
+        "series_id": "RRSFS",
+        "status": "ok",
+        "new_rows": 0,
+        "error": null,
+        "elapsed": 0.8
+      },
+      {
+        "series_id": "PAYEMS",
+        "status": "ok",
+        "new_rows": 0,
+        "error": null,
+        "elapsed": 0.8
+      },
+      {
+        "series_id": "VIXCLS",
+        "status": "ok",
+        "new_rows": 0,
+        "error": null,
+        "elapsed": 0.9
+      },
+      {
+        "series_id": "BAMLH0A0HYM2",
+        "status": "ok",
+        "new_rows": 0,
+        "error": null,
+        "elapsed": 0.9
+      },
+      {
+        "series_id": "BAMLC0A0CM",
+        "status": "ok",
+        "new_rows": 0,
+        "error": null,
+        "elapsed": 0.9
+      },
+      {
+        "series_id": "DTWEXBGS",
+        "status": "ok",
+        "new_rows": 0,
+        "error": null,
+        "elapsed": 0.8
+      },
+      {
+        "series_id": "DCOILWTICO",
+        "status": "ok",
+        "new_rows": 0,
+        "error": null,
+        "elapsed": 0.8
+      },
+      {
+        "series_id": "NASDAQQGLDI",
+        "status": "ok",
+        "new_rows": 3512,
+        "error": null,
+        "elapsed": 0.9
+      },
+      {
+        "series_id": "DGS1MO",
+        "status": "ok",
+        "new_rows": 0,
+        "error": null,
+        "elapsed": 0.8
+      },
+      {
+        "series_id": "DGS3MO",
+        "status": "ok",
+        "new_rows": 0,
+        "error": null,
+        "elapsed": 0.8
+      },
+      {
+        "series_id": "DGS6MO",
+        "status": "ok",
+        "new_rows": 0,
+        "error": null,
+        "elapsed": 0.9
+      },
+      {
+        "series_id": "DGS1",
+        "status": "ok",
+        "new_rows": 0,
+        "error": null,
+        "elapsed": 0.8
+      },
+      {
+        "series_id": "DGS2",
+        "status": "ok",
+        "new_rows": 0,
+        "error": null,
+        "elapsed": 0.9
+      },
+      {
+        "series_id": "DGS5",
+        "status": "ok",
+        "new_rows": 0,
+        "error": null,
+        "elapsed": 0.9
+      },
+      {
+        "series_id": "DGS10",
+        "status": "ok",
+        "new_rows": 0,
+        "error": null,
+        "elapsed": 0.8
+      },
+      {
+        "series_id": "DGS30",
+        "status": "ok",
+        "new_rows": 0,
+        "error": null,
+        "elapsed": 0.9
+      }
+    ],
+    "sector_refresh_details": [],
+    "crunchbase_refresh_details": []
+  }
+]

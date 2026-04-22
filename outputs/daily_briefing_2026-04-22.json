@@ -1,0 +1,130 @@
+{
+  "date": "2026-04-22",
+  "generated_at": "2026-04-22T22:06:56",
+  "article_count": 730,
+  "top_stories": [
+    {
+      "timestamp": "2026-04-22T13:01:02Z",
+      "source_name": "CNBC",
+      "sector": "equities",
+      "ticker": "NVDA",
+      "headline": "Stocks making the biggest moves midday: Axe Compute, AST SpaceMobile, United Airlines, GE Vernova & more",
+      "sentiment": null,
+      "sentiment_label": NaN,
+      "macro_tag": "ipo",
+      "market_impact_score": 0.59
+    },
+    {
+      "timestamp": "2026-04-22T07:06:50Z",
+      "source_name": "CNBC",
+      "sector": "macro",
+      "ticker": "AMZN",
+      "headline": "AWS: Skills, funding and smart regulation can help UK close AI gap",
+      "sentiment": null,
+      "sentiment_label": NaN,
+      "macro_tag": "regulation",
+      "market_impact_score": 0.56
+    },
+    {
+      "timestamp": "2026-04-22T21:25:26.000000Z",
+      "source_name": "insidermonkey.com",
+      "sector": "crypto",
+      "ticker": "V",
+      "headline": "Visa Inc. (V) Tempo Blockchain Integration Asserts Stablecoin Opportunities Push",
+      "sentiment": 0.3818,
+      "sentiment_label": "positive",
+      "macro_tag": NaN,
+      "market_impact_score": 0.5554
+    },
+    {
+      "timestamp": "2026-04-22T19:15:52Z",
+      "source_name": "Yahoo",
+      "sector": "equities",
+      "ticker": "GOOGL",
+      "headline": "Intel to report first quarter earnings as CPUs become key to AI growth",
+      "sentiment": null,
+      "sentiment_label": NaN,
+      "macro_tag": "earnings",
+      "market_impact_score": 0.55
+    },
+    {
+      "timestamp": "2026-04-22T10:00:24Z",
+      "source_name": "Finnhub",
+      "sector": "macro",
+      "ticker": "GOOGL",
+      "headline": "PepsiCo Signs Deal With Google Cloud to Update Digital Infrastructure",
+      "sentiment": null,
+      "sentiment_label": NaN,
+      "macro_tag": "earnings",
+      "market_impact_score": 0.55
+    },
+    {
+      "timestamp": "2026-04-22T14:14:49Z",
+      "source_name": "Yahoo",
+      "sector": "equities",
+      "ticker": "GOOGL",
+      "headline": "Tesla Q1 earnings: Should investors be betting against Elon Musk?",
+      "sentiment": null,
+      "sentiment_label": NaN,
+      "macro_tag": "earnings",
+      "market_impact_score": 0.55
+    },
+    {
+      "timestamp": "2026-04-22T14:00:27Z",
+      "source_name": "Yahoo",
+      "sector": "equities",
+      "ticker": "GOOGL",
+      "headline": "Alphabet Inc. (GOOG) Expected to Beat Earnings Estimates: Can the Stock Move Higher?",
+      "sentiment": null,
+      "sentiment_label": NaN,
+      "macro_tag": "earnings",
+      "market_impact_score": 0.55
+    },
+    {
+      "timestamp": "2026-04-22T12:00:35Z",
+      "source_name": "Yahoo",
+      "sector": "equities",
+      "ticker": "GOOGL",
+      "headline": "Microsoft Higher Ahead Of Magnificent Seven Earnings; Is Microsoft A Buy Now?",
+      "sentiment": null,
+      "sentiment_label": NaN,
+      "macro_tag": "earnings",
+      "market_impact_score": 0.55
+    },
+    {
+      "timestamp": "2026-04-22T15:53:00Z",
+      "source_name": "Yahoo",
+      "sector": "macro",
+      "ticker": "GOOGL",
+      "headline": "Google Steps Up Its Long Running Challenge to Nvidia With New AI Chips",
+      "sentiment": null,
+      "sentiment_label": NaN,
+      "macro_tag": "earnings",
+      "market_impact_score": 0.55
+    },
+    {
+      "timestamp": "2026-04-22T09:40:00Z",
+      "source_name": "SeekingAlpha",
+      "sector": "equities",
+      "ticker": "TSLA",
+      "headline": "Stocks Shook Off The March Dip: Now Q1 Earnings And April Data Take Center Stage",
+      "sentiment": null,
+      "sentiment_label": NaN,
+      "macro_tag": "earnings",
+      "market_impact_score": 0.55
+    }
+  ],
+  "sector_mood": {
+    "crypto": 0.382,
+    "equities": 0.296,
+    "macro": 0.102
+  },
+  "macro_signals": [
+    "56 earnings articles today",
+    "28 regulation articles today",
+    "16 ipo articles today",
+    "3 funding round articles today",
+    "Crypto sentiment positive (+0.382)"
+  ],
+  "alerts": []
+}

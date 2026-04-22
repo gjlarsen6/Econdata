@@ -1,0 +1,206 @@
+{
+  "generated_at": "2026-04-22T15:11:17",
+  "current_regime": "contraction",
+  "current_fsi": 0.4595,
+  "regime_distribution": {
+    "expansion": 0.3077,
+    "slowdown": 0.4615,
+    "contraction": 0.2308,
+    "stress": 0.0,
+    "recovery": 0.0
+  },
+  "forecast": [
+    {
+      "month": "2026-05",
+      "fsi": 0.3538,
+      "regime": "slowdown"
+    },
+    {
+      "month": "2026-06",
+      "fsi": 0.3538,
+      "regime": "slowdown"
+    },
+    {
+      "month": "2026-07",
+      "fsi": 0.3538,
+      "regime": "slowdown"
+    },
+    {
+      "month": "2026-08",
+      "fsi": 0.3538,
+      "regime": "slowdown"
+    },
+    {
+      "month": "2026-09",
+      "fsi": 0.3538,
+      "regime": "slowdown"
+    },
+    {
+      "month": "2026-10",
+      "fsi": 0.3538,
+      "regime": "slowdown"
+    },
+    {
+      "month": "2026-11",
+      "fsi": 0.3538,
+      "regime": "slowdown"
+    },
+    {
+      "month": "2026-12",
+      "fsi": 0.3538,
+      "regime": "slowdown"
+    },
+    {
+      "month": "2027-01",
+      "fsi": 0.3538,
+      "regime": "slowdown"
+    },
+    {
+      "month": "2027-02",
+      "fsi": 0.3538,
+      "regime": "slowdown"
+    },
+    {
+      "month": "2027-03",
+      "fsi": 0.3538,
+      "regime": "slowdown"
+    },
+    {
+      "month": "2027-04",
+      "fsi": 0.3538,
+      "regime": "slowdown"
+    }
+  ],
+  "history": [
+    {
+      "date": "2024-03-01",
+      "fsi": 0.1667,
+      "regime": "expansion"
+    },
+    {
+      "date": "2024-04-01",
+      "fsi": 0.3538,
+      "regime": "slowdown"
+    },
+    {
+      "date": "2024-05-01",
+      "fsi": 0.1571,
+      "regime": "expansion"
+    },
+    {
+      "date": "2024-06-01",
+      "fsi": 0.32,
+      "regime": "slowdown"
+    },
+    {
+      "date": "2024-07-01",
+      "fsi": 0.375,
+      "regime": "slowdown"
+    },
+    {
+      "date": "2024-08-01",
+      "fsi": 0.5,
+      "regime": "contraction"
+    },
+    {
+      "date": "2024-09-01",
+      "fsi": 0.4667,
+      "regime": "contraction"
+    },
+    {
+      "date": "2024-10-01",
+      "fsi": 0.3105,
+      "regime": "slowdown"
+    },
+    {
+      "date": "2024-11-01",
+      "fsi": 0.19,
+      "regime": "expansion"
+    },
+    {
+      "date": "2024-12-01",
+      "fsi": 0.1714,
+      "regime": "expansion"
+    },
+    {
+      "date": "2025-01-01",
+      "fsi": 0.3136,
+      "regime": "slowdown"
+    },
+    {
+      "date": "2025-02-01",
+      "fsi": 0.2261,
+      "regime": "expansion"
+    },
+    {
+      "date": "2025-03-01",
+      "fsi": 0.3583,
+      "regime": "slowdown"
+    },
+    {
+      "date": "2025-04-01",
+      "fsi": 0.624,
+      "regime": "contraction"
+    },
+    {
+      "date": "2025-05-01",
+      "fsi": 0.55,
+      "regime": "contraction"
+    },
+    {
+      "date": "2025-06-01",
+      "fsi": 0.3444,
+      "regime": "slowdown"
+    },
+    {
+      "date": "2025-07-01",
+      "fsi": 0.2036,
+      "regime": "expansion"
+    },
+    {
+      "date": "2025-08-01",
+      "fsi": 0.3103,
+      "regime": "slowdown"
+    },
+    {
+      "date": "2025-09-01",
+      "fsi": 0.29,
+      "regime": "slowdown"
+    },
+    {
+      "date": "2025-10-01",
+      "fsi": 0.4129,
+      "regime": "slowdown"
+    },
+    {
+      "date": "2025-11-01",
+      "fsi": 0.3438,
+      "regime": "slowdown"
+    },
+    {
+      "date": "2025-12-01",
+      "fsi": 0.1606,
+      "regime": "expansion"
+    },
+    {
+      "date": "2026-01-01",
+      "fsi": 0.1559,
+      "regime": "expansion"
+    },
+    {
+      "date": "2026-02-01",
+      "fsi": 0.3486,
+      "regime": "slowdown"
+    },
+    {
+      "date": "2026-03-01",
+      "fsi": 0.5139,
+      "regime": "contraction"
+    },
+    {
+      "date": "2026-04-01",
+      "fsi": 0.4595,
+      "regime": "contraction"
+    }
+  ]
+}
