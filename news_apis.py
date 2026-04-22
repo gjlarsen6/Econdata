@@ -150,9 +150,28 @@ def normalize_article(raw: dict, source_api: str) -> dict | None:
             timestamp   = raw.get("published_at", "")
             source_name = raw.get("source", "")
             ent_list    = raw.get("entities") or []
-            ticker      = ent_list[0].get("symbol", "") if ent_list else ""
-            entities    = [e.get("symbol", "") for e in ent_list if e.get("symbol")]
-            sentiment   = raw.get("sentiment_score")
+
+            # Primary ticker = entity with highest match_score
+            if ent_list:
+                primary = max(ent_list, key=lambda e: e.get("match_score") or 0.0)
+                ticker = primary.get("symbol", "")
+            else:
+                ticker = ""
+            entities = [e.get("symbol", "") for e in ent_list if e.get("symbol")]
+
+            # Sentiment: match-score-weighted average of per-entity sentiment_score.
+            # The API returns sentiment_score on each entity, not at article level.
+            scored = [
+                (e.get("sentiment_score", 0.0) or 0.0, e.get("match_score", 1.0) or 1.0)
+                for e in ent_list
+                if e.get("sentiment_score") is not None
+            ]
+            if scored:
+                total_weight = sum(w for _, w in scored)
+                sentiment = sum(s * w for s, w in scored) / total_weight if total_weight else None
+            else:
+                sentiment = None
+
             if sentiment is not None:
                 sentiment_label = (
                     "positive" if sentiment > 0.05
