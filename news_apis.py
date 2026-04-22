@@ -37,8 +37,13 @@ NEWS_DATA_DIR     = BASE_DIR / "data" / "FinancialNews"
 RAW_CSV           = NEWS_DATA_DIR / "raw" / "news_articles.csv"
 SENTIMENT_AGG_JSON        = NEWS_DATA_DIR / "raw" / "marketaux_sentiment_agg.json"
 SENTIMENT_AGG_PARSED_JSON = NEWS_DATA_DIR / "raw" / "marketaux_sentiment_parsed.json"
+FINNHUB_SENT_JSON         = NEWS_DATA_DIR / "raw" / "finnhub_sentiment.json"
+FINNHUB_SENT_PARSED_JSON  = NEWS_DATA_DIR / "raw" / "finnhub_sentiment_parsed.json"
 
 MARKETAUX_AGG_URL = "https://api.marketaux.com/v1/entity/stats/aggregation"
+
+FINNHUB_MARKET_CATEGORIES = ["general", "forex", "crypto", "merger"]
+FINNHUB_DEFAULT_SYMBOLS   = ["AAPL", "MSFT", "NVDA", "JPM", "TSLA", "XOM", "AMZN", "GOOGL"]
 
 # Ordered CSV column schema
 CSV_COLUMNS = [
@@ -335,33 +340,178 @@ def fetch_marketaux(api_key: str, from_dt: datetime) -> list[dict]:
     return articles
 
 
+def _safe_float(val: object) -> float | None:
+    try:
+        return float(val) if val is not None else None  # type: ignore[arg-type]
+    except (TypeError, ValueError):
+        return None
+
+
+def _safe_int(val: object) -> int | None:
+    try:
+        return int(val) if val is not None else None  # type: ignore[arg-type]
+    except (TypeError, ValueError):
+        return None
+
+
 def fetch_finnhub(api_key: str, from_dt: datetime) -> list[dict]:
     """
-    GET https://finnhub.io/api/v1/news?category=general
-    Single request. On HTTP error: logs warning and returns [].
+    GET https://finnhub.io/api/v1/news for all 4 market news categories:
+    general, forex, crypto, merger. One request per category, 0.5s sleep
+    between calls. On HTTP error per category: logs warning and continues.
     """
     articles: list[dict] = []
-    try:
-        resp = requests.get(
-            "https://finnhub.io/api/v1/news",
-            params={
-                "category": "general",
-                "token":    api_key,
-                "from":     from_dt.strftime("%Y-%m-%d"),
-            },
-            timeout=15,
-        )
-        resp.raise_for_status()
-        raw_list = resp.json()
-        if isinstance(raw_list, list):
-            for raw in raw_list:
-                art = normalize_article(raw, "finnhub")
-                if art:
-                    articles.append(art)
-    except Exception as exc:
-        log.warning("[NEWS] Finnhub failed: %s", exc)
-    log.info("[NEWS] Finnhub: %d articles fetched", len(articles))
+    from_str = from_dt.strftime("%Y-%m-%d")
+    for category in FINNHUB_MARKET_CATEGORIES:
+        try:
+            resp = requests.get(
+                "https://finnhub.io/api/v1/news",
+                params={"category": category, "token": api_key, "from": from_str},
+                timeout=15,
+            )
+            resp.raise_for_status()
+            raw_list = resp.json()
+            if isinstance(raw_list, list):
+                for raw in raw_list:
+                    art = normalize_article(raw, "finnhub")
+                    if art:
+                        articles.append(art)
+        except Exception as exc:
+            log.warning("[NEWS] Finnhub market news category=%r failed: %s", category, exc)
+        time.sleep(0.5)
+    log.info("[NEWS] Finnhub market news: %d articles fetched", len(articles))
     return articles
+
+
+def parse_finnhub_sentiment(payload: list[dict]) -> list[dict]:
+    """
+    Parse a list of Finnhub /api/v1/news-sentiment responses (one per symbol).
+
+    Each element of payload is the raw dict returned by the API:
+        {
+            "symbol": "AAPL",
+            "sentiment": {"bullishPercent": 0.6, "bearishPercent": 0.4},
+            "companyNewsScore": 0.72,
+            "sectorAverageNewsScore": 0.61,
+            "buzz": {"articlesInLastWeek": 142, "weeklyAverage": 110.5}
+        }
+
+    Returns a list of clean dicts with keys:
+        symbol, bullish_pct, bearish_pct, company_news_score,
+        sector_avg_score, articles_last_week, weekly_avg
+    """
+    rows = []
+    for item in payload:
+        sentiment_block = item.get("sentiment") or {}
+        buzz_block      = item.get("buzz") or {}
+        rows.append({
+            "symbol":             item.get("symbol", ""),
+            "bullish_pct":        _safe_float(sentiment_block.get("bullishPercent")),
+            "bearish_pct":        _safe_float(sentiment_block.get("bearishPercent")),
+            "company_news_score": _safe_float(item.get("companyNewsScore")),
+            "sector_avg_score":   _safe_float(item.get("sectorAverageNewsScore")),
+            "articles_last_week": _safe_int(buzz_block.get("articlesInLastWeek")),
+            "weekly_avg":         _safe_float(buzz_block.get("weeklyAverage")),
+        })
+    return rows
+
+
+def fetch_finnhub_company_news(
+    api_key: str,
+    from_dt: datetime,
+    symbols: list[str] | None = None,
+) -> list[dict]:
+    """
+    GET https://finnhub.io/api/v1/company-news for a list of tickers.
+    Response shape is identical to /api/v1/news, so normalize_article("finnhub")
+    is reused unchanged. Duplicate articles are deduped at write time by
+    save_articles(). One request per symbol, 0.5s sleep between calls.
+    """
+    if symbols is None:
+        symbols = FINNHUB_DEFAULT_SYMBOLS
+
+    articles: list[dict] = []
+    from_str = from_dt.strftime("%Y-%m-%d")
+    to_str   = datetime.utcnow().strftime("%Y-%m-%d")
+
+    for symbol in symbols:
+        try:
+            resp = requests.get(
+                "https://finnhub.io/api/v1/company-news",
+                params={
+                    "symbol": symbol,
+                    "from":   from_str,
+                    "to":     to_str,
+                    "token":  api_key,
+                },
+                timeout=15,
+            )
+            resp.raise_for_status()
+            raw_list = resp.json()
+            if isinstance(raw_list, list):
+                for raw in raw_list:
+                    art = normalize_article(raw, "finnhub")
+                    if art:
+                        articles.append(art)
+        except Exception as exc:
+            log.warning("[NEWS] Finnhub company news symbol=%r failed: %s", symbol, exc)
+        time.sleep(0.5)
+
+    log.info("[NEWS] Finnhub company news: %d articles fetched across %d symbols",
+             len(articles), len(symbols))
+    return articles
+
+
+def fetch_finnhub_sentiment(
+    api_key: str,
+    symbols: list[str] | None = None,
+) -> list[dict]:
+    """
+    GET https://finnhub.io/api/v1/news-sentiment for a list of tickers.
+    Saves raw API responses to FINNHUB_SENT_JSON and parsed records to
+    FINNHUB_SENT_PARSED_JSON. One request per symbol, 0.5s sleep between calls.
+    Returns the parsed list of dicts, or [] on complete failure.
+    """
+    if symbols is None:
+        symbols = FINNHUB_DEFAULT_SYMBOLS
+
+    raw_responses: list[dict] = []
+    for symbol in symbols:
+        try:
+            resp = requests.get(
+                "https://finnhub.io/api/v1/news-sentiment",
+                params={"symbol": symbol, "token": api_key},
+                timeout=15,
+            )
+            resp.raise_for_status()
+            data = resp.json()
+            if isinstance(data, dict):
+                raw_responses.append(data)
+        except Exception as exc:
+            log.warning("[NEWS] Finnhub sentiment symbol=%r failed: %s", symbol, exc)
+        time.sleep(0.5)
+
+    parsed = parse_finnhub_sentiment(raw_responses)
+
+    for row in parsed:
+        log.info(
+            "[NEWS] Finnhub sentiment — symbol=%s  bullish=%.2f  bearish=%.2f  score=%.4f",
+            row["symbol"],
+            row["bullish_pct"] or 0.0,
+            row["bearish_pct"] or 0.0,
+            row["company_news_score"] or 0.0,
+        )
+
+    try:
+        FINNHUB_SENT_JSON.parent.mkdir(parents=True, exist_ok=True)
+        FINNHUB_SENT_JSON.write_text(json.dumps(raw_responses, indent=2), encoding="utf-8")
+        FINNHUB_SENT_PARSED_JSON.write_text(json.dumps(parsed, indent=2), encoding="utf-8")
+        log.info("[NEWS] Finnhub sentiment: %d symbols saved → %s",
+                 len(parsed), FINNHUB_SENT_PARSED_JSON)
+    except Exception as exc:
+        log.warning("[NEWS] Could not save Finnhub sentiment JSON: %s", exc)
+
+    return parsed
 
 
 # ── CSV helpers ────────────────────────────────────────────────────────────────
@@ -591,9 +741,13 @@ def refresh_news(api_keys: dict[str, str], mode: str = "daily",
             articles.extend(fetch_marketaux(marketaux_key, from_dt))
             sentiment_agg = fetch_marketaux_sentiment_agg(marketaux_key, from_dt)
 
+    finnhub_sentiment: list[dict] = []
+
     if finnhub_key:
         active_sources.append("finnhub")
         articles.extend(fetch_finnhub(finnhub_key, from_dt))
+        articles.extend(fetch_finnhub_company_news(finnhub_key, from_dt))
+        finnhub_sentiment = fetch_finnhub_sentiment(finnhub_key)
 
     fetched   = len(articles)
     daily_dir = NEWS_DATA_DIR / "daily"
@@ -604,8 +758,9 @@ def refresh_news(api_keys: dict[str, str], mode: str = "daily",
         mode, fetched, new_count, active_sources,
     )
     return {
-        "fetched":        fetched,
-        "new":            new_count,
-        "sources":        active_sources,
-        "sentiment_agg":  sentiment_agg,
+        "fetched":           fetched,
+        "new":               new_count,
+        "sources":           active_sources,
+        "sentiment_agg":     sentiment_agg,
+        "finnhub_sentiment": finnhub_sentiment,
     }
