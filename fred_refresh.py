@@ -102,23 +102,21 @@ SERIES_FILE_MAP: dict[str, tuple[str, str]] = {
     "IPMAT":           ("IndustrialProduction", "IPMAT.csv"),
     "IPDCONGD":        ("IndustrialProduction", "IPDCONGD.csv"),
     "IPNCONGD":        ("IndustrialProduction", "IPNCONGD.csv"),
-    # ISMIndicators — leading PMI sub-indices (industrial_model.py)
-    "NAPM":            ("ISMIndicators", "NAPM.csv"),
-    "NMFCI":           ("ISMIndicators", "NMFCI.csv"),
-    "NAPMPROD":        ("ISMIndicators", "NAPMPROD.csv"),
-    "NAPMNEWO":        ("ISMIndicators", "NAPMNEWO.csv"),
-    "NAPMEMPL":        ("ISMIndicators", "NAPMEMPL.csv"),
-    "NAPMVNDR":        ("ISMIndicators", "NAPMVNDR.csv"),
+    # ISMIndicators — Census Bureau manufacturing orders (industrial_model.py)
+    "NEWORDER":        ("ISMIndicators", "NEWORDER.csv"),
+    "DGORDER":         ("ISMIndicators", "DGORDER.csv"),
+    "AMTUNO":          ("ISMIndicators", "AMTUNO.csv"),
+    "MNFCTRIRSA":      ("ISMIndicators", "MNFCTRIRSA.csv"),
     # CapacityUtilSector — sector-level capacity utilization (industrial_model.py)
     "MCUMFN":          ("CapacityUtilSector", "MCUMFN.csv"),
     "CAPUTLG211S":     ("CapacityUtilSector", "CAPUTLG211S.csv"),
-    "CAPUTLB58SQ":     ("CapacityUtilSector", "CAPUTLB58SQ.csv"),
+    "CAPUTLG331S":     ("CapacityUtilSector", "CAPUTLG331S.csv"),
     # CreditIndicators — business/real estate/consumer loans + PPI (industrial_model.py)
     "BUSLOANS":        ("CreditIndicators", "BUSLOANS.csv"),
     "REALLN":          ("CreditIndicators", "REALLN.csv"),
     "CONSUMER":        ("CreditIndicators", "CONSUMER.csv"),
-    "WPU05":           ("CreditIndicators", "WPU05.csv"),
-    "WPU10":           ("CreditIndicators", "WPU10.csv"),
+    "WPU054":          ("CreditIndicators", "WPU054.csv"),
+    "WPU01":           ("CreditIndicators", "WPU01.csv"),
 }
 
 # Series that appear in two directories (UMCSENT is in both ConsumerDemand and RiskLeadingInd)

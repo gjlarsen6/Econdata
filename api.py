@@ -133,23 +133,21 @@ _HISTORY_FILE_MAP: dict[str, Path] = {
     "IPMAT":           DATA_DIR / "IndustrialProduction" / "IPMAT.csv",
     "IPDCONGD":        DATA_DIR / "IndustrialProduction" / "IPDCONGD.csv",
     "IPNCONGD":        DATA_DIR / "IndustrialProduction" / "IPNCONGD.csv",
-    # ISMIndicators (Phase 1)
-    "NAPM":            DATA_DIR / "ISMIndicators" / "NAPM.csv",
-    "NMFCI":           DATA_DIR / "ISMIndicators" / "NMFCI.csv",
-    "NAPMPROD":        DATA_DIR / "ISMIndicators" / "NAPMPROD.csv",
-    "NAPMNEWO":        DATA_DIR / "ISMIndicators" / "NAPMNEWO.csv",
-    "NAPMEMPL":        DATA_DIR / "ISMIndicators" / "NAPMEMPL.csv",
-    "NAPMVNDR":        DATA_DIR / "ISMIndicators" / "NAPMVNDR.csv",
+    # ISMIndicators — Census Bureau manufacturing orders (Phase 1)
+    "NEWORDER":        DATA_DIR / "ISMIndicators" / "NEWORDER.csv",
+    "DGORDER":         DATA_DIR / "ISMIndicators" / "DGORDER.csv",
+    "AMTUNO":          DATA_DIR / "ISMIndicators" / "AMTUNO.csv",
+    "MNFCTRIRSA":      DATA_DIR / "ISMIndicators" / "MNFCTRIRSA.csv",
     # CapacityUtilSector (Phase 1)
     "MCUMFN":          DATA_DIR / "CapacityUtilSector" / "MCUMFN.csv",
     "CAPUTLG211S":     DATA_DIR / "CapacityUtilSector" / "CAPUTLG211S.csv",
-    "CAPUTLB58SQ":     DATA_DIR / "CapacityUtilSector" / "CAPUTLB58SQ.csv",
+    "CAPUTLG331S":     DATA_DIR / "CapacityUtilSector" / "CAPUTLG331S.csv",
     # CreditIndicators (Phase 1)
     "BUSLOANS":        DATA_DIR / "CreditIndicators" / "BUSLOANS.csv",
     "REALLN":          DATA_DIR / "CreditIndicators" / "REALLN.csv",
     "CONSUMER":        DATA_DIR / "CreditIndicators" / "CONSUMER.csv",
-    "WPU05":           DATA_DIR / "CreditIndicators" / "WPU05.csv",
-    "WPU10":           DATA_DIR / "CreditIndicators" / "WPU10.csv",
+    "WPU054":          DATA_DIR / "CreditIndicators" / "WPU054.csv",
+    "WPU01":           DATA_DIR / "CreditIndicators" / "WPU01.csv",
 }
 
 # ── Pydantic models ───────────────────────────────────────────────────────────
@@ -1131,15 +1129,15 @@ def get_industrial_production() -> GroupResponse:
     "/api/industrial/ism-pmi",
     response_model=GroupResponse,
     tags=["Industrial Models (Phase 1)"],
-    summary="ISM PMI leading indicators — 12-month forecast",
+    summary="Manufacturing orders leading indicators — 12-month forecast",
 )
 def get_industrial_ism_pmi() -> GroupResponse:
     """
-    12-month LightGBM forecasts for ISM Manufacturing PMI (NAPM), Services PMI (NMFCI),
-    and sub-indices: New Orders (NAPMNEWO), Production (NAPMPROD),
-    Employment (NAPMEMPL), Vendor Deliveries (NAPMVNDR).
+    12-month LightGBM forecasts for Census Bureau manufacturing orders:
+    Nondefense Capital Goods (NEWORDER), Durable Goods (DGORDER),
+    Unfilled Orders (AMTUNO), Total Manufacturing SA (MNFCTRIRSA).
 
-    New Orders leads GDP direction by 2–3 months — the most forward-looking sub-index.
+    NEWORDER leads business investment by 3–6 months — strongest leading indicator here.
 
     Generated automatically by `industrial_model.py` on every `fred_refresh.py` run.
     """
@@ -1157,7 +1155,7 @@ def get_industrial_ism_pmi() -> GroupResponse:
 def get_industrial_capacity_util() -> GroupResponse:
     """
     12-month LightGBM forecasts for sector-level capacity utilization:
-    Manufacturing (MCUMFN), Mining (CAPUTLG211S), Durable Goods (CAPUTLB58SQ).
+    Manufacturing (MCUMFN), Mining (CAPUTLG211S), Primary Metals (CAPUTLG331S).
 
     Generated automatically by `industrial_model.py` on every `fred_refresh.py` run.
     """
@@ -1176,7 +1174,7 @@ def get_industrial_credit() -> GroupResponse:
     """
     12-month LightGBM forecasts for commercial and industrial loans (BUSLOANS),
     real estate loans (REALLN), consumer loans (CONSUMER),
-    PPI fuels (WPU05), and PPI farm products (WPU10).
+    PPI fuels (WPU054), and PPI farm products (WPU01).
 
     Generated automatically by `industrial_model.py` on every `fred_refresh.py` run.
     """
