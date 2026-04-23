@@ -34,19 +34,25 @@ Steps 1–5 are **flags on the same script** and can be combined into a single c
 > python3 fred_refresh.py --sector --crunchbase --news daily --enrich && python3 news_model.py
 > ```
 
+### Generate Reports
+
+| Step | Command | Purpose |
+|------|---------|---------|
+| 7 | `python3 reports.py` | Generate a timestamped Markdown forecast report in `reports/` |
+
 ### Query Models & Get Insights
 
 | Step | Command | Purpose |
 |------|---------|---------|
-| 7 | `python3 api.py` | Start the REST API server on `http://localhost:8100` |
-| 8 | `curl http://localhost:8100/api/summary` | List all available endpoints and their status |
-| 9 | `curl http://localhost:8100/api/macro/{group_id}` | Fetch 12-month forecast for a core macro group |
-| 10 | `curl http://localhost:8100/api/macro/{group_id}/{series_id}` | Fetch a single macro series forecast |
-| 11 | `curl http://localhost:8100/api/financial-news/briefing/latest` | Get today's AI-generated news briefing (Phase 1) |
-| 12 | `curl http://localhost:8100/api/financial-news/alerts` | Get threshold-based news impact alerts (Phase 1) |
-| 13 | `curl http://localhost:8100/api/financial-news/sentiment` | Get 12-month sector sentiment forecast (Phase 2) |
-| 14 | `curl http://localhost:8100/api/financial-news/volume` | Get 12-month article volume forecast by sector (Phase 2) |
-| 15 | `python3 test_api.py` | Run full API test suite to verify all endpoints |
+| 8 | `python3 api.py` | Start the REST API server on `http://localhost:8100` |
+| 9 | `curl http://localhost:8100/api/summary` | List all available endpoints and their status |
+| 10 | `curl http://localhost:8100/api/macro/{group_id}` | Fetch 12-month forecast for a core macro group |
+| 11 | `curl http://localhost:8100/api/macro/{group_id}/{series_id}` | Fetch a single macro series forecast |
+| 12 | `curl http://localhost:8100/api/financial-news/briefing/latest` | Get today's AI-generated news briefing (Phase 1) |
+| 13 | `curl http://localhost:8100/api/financial-news/alerts` | Get threshold-based news impact alerts (Phase 1) |
+| 14 | `curl http://localhost:8100/api/financial-news/sentiment` | Get 12-month sector sentiment forecast (Phase 2) |
+| 15 | `curl http://localhost:8100/api/financial-news/volume` | Get 12-month article volume forecast by sector (Phase 2) |
+| 16 | `python3 test_api.py` | Run full API test suite to verify all endpoints |
 
 > **Tip:** Replace `{group_id}` with IDs like `business_environment`, `consumer_demand`, `cost_of_capital`, `market_risk`, etc. Replace `{series_id}` with a series column name (e.g., `INDPRO`, `MACRO_SENT`). See [REST API — api.py](#rest-api--apipy) for the full endpoint list.
 
@@ -65,14 +71,15 @@ Steps 1–5 are **flags on the same script** and can be combined into a single c
 9. [Model Scripts](#model-scripts)
 10. [Shared Utilities — macro_utils.py](#shared-utilities--macro_utilspy)
 11. [Summary Table Output](#summary-table-output)
-12. [REST API — api.py](#rest-api--apipy)
-13. [API Testing](#api-testing)
-14. [TEP Fault Detection — train.py](#tep-fault-detection--trainpy)
-15. [Output Files Reference](#output-files-reference)
-16. [Data Files Reference](#data-files-reference)
-17. [Scheduling with Cron](#scheduling-with-cron)
-18. [Adding New Series](#adding-new-series)
-19. [Phase Roadmap](#phase-roadmap)
+12. [Reports — reports.py](#reports--reportspy)
+13. [REST API — api.py](#rest-api--apipy)
+14. [API Testing](#api-testing)
+15. [TEP Fault Detection — train.py](#tep-fault-detection--trainpy)
+16. [Output Files Reference](#output-files-reference)
+17. [Data Files Reference](#data-files-reference)
+18. [Scheduling with Cron](#scheduling-with-cron)
+19. [Adding New Series](#adding-new-series)
+20. [Phase Roadmap](#phase-roadmap)
 
 ---
 
@@ -1372,6 +1379,52 @@ python3 train.py
 ```
 
 Outputs: `outputs/{metrics_comparison,roc_curves,confusion_matrices,training_times}.png` and `outputs/lgbm_model.joblib`.
+
+---
+
+## Reports — reports.py
+
+`reports.py` reads all model result files from `outputs/` and generates a comprehensive Markdown forecast report, saved as a timestamped file in the `reports/` directory.
+
+```bash
+python3 reports.py
+# → reports/report_20260423_105200.md
+```
+
+The `reports/` directory is created automatically on the first run.
+
+### What the Report Contains
+
+Each report includes:
+
+- **Table of Contents** with anchor links to all 8 model group sections
+- **Per-group forecast table** — for every series in the group: last known value, +1M / +3M / +6M / +12M point forecasts, and a trend label (↑ Rising / ↓ Declining / → Stable / ⚠ Rising)
+- **Signal paragraph** — a narrative interpretation of what the forecasts mean for that group, with live values injected from the model output
+- **Low-confidence warning** — automatically added for any group where a series R² < −5, flagging that forecasts are extrapolating outside the training distribution
+- **Overall Macro Narrative** — a synthesized view across all groups covering recession probability, growth trajectory, Fed policy, credit vs. equity divergence, consumer sentiment, and commodity prices
+- **Bottom Line** — one-paragraph summary calibrated to the current recession probability level
+
+### Report Naming
+
+Files are named `report_<YYYYMMDD_HHMMSS>.md` so every run produces a new file. Previous reports are preserved, allowing comparison across refresh cycles.
+
+### Viewing Reports
+
+Reports are standard Markdown and render in any Markdown viewer:
+
+- **VS Code** — open the file and press `Cmd+Shift+V` (Mac) or `Ctrl+Shift+V` (Windows) for the preview pane
+- **GitHub** — reports pushed to the repo render automatically
+- **Terminal** — `cat reports/report_*.md | head -100` for a quick read
+
+### Workflow Integration
+
+Run `reports.py` immediately after a model refresh to capture the latest forecasts:
+
+```bash
+python3 fred_refresh.py --sector --news daily --enrich && \
+python3 news_model.py && \
+python3 reports.py
+```
 
 ---
 
