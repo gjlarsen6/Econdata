@@ -92,7 +92,7 @@ The macroeconomic side of this project answers one question every week: **where 
 3. Generating 12-month recursive forecasts with 80% prediction intervals
 4. Displaying everything in a single tabular summary
 
-Seven model groups cover distinct areas of the economy:
+Eight model groups cover distinct areas of the economy:
 
 | Group | Series Modeled | Source Directory |
 |---|---|---|
@@ -103,10 +103,11 @@ Seven model groups cover distinct areas of the economy:
 | Market Risk *(Phase 0)* | VIX, HY credit spread, IG credit spread, USD index | `data/MarketRisk/` |
 | Commodities *(Phase 0)* | WTI crude oil, gold | `data/Commodities/` |
 | Yield Curve *(Phase 0)* | 8 Treasury tenors: 1M, 3M, 6M, 1Y, 2Y, 5Y, 10Y, 30Y | `data/YieldCurve/` |
+| Industrial / ISM / Credit *(Phase 1)* | IP sector breakdowns, ISM PMI sub-indices, sector capacity utilization, commercial loans, PPI | `data/IndustrialProduction/`, `data/ISMIndicators/`, `data/CapacityUtilSector/`, `data/CreditIndicators/` |
 
 Phase 0 also produces a **Financial Stress Index (FSI)** and a **Market Regime** label (`expansion / slowdown / contraction / stress / recovery`) from `composite_model.py` using the expanded FRED data — no additional API keys required.
 
-Optional sector modules extend coverage to industry-level data from BLS (employment by sector), BEA (GDP by industry), and the World Bank (sector shares of GDP).
+Optional sector modules extend coverage to industry-level data from BLS (10 employment sectors, hourly earnings by sector, weekly hours by sector, JOLTS job openings by sector), BEA (10 GDP-by-industry series), World Bank (sector shares of GDP), and S&P 500 sector ETFs via yfinance.
 
 An additional Crunchbase module (`--crunchbase`) tracks weekly VC investment activity across three segments — AI, Fintech, and Healthcare — building a time-series dataset suitable for LightGBM forecasting once sufficient history accumulates.
 
@@ -118,8 +119,9 @@ An additional Crunchbase module (`--crunchbase`) tracks weekly VC investment act
 econdata/
 │
 ├── fred_refresh.py            # Main orchestrator — run this weekly
-├── sector_apis.py             # Sector API fetchers (BLS, BEA, World Bank, Trading Economics)
-├── sector_model.py            # Generic LightGBM trainer for sector data
+├── sector_apis.py             # Sector API fetchers (BLS, BEA, World Bank, ETFs, Trading Economics)
+├── sector_model.py            # Generic LightGBM trainer for sector data (BLS, BEA, WB, wages, hours, JOLTS, ETFs)
+├── industrial_model.py        # Phase 1: LightGBM trainer for IP, ISM PMI, capacity util, credit/PPI
 ├── crunchbase_apis.py         # Crunchbase VC data fetcher (AI, Fintech, Healthcare)
 ├── vc_model.py                # LightGBM trainer for VC segment weekly data
 ├── macro_utils.py             # Shared feature engineering, training, forecasting, plotting
@@ -152,10 +154,18 @@ econdata/
 │   ├── Commodities/           # DCOILWTICO, GOLDAMGBD228NLBM CSVs (Phase 0)
 │   ├── YieldCurve/            # DGS1MO, DGS3MO, DGS6MO, DGS1, DGS2, DGS5, DGS10, DGS30 CSVs (Phase 0)
 │   ├── SectorAPIs/            # JSON API documentation for each sector data source
+│   ├── IndustrialProduction/  # IPMAN, IPUTIL, IPMINE, IPCONGD, IPBUSEQ, IPMAT, IPDCONGD, IPNCONGD (Phase 1)
+│   ├── ISMIndicators/         # NAPM, NMFCI, NAPMPROD, NAPMNEWO, NAPMEMPL, NAPMVNDR (Phase 1)
+│   ├── CapacityUtilSector/    # MCUMFN, CAPUTLG211S, CAPUTLB58SQ (Phase 1)
+│   ├── CreditIndicators/      # BUSLOANS, REALLN, CONSUMER, WPU05, WPU10 (Phase 1)
 │   ├── Sector/                # Created automatically by sector refresh
-│   │   ├── BLS/               #   Employment by industry (monthly)
-│   │   ├── BEA/               #   GDP by industry (quarterly)
-│   │   └── WorldBank/         #   Sector % of GDP (annual → monthly)
+│   │   ├── BLS/               #   10 employment series by NAICS sector (monthly)
+│   │   ├── BEA/               #   10 GDP-by-industry series (quarterly)
+│   │   ├── WorldBank/         #   Sector % of GDP (annual → monthly)
+│   │   ├── BLS_Wages/         #   Avg hourly earnings by sector — 6 series (--sector bls_wages)
+│   │   ├── BLS_Hours/         #   Avg weekly hours by sector — 3 series (--sector bls_hours)
+│   │   ├── JOLTS/             #   Job openings by sector — 7 series (--sector jolts)
+│   │   └── ETF/               #   S&P 500 sector ETF monthly close — 11 tickers (--sector etf)
 │   ├── FinancialNews/         # Created automatically by --news refresh (Phase 1)
 │   │   ├── raw/
 │   │   │   └── news_articles.csv        # append-only master — all articles, deduped by normalized URL
@@ -292,9 +302,9 @@ python3 fred_refresh.py
 
 This single command runs the full pipeline:
 
-1. Fetches the latest observations for all 32 FRED series (18 core + 14 Phase 0)
+1. Fetches the latest observations for all 53 FRED series (18 core + 14 Phase 0 + 22 Phase 1 industrial/ISM/credit)
 2. Merges new rows into existing CSVs (never overwrites historical data)
-3. Retrains all seven LightGBM model groups (4 core + 3 Phase 0)
+3. Retrains all eight LightGBM model groups (4 core + 3 Phase 0 + 1 Phase 1 industrial)
 4. Prints a **Market Conditions Snapshot** (VIX, FSI, regime, WTI, gold, 10Y−2Y slope)
 5. Prints a unified summary table with forecasts and validation metrics
 6. Appends a run log entry to `outputs/refresh_log.json`
@@ -307,12 +317,16 @@ python3 fred_refresh.py [--sector SOURCE ...] [--crunchbase] [--news MODE] [--sk
 
 | Option | Description |
 |---|---|
-| *(no flags)* | FRED data refresh + all four model retrains |
-| `--sector bls` | Also refresh BLS employment data and train BLS models |
-| `--sector bea` | Also refresh BEA GDP-by-industry data (requires `BEA_API_KEY`) |
+| *(no flags)* | FRED data refresh + all eight model retrains (includes industrial_model.py) |
+| `--sector bls` | Also refresh BLS employment data (10 sectors) and train BLS models |
+| `--sector bea` | Also refresh BEA GDP-by-industry data (10 industries; requires `BEA_API_KEY`) |
 | `--sector worldbank` | Also refresh World Bank sector indicators |
+| `--sector bls_wages` | Also refresh BLS avg hourly earnings by sector (6 series) |
+| `--sector bls_hours` | Also refresh BLS avg weekly hours by sector (3 series) |
+| `--sector jolts` | Also refresh JOLTS job openings by sector (7 series) |
+| `--sector etf` | Also refresh S&P 500 sector ETF monthly prices via yfinance (11 tickers; no API key required) |
 | `--sector bls bea worldbank` | Multiple sources in one run |
-| `--sector all` | All available sector sources |
+| `--sector all` | All available sector sources (BLS, BEA, WorldBank, wages, hours, JOLTS, ETF) |
 | `--crunchbase` | Also refresh Crunchbase VC data (AI, Fintech, Healthcare) and train VC models (requires `CRUNCHBASE_API_KEY`) |
 | `--news daily` | Ingest news from all configured sources (once/day); generate daily briefing JSON *(Phase 1)* |
 | `--news realtime` | Ingest Finnhub only — safe to run every 15 min as a cron *(Phase 1)* |
@@ -371,15 +385,19 @@ python3 news_model.py
 The step count shown in the log (`[1/N]`) adjusts automatically based on which flags are active: each of `--sector` and `--crunchbase` adds 2 steps (data refresh + model training).
 
 ```
-[1/N]  Refresh FRED data (32 series — 18 core + 14 Phase 0)
+[1/N]  Refresh FRED data (53 series — 18 core + 14 Phase 0 + 22 Phase 1 industrial/ISM/credit)
          → Incremental fetch: only pulls data since last run (30-day lookback for revisions)
          → Rate-limited: 0.6 s between API calls (stays under 120 req/min)
          → Prints a per-series status table
 
 [2/N]  Refresh sector API data  (only with --sector)
-         → BLS: POST multi-series employment data
-         → BEA: GET GDP by industry (all years, pivots to per-industry CSVs)
+         → BLS employment: POST multi-series for 10 NAICS employment sectors
+         → BLS wages: POST avg hourly earnings by sector (6 series; --sector bls_wages)
+         → BLS hours: POST avg weekly hours by sector (3 series; --sector bls_hours)
+         → JOLTS: POST job openings by sector (7 series; --sector jolts)
+         → BEA: GET GDP by industry (all years, pivots to 10 per-industry CSVs)
          → World Bank: GET annual indicators, forward-fills to monthly
+         → ETF: fetch monthly close prices for 11 S&P 500 sector ETFs via yfinance (--sector etf)
          → Prints a per-series status table
 
 [3/N]  Refresh Crunchbase VC data  (only with --crunchbase)
@@ -391,12 +409,15 @@ The step count shown in the log (`[1/N]`) adjusts automatically based on which f
          → Prints a per-segment status table
 
 [N-2]  Retrain FRED LightGBM models
-         → Runs 7 model scripts sequentially as subprocesses (4 core + market_model, yield_curve_model, composite_model)
+         → Runs 8 model scripts sequentially as subprocesses:
+              4 core + market_model, yield_curve_model, composite_model, industrial_model
          → Each script saves .joblib models, PNGs, and a results JSON
          → composite_model.py additionally writes regime_history.json
+         → industrial_model.py runs all 4 groups (IP, ISM PMI, capacity util, credit/PPI);
+              skips any group whose data directory is empty
 
 [N-1]  Train sector models  (only with --sector + data exists)
-         → Discovers all CSVs in data/Sector/
+         → Discovers all CSVs in data/Sector/{BLS,BEA,WorldBank,BLS_Wages,BLS_Hours,JOLTS,ETF}/
          → Auto-creates models for any new series without an existing .joblib
 
 [N-1]  Train VC models  (only with --crunchbase + data exists)
@@ -437,31 +458,108 @@ The `sector_apis.py` module fetches industry-level data from four external sourc
 
 ### BLS — Bureau of Labor Statistics
 
-**No API key required.** Fetches monthly employment levels for six sectors:
+**No API key required** (a key raises rate limits but is not mandatory). Three subsets of BLS data are available, each enabled by a different `--sector` value.
+
+#### Employment by Sector (`--sector bls`)
+
+10 monthly employment series covering full NAICS private-sector scope:
 
 | Series ID | Description |
 |---|---|
+| CES1000000001 | Mining & Logging Employment |
+| CES2000000001 | Construction Employment |
 | CES3000000001 | Manufacturing Employment |
 | CES4000000001 | Trade, Transportation & Utilities Employment |
+| CES5000000001 | Information Employment |
 | CES5500000001 | Financial Activities Employment |
 | CES6000000001 | Professional & Business Services Employment |
+| CES9000000001 | Government Employment |
 | CEU6500000001 | Education & Health Services Employment |
 | CEU7000000001 | Leisure & Hospitality Employment |
 
 Saved to: `data/Sector/BLS/<series_id>.csv`
 
+#### Average Hourly Earnings by Sector (`--sector bls_wages`)
+
+Sector-level wage data — a direct input-cost inflation signal. Series suffix `008`.
+
+| Series ID | Description |
+|---|---|
+| CES2000000008 | Construction Avg Hourly Earnings |
+| CES3000000008 | Manufacturing Avg Hourly Earnings |
+| CES4000000008 | Trade/Transport Avg Hourly Earnings |
+| CES5000000008 | Information Avg Hourly Earnings |
+| CES5500000008 | Financial Avg Hourly Earnings |
+| CES6000000008 | Professional Services Avg Hourly Earnings |
+
+Saved to: `data/Sector/BLS_Wages/<series_id>.csv`
+
+#### Average Weekly Hours by Sector (`--sector bls_hours`)
+
+Hours lead payrolls — firms cut hours before headcount. Series suffix `007`.
+
+| Series ID | Description |
+|---|---|
+| CES2000000007 | Construction Avg Weekly Hours |
+| CES3000000007 | Manufacturing Avg Weekly Hours |
+| CES6000000007 | Professional Services Avg Weekly Hours |
+
+Saved to: `data/Sector/BLS_Hours/<series_id>.csv`
+
+#### JOLTS — Job Openings by Sector (`--sector jolts`)
+
+Job openings turn before payrolls — a forward-looking labor market signal.
+
+| Series ID | Description |
+|---|---|
+| JTS2300JOL | Job Openings: Construction |
+| JTS3000JOL | Job Openings: Manufacturing |
+| JTS4000JOL | Job Openings: Trade/Transport |
+| JTS5500JOL | Job Openings: Financial |
+| JTS6000JOL | Job Openings: Professional Services |
+| JTS6500JOL | Job Openings: Education & Health |
+| JTS7000JOL | Job Openings: Leisure & Hospitality |
+
+Saved to: `data/Sector/JOLTS/<series_id>.csv`
+
 ### BEA — Bureau of Economic Analysis
 
-**Requires `BEA_API_KEY`.** Fetches quarterly GDP by industry:
+**Requires `BEA_API_KEY`.** Fetches quarterly GDP by industry in a single API call; all 10 industries are pivoted from one response at zero additional API cost:
 
 | Column Name | Description |
 |---|---|
+| BEA_Agriculture | Gross Output — Agriculture |
+| BEA_Utilities | Gross Output — Utilities |
+| BEA_Construction | Gross Output — Construction |
 | BEA_Manufacturing | Gross Output — Manufacturing |
-| BEA_Finance_Insurance_RE | Gross Output — Finance, Insurance & Real Estate |
 | BEA_Wholesale_Retail_Trade | Gross Output — Wholesale & Retail Trade |
+| BEA_Information | Gross Output — Information |
+| BEA_Finance_Insurance_RE | Gross Output — Finance, Insurance & Real Estate |
 | BEA_Professional_Biz_Svcs | Gross Output — Professional & Business Services |
+| BEA_Healthcare | Gross Output — Healthcare & Social Assistance |
+| BEA_Arts_Hospitality | Gross Output — Arts, Entertainment & Hospitality |
 
 Saved to: `data/Sector/BEA/<industry>.csv` (quarterly dates)
+
+### S&P 500 Sector ETFs (`--sector etf`)
+
+**No API key required** (uses `yfinance`). Monthly close prices for all 11 GICS sector ETFs provide a market-implied, forward-looking view of sector strength that leads lagging government data by months.
+
+| Ticker | Sector |
+|---|---|
+| XLK | Technology |
+| XLF | Financials |
+| XLV | Healthcare |
+| XLE | Energy |
+| XLI | Industrials |
+| XLP | Consumer Staples |
+| XLY | Consumer Discretionary |
+| XLU | Utilities |
+| XLRE | Real Estate |
+| XLB | Materials |
+| XLC | Communication Services |
+
+Saved to: `data/Sector/ETF/<ticker>.csv`
 
 ### World Bank
 
@@ -478,10 +576,6 @@ Saved to: `data/Sector/WorldBank/<indicator>.csv` (monthly, forward-filled from 
 ### Trading Economics
 
 Requires a commercial plan (`TE_CLIENT_KEY` + `TE_CLIENT_SECRET`). A stub is implemented in `sector_apis.py`; extend `refresh_trading_economics()` with specific indicators once credentials are available.
-
-### S&P Global / ISM PMI
-
-No public API is available for either source. They are documented in `data/SectorAPIs/` for reference but not implemented.
 
 ---
 
@@ -834,6 +928,29 @@ For each source, it:
 6. Saves per-source results JSONs that feed directly into the summary table
 
 **New series** (a CSV without a corresponding `.joblib`) trigger automatic model creation on the next `fred_refresh.py --sector` run.
+
+---
+
+### industrial_model.py *(Phase 1)*
+
+Discovery-based LightGBM trainer for four groups of FRED-sourced industrial indicators. Runs automatically on every `fred_refresh.py` call (no flag required); results appear in the unified summary table. Can also be run directly:
+
+```bash
+python3 industrial_model.py --source industrial_production
+python3 industrial_model.py --source ism_pmi capacity_util_sector
+python3 industrial_model.py --source all
+```
+
+| Source Key | Data Directory | Series | API Endpoint |
+|---|---|---|---|
+| `industrial_production` | `data/IndustrialProduction/` | IPMAN, IPUTIL, IPMINE, IPCONGD, IPBUSEQ, IPMAT, IPDCONGD, IPNCONGD | `/api/industrial/production` |
+| `ism_pmi` | `data/ISMIndicators/` | NAPM, NMFCI, NAPMPROD, NAPMNEWO, NAPMEMPL, NAPMVNDR | `/api/industrial/ism-pmi` |
+| `capacity_util_sector` | `data/CapacityUtilSector/` | MCUMFN, CAPUTLG211S, CAPUTLB58SQ | `/api/industrial/capacity-utilization` |
+| `credit_indicators` | `data/CreditIndicators/` | BUSLOANS, REALLN, CONSUMER, WPU05, WPU10 | `/api/industrial/credit` |
+
+Groups skip gracefully if their data directory is empty. ISM New Orders (`NAPMNEWO`) leads GDP direction by 2–3 months and is the highest signal-to-noise sub-index.
+
+**Outputs:** `industrial_{group}_model_{series}.joblib`, `industrial_{group}_{dashboard,validation,importance}.png`, `results_industrial_{group}.json`
 
 ---
 
@@ -1239,9 +1356,24 @@ These return HTTP 404 until the pipeline has been run with the corresponding `--
 
 | Method | Path | Requires | What It Returns |
 |---|---|---|---|
-| GET | `/api/sector/bls` | `--sector bls` | 12-month LightGBM forecasts for BLS industry-level employment series (manufacturing, trade, financial, professional services, education & health, leisure & hospitality). |
-| GET | `/api/sector/bea` | `--sector bea` + `BEA_API_KEY` | 12-month forecasts for BEA GDP-by-Industry gross output series (manufacturing, finance & real estate, wholesale & retail trade, professional & business services). |
-| GET | `/api/sector/worldbank` | `--sector worldbank` | 12-month forecasts for World Bank U.S. sector share-of-GDP indicators (manufacturing, services, industry). Annual data forward-filled to monthly. |
+| GET | `/api/sector/bls` | `--sector bls` | 12-month forecasts for BLS employment across 10 NAICS sectors. |
+| GET | `/api/sector/bea` | `--sector bea` + `BEA_API_KEY` | 12-month forecasts for BEA GDP-by-Industry gross output (10 industries). |
+| GET | `/api/sector/worldbank` | `--sector worldbank` | 12-month forecasts for World Bank U.S. sector share-of-GDP (3 series). |
+| GET | `/api/sector/bls-wages` | `--sector bls_wages` | 12-month forecasts for BLS average hourly earnings by sector (6 series). |
+| GET | `/api/sector/bls-hours` | `--sector bls_hours` | 12-month forecasts for BLS average weekly hours by sector (3 series). |
+| GET | `/api/sector/jolts` | `--sector jolts` | 12-month forecasts for JOLTS job openings by sector (7 series). |
+| GET | `/api/sector/etf` | `--sector etf` | 12-month forecasts for S&P 500 sector ETF monthly close prices (11 tickers). |
+
+#### Phase 1 Industrial Endpoints
+
+Generated automatically by `industrial_model.py` on every `fred_refresh.py` run. Return HTTP 404 until FRED data has been fetched at least once.
+
+| Method | Path | Series | What It Returns |
+|---|---|---|---|
+| GET | `/api/industrial/production` | IPMAN, IPUTIL, IPMINE, IPCONGD, IPBUSEQ, IPMAT, IPDCONGD, IPNCONGD | 12-month forecasts for 8 IP sector breakdowns. |
+| GET | `/api/industrial/ism-pmi` | NAPM, NMFCI, NAPMPROD, NAPMNEWO, NAPMEMPL, NAPMVNDR | 12-month forecasts for ISM manufacturing and services PMI + sub-indices. |
+| GET | `/api/industrial/capacity-utilization` | MCUMFN, CAPUTLG211S, CAPUTLB58SQ | 12-month forecasts for sector-level capacity utilization rates. |
+| GET | `/api/industrial/credit` | BUSLOANS, REALLN, CONSUMER, WPU05, WPU10 | 12-month forecasts for commercial/consumer loans and PPI commodity prices. |
 
 #### Optional Venture Capital Endpoints
 

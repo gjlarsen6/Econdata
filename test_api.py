@@ -721,6 +721,16 @@ def main() -> int:
     test_group("/api/sector/bls",       [], optional=True)
     test_group("/api/sector/bea",       [], optional=True)
     test_group("/api/sector/worldbank", [], optional=True)
+    test_group("/api/sector/bls-wages", [], optional=True)
+    test_group("/api/sector/bls-hours", [], optional=True)
+    test_group("/api/sector/jolts",     [], optional=True)
+    test_group("/api/sector/etf",       [], optional=True)
+
+    # ── Phase 1: Industrial / ISM / Capacity / Credit ────────────────────────
+    test_group("/api/industrial/production",          [], optional=True)
+    test_group("/api/industrial/ism-pmi",             [], optional=True)
+    test_group("/api/industrial/capacity-utilization",[], optional=True)
+    test_group("/api/industrial/credit",              [], optional=True)
 
     # ── Optional: Venture Capital ─────────────────────────────────────────────
     test_group("/api/vc/ai",         [], optional=True)

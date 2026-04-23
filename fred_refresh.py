@@ -93,6 +93,32 @@ SERIES_FILE_MAP: dict[str, tuple[str, str]] = {
     "DGS5":            ("YieldCurve", "DGS5.csv"),
     "DGS10":           ("YieldCurve", "DGS10.csv"),
     "DGS30":           ("YieldCurve", "DGS30.csv"),
+    # IndustrialProduction — IP sector breakdowns (industrial_model.py)
+    "IPMAN":           ("IndustrialProduction", "IPMAN.csv"),
+    "IPUTIL":          ("IndustrialProduction", "IPUTIL.csv"),
+    "IPMINE":          ("IndustrialProduction", "IPMINE.csv"),
+    "IPCONGD":         ("IndustrialProduction", "IPCONGD.csv"),
+    "IPBUSEQ":         ("IndustrialProduction", "IPBUSEQ.csv"),
+    "IPMAT":           ("IndustrialProduction", "IPMAT.csv"),
+    "IPDCONGD":        ("IndustrialProduction", "IPDCONGD.csv"),
+    "IPNCONGD":        ("IndustrialProduction", "IPNCONGD.csv"),
+    # ISMIndicators — leading PMI sub-indices (industrial_model.py)
+    "NAPM":            ("ISMIndicators", "NAPM.csv"),
+    "NMFCI":           ("ISMIndicators", "NMFCI.csv"),
+    "NAPMPROD":        ("ISMIndicators", "NAPMPROD.csv"),
+    "NAPMNEWO":        ("ISMIndicators", "NAPMNEWO.csv"),
+    "NAPMEMPL":        ("ISMIndicators", "NAPMEMPL.csv"),
+    "NAPMVNDR":        ("ISMIndicators", "NAPMVNDR.csv"),
+    # CapacityUtilSector — sector-level capacity utilization (industrial_model.py)
+    "MCUMFN":          ("CapacityUtilSector", "MCUMFN.csv"),
+    "CAPUTLG211S":     ("CapacityUtilSector", "CAPUTLG211S.csv"),
+    "CAPUTLB58SQ":     ("CapacityUtilSector", "CAPUTLB58SQ.csv"),
+    # CreditIndicators — business/real estate/consumer loans + PPI (industrial_model.py)
+    "BUSLOANS":        ("CreditIndicators", "BUSLOANS.csv"),
+    "REALLN":          ("CreditIndicators", "REALLN.csv"),
+    "CONSUMER":        ("CreditIndicators", "CONSUMER.csv"),
+    "WPU05":           ("CreditIndicators", "WPU05.csv"),
+    "WPU10":           ("CreditIndicators", "WPU10.csv"),
 }
 
 # Series that appear in two directories (UMCSENT is in both ConsumerDemand and RiskLeadingInd)
@@ -103,7 +129,8 @@ SERIES_EXTRA_COPIES: dict[str, list[tuple[str, str]]] = {
 # Sector data directory and script
 SECTOR_DATA_DIR       = DATA_DIR / "Sector"
 SECTOR_MODEL_SCRIPT   = "sector_model.py"
-SECTOR_RESULTS_PATTERN = "results_sector_*.json"
+SECTOR_RESULTS_PATTERN      = "results_sector_*.json"
+INDUSTRIAL_RESULTS_PATTERN  = "results_industrial_*.json"
 
 # VentureCapital (Crunchbase) data directory and script
 VC_DATA_DIR        = DATA_DIR / "VentureCapital"
@@ -120,6 +147,8 @@ MODEL_SCRIPTS = [
     "market_model.py",
     "yield_curve_model.py",
     "composite_model.py",
+    # Phase 1 — industrial production, ISM PMI, capacity util, credit/PPI
+    "industrial_model.py",
 ]
 
 # Results JSON written by each model script
@@ -288,11 +317,13 @@ def _parse_args() -> argparse.Namespace:
     p.add_argument(
         "--sector",
         nargs="*",
-        choices=["bls", "bea", "worldbank", "tradingeconomics", "all"],
+        choices=["bls", "bea", "worldbank", "tradingeconomics", "etf",
+                 "bls_wages", "bls_hours", "jolts", "all"],
         default=[],
         metavar="SOURCE",
         help=(
-            "Sector APIs to refresh (bls, bea, worldbank, tradingeconomics, all). "
+            "Sector APIs to refresh (bls, bea, worldbank, tradingeconomics, etf, "
+            "bls_wages, bls_hours, jolts, all). "
             "E.g.: --sector bls worldbank  or  --sector all. "
             "FRED refresh always runs regardless of this flag."
         ),
@@ -375,13 +406,32 @@ def refresh_sector_data(enabled_sources: list[str]) -> list[dict]:
     keys = sector_apis.load_sector_api_keys()
 
     if "all" in enabled_sources:
-        enabled_sources = ["bls", "bea", "worldbank", "tradingeconomics"]
+        enabled_sources = [
+            "bls", "bea", "worldbank", "tradingeconomics",
+            "bls_wages", "bls_hours", "jolts", "etf",
+        ]
 
     results: list[dict] = []
 
     if "bls" in enabled_sources:
         log.info("  Refreshing BLS sector data ...")
         results.extend(sector_apis.refresh_bls(api_key=keys.get("BLS_API_KEY")))
+
+    if "bls_wages" in enabled_sources:
+        log.info("  Refreshing BLS average hourly earnings by sector ...")
+        results.extend(sector_apis.refresh_bls_wages(api_key=keys.get("BLS_API_KEY")))
+
+    if "bls_hours" in enabled_sources:
+        log.info("  Refreshing BLS average weekly hours by sector ...")
+        results.extend(sector_apis.refresh_bls_hours(api_key=keys.get("BLS_API_KEY")))
+
+    if "jolts" in enabled_sources:
+        log.info("  Refreshing JOLTS job openings by sector ...")
+        results.extend(sector_apis.refresh_jolts(api_key=keys.get("BLS_API_KEY")))
+
+    if "etf" in enabled_sources:
+        log.info("  Refreshing S&P 500 sector ETF prices via yfinance ...")
+        results.extend(sector_apis.refresh_sector_etfs())
 
     if "bea" in enabled_sources:
         bea_key = keys.get("BEA_API_KEY")
@@ -413,11 +463,19 @@ def refresh_sector_data(enabled_sources: list[str]) -> list[dict]:
 
 def detect_new_sector_csvs_needing_models() -> dict[str, list[str]]:
     """
-    Scan data/Sector/{BLS,BEA,WorldBank}/ for CSV files.
+    Scan data/Sector/{BLS,BEA,WorldBank,BLS_Wages,BLS_Hours,JOLTS,ETF}/ for CSV files.
     For each CSV, check whether a corresponding .joblib file already exists.
     Returns {source_key: [series_ids_without_models]}.
     """
-    source_map = {"BLS": "bls", "BEA": "bea", "WorldBank": "worldbank"}
+    source_map = {
+        "BLS":       "bls",
+        "BEA":       "bea",
+        "WorldBank": "worldbank",
+        "BLS_Wages": "bls_wages",
+        "BLS_Hours": "bls_hours",
+        "JOLTS":     "jolts",
+        "ETF":       "etf",
+    }
     needs: dict[str, list[str]] = {}
 
     for dir_name, source_key in source_map.items():
@@ -716,7 +774,9 @@ def main():
     # Detect FRED series with no model group mapping
     known_dirs = {"BusinessEnvironment", "ConsumerDemand",
                    "CostOfCapital", "RiskLeadingInd",
-                   "MarketRisk", "Commodities", "YieldCurve"}
+                   "MarketRisk", "Commodities", "YieldCurve",
+                   "IndustrialProduction", "ISMIndicators",
+                   "CapacityUtilSector", "CreditIndicators"}
     for series_id in series_catalogue:
         directory, _ = SERIES_FILE_MAP.get(series_id, ("NewSeries", ""))
         if directory not in known_dirs:
@@ -888,11 +948,13 @@ def main():
             log.info("  New sector series without models: %s", new_series)
 
         # Always re-train sector models for all enabled sources
+        _all_sector_model_sources = [
+            "bls", "bea", "worldbank", "bls_wages", "bls_hours", "jolts", "etf",
+        ]
         enabled_normalized = (
-            ["bls", "bea", "worldbank"]
+            _all_sector_model_sources
             if "all" in args.sector
-            else [s for s in args.sector
-                  if s in ("bls", "bea", "worldbank")]
+            else [s for s in args.sector if s in _all_sector_model_sources]
         )
         if enabled_normalized:
             sector_model_step = fred_step + 1
@@ -923,6 +985,9 @@ def main():
              summary_step, total_steps)
 
     all_results_files = list(RESULTS_FILES)
+    # industrial_model.py always runs — include its results whenever they exist
+    industrial_results = sorted(OUTPUT_DIR.glob(INDUSTRIAL_RESULTS_PATTERN))
+    all_results_files.extend(industrial_results)
     if args.sector:
         sector_results = sorted(OUTPUT_DIR.glob(SECTOR_RESULTS_PATTERN))
         all_results_files.extend(sector_results)
@@ -930,12 +995,15 @@ def main():
         vc_results = sorted(OUTPUT_DIR.glob(VC_RESULTS_PATTERN))
         all_results_files.extend(vc_results)
 
+    has_industrial = bool(industrial_results)
     if args.sector and args.crunchbase:
-        table_title = "MACRO + SECTOR + VC MODEL SUMMARY — FRED Weekly Refresh"
+        table_title = "MACRO + INDUSTRIAL + SECTOR + VC MODEL SUMMARY — FRED Weekly Refresh"
     elif args.sector:
-        table_title = "MACRO + SECTOR MODEL SUMMARY — FRED Weekly Refresh"
+        table_title = "MACRO + INDUSTRIAL + SECTOR MODEL SUMMARY — FRED Weekly Refresh"
     elif args.crunchbase:
-        table_title = "MACRO + VC MODEL SUMMARY — FRED Weekly Refresh"
+        table_title = "MACRO + INDUSTRIAL + VC MODEL SUMMARY — FRED Weekly Refresh"
+    elif has_industrial:
+        table_title = "MACRO + INDUSTRIAL MODEL SUMMARY — FRED Weekly Refresh"
     else:
         table_title = "MACRO MODEL SUMMARY — FRED Weekly Refresh"
     print_market_snapshot(OUTPUT_DIR)

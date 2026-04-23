@@ -51,6 +51,7 @@ SECTOR_COLORS = [
 
 from sector_apis import (
     BLS_SERIES_IDS, BEA_INDUSTRY_MAP, WB_INDICATORS,
+    BLS_WAGES_SERIES, BLS_HOURS_SERIES, JOLTS_SERIES, SECTOR_ETFS,
 )
 
 SOURCE_CONFIG: dict[str, dict] = {
@@ -78,6 +79,40 @@ SOURCE_CONFIG: dict[str, dict] = {
         "model_prefix": "sector_worldbank_model",
         "plot_prefix":  "sector_worldbank",
     },
+    # Priority 3 — BLS subgroups
+    "bls_wages": {
+        "dir":          "BLS_Wages",
+        "group_name":   "BLS Avg Hourly Earnings by Sector",
+        "label_map":    BLS_WAGES_SERIES,
+        "results_file": "results_sector_bls_wages.json",
+        "model_prefix": "sector_bls_wages_model",
+        "plot_prefix":  "sector_bls_wages",
+    },
+    "bls_hours": {
+        "dir":          "BLS_Hours",
+        "group_name":   "BLS Avg Weekly Hours by Sector",
+        "label_map":    BLS_HOURS_SERIES,
+        "results_file": "results_sector_bls_hours.json",
+        "model_prefix": "sector_bls_hours_model",
+        "plot_prefix":  "sector_bls_hours",
+    },
+    "jolts": {
+        "dir":          "JOLTS",
+        "group_name":   "JOLTS Job Openings by Sector",
+        "label_map":    JOLTS_SERIES,
+        "results_file": "results_sector_jolts.json",
+        "model_prefix": "sector_jolts_model",
+        "plot_prefix":  "sector_jolts",
+    },
+    # Priority 4 — Sector ETFs
+    "etf": {
+        "dir":          "ETF",
+        "group_name":   "S&P 500 Sector ETFs",
+        "label_map":    SECTOR_ETFS,
+        "results_file": "results_sector_etf.json",
+        "model_prefix": "sector_etf_model",
+        "plot_prefix":  "sector_etf",
+    },
 }
 
 # ── Argument parsing ──────────────────────────────────────────────────────────
@@ -88,7 +123,7 @@ def parse_args() -> argparse.Namespace:
     )
     p.add_argument(
         "--source", nargs="+",
-        choices=["bls", "bea", "worldbank", "all"],
+        choices=["bls", "bea", "worldbank", "bls_wages", "bls_hours", "jolts", "etf", "all"],
         default=["all"],
         help="Which sector source(s) to model. Use 'all' to process every source.",
     )

@@ -41,6 +41,11 @@ BLS_SERIES_IDS: dict[str, str] = {
     "CES6000000001": "Professional Business Services Employment",
     "CEU6500000001": "Education Health Employment",
     "CEU7000000001": "Leisure Hospitality Employment",
+    # Priority 1a additions — full NAICS private-sector coverage
+    "CES1000000001": "Mining Logging Employment",
+    "CES2000000001": "Construction Employment",
+    "CES5000000001": "Information Employment",
+    "CES9000000001": "Government Employment",
 }
 
 # ── BEA Industry Map ──────────────────────────────────────────────────────────
@@ -53,6 +58,13 @@ BEA_INDUSTRY_MAP: dict[str, str] = {
     "52-53": "BEA_Finance_Insurance_RE",
     "44-45": "BEA_Wholesale_Retail_Trade",
     "54-56": "BEA_Professional_Biz_Svcs",
+    # Priority 1b additions — nearly triples BEA coverage at zero extra API cost
+    "11":    "BEA_Agriculture",
+    "22":    "BEA_Utilities",
+    "23":    "BEA_Construction",
+    "51":    "BEA_Information",
+    "62":    "BEA_Healthcare",
+    "71-72": "BEA_Arts_Hospitality",
 }
 
 # ── World Bank Indicators ─────────────────────────────────────────────────────
@@ -61,6 +73,49 @@ WB_INDICATORS: dict[str, str] = {
     "NV.IND.MANF.ZS": "Manufacturing pct GDP",
     "NV.SRV.TOTL.ZS":  "Services pct GDP",
     "NV.IND.TOTL.ZS":  "Industry pct GDP",
+}
+
+# ── BLS Subgroup Catalogues (Priority 3) ──────────────────────────────────────
+
+BLS_WAGES_SERIES: dict[str, str] = {
+    "CES3000000008": "Manufacturing Avg Hourly Earnings",
+    "CES4000000008": "Trade Transport Avg Hourly Earnings",
+    "CES5500000008": "Financial Avg Hourly Earnings",
+    "CES6000000008": "Professional Services Avg Hourly Earnings",
+    "CES2000000008": "Construction Avg Hourly Earnings",
+    "CES5000000008": "Information Avg Hourly Earnings",
+}
+
+BLS_HOURS_SERIES: dict[str, str] = {
+    "CES3000000007": "Manufacturing Avg Weekly Hours",
+    "CES6000000007": "Professional Services Avg Weekly Hours",
+    "CES2000000007": "Construction Avg Weekly Hours",
+}
+
+JOLTS_SERIES: dict[str, str] = {
+    "JTS3000JOL": "Job Openings: Manufacturing",
+    "JTS4000JOL": "Job Openings: Trade/Transport",
+    "JTS5500JOL": "Job Openings: Financial",
+    "JTS6000JOL": "Job Openings: Professional Services",
+    "JTS6500JOL": "Job Openings: Education & Health",
+    "JTS7000JOL": "Job Openings: Leisure & Hospitality",
+    "JTS2300JOL": "Job Openings: Construction",
+}
+
+# ── Sector ETF Catalogue (Priority 4) ────────────────────────────────────────
+
+SECTOR_ETFS: dict[str, str] = {
+    "XLK":  "Technology",
+    "XLF":  "Financials",
+    "XLV":  "Healthcare",
+    "XLE":  "Energy",
+    "XLI":  "Industrials",
+    "XLP":  "Consumer Staples",
+    "XLY":  "Consumer Discretionary",
+    "XLU":  "Utilities",
+    "XLRE": "Real Estate",
+    "XLB":  "Materials",
+    "XLC":  "Communication Services",
 }
 
 # ── Key loader ────────────────────────────────────────────────────────────────
@@ -455,6 +510,140 @@ def refresh_worldbank(country: str = "US") -> list[dict]:
         time.sleep(0.5)
 
     return results
+
+# ── BLS Subgroup Fetcher (Priority 3) ────────────────────────────────────────
+
+def refresh_bls_subgroup(series_dict: dict[str, str],
+                          subdir: str,
+                          api_key: str | None = None) -> list[dict]:
+    """
+    Generic BLS refresh for any series dict.
+    Saves CSVs to data/Sector/{subdir}/{series_id}.csv.
+    Reuses fetch_bls_series() and the same incremental merge pattern as refresh_bls().
+    """
+    results = []
+    current_year = datetime.now().year
+
+    for series_id, label in series_dict.items():
+        t0 = time.time()
+        status = {"series_id": series_id, "source": f"BLS/{subdir}",
+                  "status": "ok", "new_rows": 0, "error": None}
+        try:
+            csv_path = _sector_csv_path(subdir, f"{series_id}.csv")
+            existing = _load_sector_existing(csv_path, series_id)
+
+            if existing.empty or existing["observation_date"].isna().all():
+                start_year = 1990
+            else:
+                last_year  = existing["observation_date"].max().year
+                start_year = max(1990, last_year)
+
+            log.info("    BLS  %-20s  [%s]  start=%d", series_id, label, start_year)
+            fetched = fetch_bls_series([series_id], start_year, current_year, api_key)
+            new_rows = fetched.get(series_id, pd.DataFrame())
+            status["new_rows"] = _merge_and_save_sector(existing, new_rows, series_id, csv_path)
+
+        except Exception as exc:
+            status["status"] = "error"
+            status["error"]  = str(exc)
+            log.warning("    BLS  %s: FAILED — %s", series_id, exc)
+
+        status["elapsed"] = round(time.time() - t0, 1)
+        results.append(status)
+        time.sleep(0.5)
+
+    return results
+
+
+def refresh_bls_wages(api_key: str | None = None) -> list[dict]:
+    """Refresh average hourly earnings by sector (BLS suffix 008)."""
+    return refresh_bls_subgroup(BLS_WAGES_SERIES, "BLS_Wages", api_key)
+
+
+def refresh_bls_hours(api_key: str | None = None) -> list[dict]:
+    """Refresh average weekly hours by sector (BLS suffix 007)."""
+    return refresh_bls_subgroup(BLS_HOURS_SERIES, "BLS_Hours", api_key)
+
+
+def refresh_jolts(api_key: str | None = None) -> list[dict]:
+    """Refresh JOLTS job openings by sector."""
+    return refresh_bls_subgroup(JOLTS_SERIES, "JOLTS", api_key)
+
+
+# ── Sector ETF Fetcher (Priority 4) ──────────────────────────────────────────
+
+def refresh_sector_etfs(symbols: list[str] | None = None,
+                         from_date: str = "2000-01-01") -> list[dict]:
+    """
+    Fetch monthly close prices for S&P 500 sector ETFs via yfinance.
+    Saves each ticker to data/Sector/ETF/{ticker}.csv in the standard
+    [observation_date, {ticker}] format used throughout the project.
+    Dates are normalised to month-start timestamps.
+    """
+    try:
+        import yfinance as yf
+    except ImportError:
+        log.error("yfinance not installed — pip install yfinance")
+        return [{"series_id": "ETF_all", "source": "yfinance",
+                  "status": "error", "new_rows": 0, "elapsed": 0.0,
+                  "error": "yfinance not installed"}]
+
+    if symbols is None:
+        symbols = list(SECTOR_ETFS.keys())
+
+    results = []
+    for ticker in symbols:
+        t0 = time.time()
+        status = {"series_id": ticker, "source": "yfinance/ETF",
+                  "status": "ok", "new_rows": 0, "error": None}
+        try:
+            csv_path = _sector_csv_path("ETF", f"{ticker}.csv")
+            existing = _load_sector_existing(csv_path, ticker)
+
+            if not existing.empty and not existing["observation_date"].isna().all():
+                last_dt    = existing["observation_date"].max()
+                start_date = (last_dt - pd.DateOffset(months=2)).strftime("%Y-%m-%d")
+            else:
+                start_date = from_date
+
+            log.info("    ETF  %-6s  [%s]  start=%s",
+                     ticker, SECTOR_ETFS.get(ticker, ""), start_date)
+
+            tkr  = yf.Ticker(ticker)
+            hist = tkr.history(start=start_date, interval="1mo", auto_adjust=True)
+            if hist.empty:
+                log.warning("    ETF  %s: no data returned", ticker)
+                status["elapsed"] = round(time.time() - t0, 1)
+                results.append(status)
+                continue
+
+            new_rows = (
+                hist[["Close"]]
+                .rename(columns={"Close": ticker})
+                .reset_index()
+                .rename(columns={"Date": "observation_date"})
+            )
+            new_rows["observation_date"] = (
+                pd.to_datetime(new_rows["observation_date"])
+                .dt.to_period("M")
+                .dt.to_timestamp()
+            )
+            status["new_rows"] = _merge_and_save_sector(
+                existing, new_rows, ticker, csv_path
+            )
+            log.info("    ETF  %-6s  +%d rows", ticker, status["new_rows"])
+
+        except Exception as exc:
+            status["status"] = "error"
+            status["error"]  = str(exc)
+            log.warning("    ETF  %s: FAILED — %s", ticker, exc)
+
+        status["elapsed"] = round(time.time() - t0, 1)
+        results.append(status)
+        time.sleep(0.2)
+
+    return results
+
 
 # ── Trading Economics Fetcher (stub — requires commercial credentials) ─────────
 

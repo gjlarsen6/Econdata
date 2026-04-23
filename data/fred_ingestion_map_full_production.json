@@ -692,6 +692,410 @@
         "resample_to_monthly": "mean",
         "notes": "Discontinued 2002-02-19 to 2006-02-09; interpolated over that gap"
       }
+    },
+    "IPMAN": {
+      "title": "Industrial Production: Manufacturing (NAICS)",
+      "source": "Board of Governors of the Federal Reserve System (US)",
+      "release": "G.17 Industrial Production and Capacity Utilization",
+      "frequency": "Monthly",
+      "units": "Index 2017=100",
+      "seasonal_adjustment": "Seasonally Adjusted",
+      "series_page_url": "https://fred.stlouisfed.org/series/IPMAN",
+      "data_download_url": "https://fred.stlouisfed.org/data/IPMAN",
+      "api_series_url": "https://api.stlouisfed.org/fred/series?series_id=IPMAN&api_key={api_key}&file_type=json",
+      "api_observations_url": "https://api.stlouisfed.org/fred/series/observations?series_id=IPMAN&api_key={api_key}&file_type=json",
+      "api_release_url": "https://api.stlouisfed.org/fred/series/release?series_id=IPMAN&api_key={api_key}&file_type=json",
+      "api_vintages_url": "https://api.stlouisfed.org/fred/series/vintagedates?series_id=IPMAN&api_key={api_key}&file_type=json",
+      "pipeline_flags": {
+        "supports_standard_monthly_ingestion": true,
+        "model_group": "IndustrialProduction"
+      }
+    },
+    "IPUTIL": {
+      "title": "Industrial Production: Utilities",
+      "source": "Board of Governors of the Federal Reserve System (US)",
+      "release": "G.17 Industrial Production and Capacity Utilization",
+      "frequency": "Monthly",
+      "units": "Index 2017=100",
+      "seasonal_adjustment": "Seasonally Adjusted",
+      "series_page_url": "https://fred.stlouisfed.org/series/IPUTIL",
+      "data_download_url": "https://fred.stlouisfed.org/data/IPUTIL",
+      "api_series_url": "https://api.stlouisfed.org/fred/series?series_id=IPUTIL&api_key={api_key}&file_type=json",
+      "api_observations_url": "https://api.stlouisfed.org/fred/series/observations?series_id=IPUTIL&api_key={api_key}&file_type=json",
+      "api_release_url": "https://api.stlouisfed.org/fred/series/release?series_id=IPUTIL&api_key={api_key}&file_type=json",
+      "api_vintages_url": "https://api.stlouisfed.org/fred/series/vintagedates?series_id=IPUTIL&api_key={api_key}&file_type=json",
+      "pipeline_flags": {
+        "supports_standard_monthly_ingestion": true,
+        "model_group": "IndustrialProduction"
+      }
+    },
+    "IPMINE": {
+      "title": "Industrial Production: Mining",
+      "source": "Board of Governors of the Federal Reserve System (US)",
+      "release": "G.17 Industrial Production and Capacity Utilization",
+      "frequency": "Monthly",
+      "units": "Index 2017=100",
+      "seasonal_adjustment": "Seasonally Adjusted",
+      "series_page_url": "https://fred.stlouisfed.org/series/IPMINE",
+      "data_download_url": "https://fred.stlouisfed.org/data/IPMINE",
+      "api_series_url": "https://api.stlouisfed.org/fred/series?series_id=IPMINE&api_key={api_key}&file_type=json",
+      "api_observations_url": "https://api.stlouisfed.org/fred/series/observations?series_id=IPMINE&api_key={api_key}&file_type=json",
+      "api_release_url": "https://api.stlouisfed.org/fred/series/release?series_id=IPMINE&api_key={api_key}&file_type=json",
+      "api_vintages_url": "https://api.stlouisfed.org/fred/series/vintagedates?series_id=IPMINE&api_key={api_key}&file_type=json",
+      "pipeline_flags": {
+        "supports_standard_monthly_ingestion": true,
+        "model_group": "IndustrialProduction"
+      }
+    },
+    "IPCONGD": {
+      "title": "Industrial Production: Consumer Goods",
+      "source": "Board of Governors of the Federal Reserve System (US)",
+      "release": "G.17 Industrial Production and Capacity Utilization",
+      "frequency": "Monthly",
+      "units": "Index 2017=100",
+      "seasonal_adjustment": "Seasonally Adjusted",
+      "series_page_url": "https://fred.stlouisfed.org/series/IPCONGD",
+      "data_download_url": "https://fred.stlouisfed.org/data/IPCONGD",
+      "api_series_url": "https://api.stlouisfed.org/fred/series?series_id=IPCONGD&api_key={api_key}&file_type=json",
+      "api_observations_url": "https://api.stlouisfed.org/fred/series/observations?series_id=IPCONGD&api_key={api_key}&file_type=json",
+      "api_release_url": "https://api.stlouisfed.org/fred/series/release?series_id=IPCONGD&api_key={api_key}&file_type=json",
+      "api_vintages_url": "https://api.stlouisfed.org/fred/series/vintagedates?series_id=IPCONGD&api_key={api_key}&file_type=json",
+      "pipeline_flags": {
+        "supports_standard_monthly_ingestion": true,
+        "model_group": "IndustrialProduction"
+      }
+    },
+    "IPBUSEQ": {
+      "title": "Industrial Production: Business Equipment",
+      "source": "Board of Governors of the Federal Reserve System (US)",
+      "release": "G.17 Industrial Production and Capacity Utilization",
+      "frequency": "Monthly",
+      "units": "Index 2017=100",
+      "seasonal_adjustment": "Seasonally Adjusted",
+      "series_page_url": "https://fred.stlouisfed.org/series/IPBUSEQ",
+      "data_download_url": "https://fred.stlouisfed.org/data/IPBUSEQ",
+      "api_series_url": "https://api.stlouisfed.org/fred/series?series_id=IPBUSEQ&api_key={api_key}&file_type=json",
+      "api_observations_url": "https://api.stlouisfed.org/fred/series/observations?series_id=IPBUSEQ&api_key={api_key}&file_type=json",
+      "api_release_url": "https://api.stlouisfed.org/fred/series/release?series_id=IPBUSEQ&api_key={api_key}&file_type=json",
+      "api_vintages_url": "https://api.stlouisfed.org/fred/series/vintagedates?series_id=IPBUSEQ&api_key={api_key}&file_type=json",
+      "pipeline_flags": {
+        "supports_standard_monthly_ingestion": true,
+        "model_group": "IndustrialProduction"
+      }
+    },
+    "IPMAT": {
+      "title": "Industrial Production: Materials",
+      "source": "Board of Governors of the Federal Reserve System (US)",
+      "release": "G.17 Industrial Production and Capacity Utilization",
+      "frequency": "Monthly",
+      "units": "Index 2017=100",
+      "seasonal_adjustment": "Seasonally Adjusted",
+      "series_page_url": "https://fred.stlouisfed.org/series/IPMAT",
+      "data_download_url": "https://fred.stlouisfed.org/data/IPMAT",
+      "api_series_url": "https://api.stlouisfed.org/fred/series?series_id=IPMAT&api_key={api_key}&file_type=json",
+      "api_observations_url": "https://api.stlouisfed.org/fred/series/observations?series_id=IPMAT&api_key={api_key}&file_type=json",
+      "api_release_url": "https://api.stlouisfed.org/fred/series/release?series_id=IPMAT&api_key={api_key}&file_type=json",
+      "api_vintages_url": "https://api.stlouisfed.org/fred/series/vintagedates?series_id=IPMAT&api_key={api_key}&file_type=json",
+      "pipeline_flags": {
+        "supports_standard_monthly_ingestion": true,
+        "model_group": "IndustrialProduction"
+      }
+    },
+    "IPDCONGD": {
+      "title": "Industrial Production: Durable Consumer Goods",
+      "source": "Board of Governors of the Federal Reserve System (US)",
+      "release": "G.17 Industrial Production and Capacity Utilization",
+      "frequency": "Monthly",
+      "units": "Index 2017=100",
+      "seasonal_adjustment": "Seasonally Adjusted",
+      "series_page_url": "https://fred.stlouisfed.org/series/IPDCONGD",
+      "data_download_url": "https://fred.stlouisfed.org/data/IPDCONGD",
+      "api_series_url": "https://api.stlouisfed.org/fred/series?series_id=IPDCONGD&api_key={api_key}&file_type=json",
+      "api_observations_url": "https://api.stlouisfed.org/fred/series/observations?series_id=IPDCONGD&api_key={api_key}&file_type=json",
+      "api_release_url": "https://api.stlouisfed.org/fred/series/release?series_id=IPDCONGD&api_key={api_key}&file_type=json",
+      "api_vintages_url": "https://api.stlouisfed.org/fred/series/vintagedates?series_id=IPDCONGD&api_key={api_key}&file_type=json",
+      "pipeline_flags": {
+        "supports_standard_monthly_ingestion": true,
+        "model_group": "IndustrialProduction"
+      }
+    },
+    "IPNCONGD": {
+      "title": "Industrial Production: Nondurable Consumer Goods",
+      "source": "Board of Governors of the Federal Reserve System (US)",
+      "release": "G.17 Industrial Production and Capacity Utilization",
+      "frequency": "Monthly",
+      "units": "Index 2017=100",
+      "seasonal_adjustment": "Seasonally Adjusted",
+      "series_page_url": "https://fred.stlouisfed.org/series/IPNCONGD",
+      "data_download_url": "https://fred.stlouisfed.org/data/IPNCONGD",
+      "api_series_url": "https://api.stlouisfed.org/fred/series?series_id=IPNCONGD&api_key={api_key}&file_type=json",
+      "api_observations_url": "https://api.stlouisfed.org/fred/series/observations?series_id=IPNCONGD&api_key={api_key}&file_type=json",
+      "api_release_url": "https://api.stlouisfed.org/fred/series/release?series_id=IPNCONGD&api_key={api_key}&file_type=json",
+      "api_vintages_url": "https://api.stlouisfed.org/fred/series/vintagedates?series_id=IPNCONGD&api_key={api_key}&file_type=json",
+      "pipeline_flags": {
+        "supports_standard_monthly_ingestion": true,
+        "model_group": "IndustrialProduction"
+      }
+    },
+    "NAPM": {
+      "title": "ISM Manufacturing: PMI Composite Index",
+      "source": "Institute for Supply Management",
+      "release": "Manufacturing ISM Report on Business",
+      "frequency": "Monthly",
+      "units": "Index",
+      "seasonal_adjustment": "Not Seasonally Adjusted",
+      "series_page_url": "https://fred.stlouisfed.org/series/NAPM",
+      "data_download_url": "https://fred.stlouisfed.org/data/NAPM",
+      "api_series_url": "https://api.stlouisfed.org/fred/series?series_id=NAPM&api_key={api_key}&file_type=json",
+      "api_observations_url": "https://api.stlouisfed.org/fred/series/observations?series_id=NAPM&api_key={api_key}&file_type=json",
+      "api_release_url": "https://api.stlouisfed.org/fred/series/release?series_id=NAPM&api_key={api_key}&file_type=json",
+      "api_vintages_url": "https://api.stlouisfed.org/fred/series/vintagedates?series_id=NAPM&api_key={api_key}&file_type=json",
+      "notes": [">50 = expansion, <50 = contraction; best single monthly leading indicator for manufacturing GDP"],
+      "pipeline_flags": {
+        "supports_standard_monthly_ingestion": true,
+        "model_group": "ISMIndicators"
+      }
+    },
+    "NMFCI": {
+      "title": "ISM Non-Manufacturing (Services) PMI Composite Index",
+      "source": "Institute for Supply Management",
+      "release": "Non-Manufacturing ISM Report on Business",
+      "frequency": "Monthly",
+      "units": "Index",
+      "seasonal_adjustment": "Not Seasonally Adjusted",
+      "series_page_url": "https://fred.stlouisfed.org/series/NMFCI",
+      "data_download_url": "https://fred.stlouisfed.org/data/NMFCI",
+      "api_series_url": "https://api.stlouisfed.org/fred/series?series_id=NMFCI&api_key={api_key}&file_type=json",
+      "api_observations_url": "https://api.stlouisfed.org/fred/series/observations?series_id=NMFCI&api_key={api_key}&file_type=json",
+      "api_release_url": "https://api.stlouisfed.org/fred/series/release?series_id=NMFCI&api_key={api_key}&file_type=json",
+      "api_vintages_url": "https://api.stlouisfed.org/fred/series/vintagedates?series_id=NMFCI&api_key={api_key}&file_type=json",
+      "notes": [">50 = expansion; covers ~80% of US GDP via services sector"],
+      "pipeline_flags": {
+        "supports_standard_monthly_ingestion": true,
+        "model_group": "ISMIndicators"
+      }
+    },
+    "NAPMPROD": {
+      "title": "ISM Manufacturing: Production Index",
+      "source": "Institute for Supply Management",
+      "release": "Manufacturing ISM Report on Business",
+      "frequency": "Monthly",
+      "units": "Index",
+      "seasonal_adjustment": "Not Seasonally Adjusted",
+      "series_page_url": "https://fred.stlouisfed.org/series/NAPMPROD",
+      "data_download_url": "https://fred.stlouisfed.org/data/NAPMPROD",
+      "api_series_url": "https://api.stlouisfed.org/fred/series?series_id=NAPMPROD&api_key={api_key}&file_type=json",
+      "api_observations_url": "https://api.stlouisfed.org/fred/series/observations?series_id=NAPMPROD&api_key={api_key}&file_type=json",
+      "api_release_url": "https://api.stlouisfed.org/fred/series/release?series_id=NAPMPROD&api_key={api_key}&file_type=json",
+      "api_vintages_url": "https://api.stlouisfed.org/fred/series/vintagedates?series_id=NAPMPROD&api_key={api_key}&file_type=json",
+      "pipeline_flags": {
+        "supports_standard_monthly_ingestion": true,
+        "model_group": "ISMIndicators"
+      }
+    },
+    "NAPMNEWO": {
+      "title": "ISM Manufacturing: New Orders Index",
+      "source": "Institute for Supply Management",
+      "release": "Manufacturing ISM Report on Business",
+      "frequency": "Monthly",
+      "units": "Index",
+      "seasonal_adjustment": "Not Seasonally Adjusted",
+      "series_page_url": "https://fred.stlouisfed.org/series/NAPMNEWO",
+      "data_download_url": "https://fred.stlouisfed.org/data/NAPMNEWO",
+      "api_series_url": "https://api.stlouisfed.org/fred/series?series_id=NAPMNEWO&api_key={api_key}&file_type=json",
+      "api_observations_url": "https://api.stlouisfed.org/fred/series/observations?series_id=NAPMNEWO&api_key={api_key}&file_type=json",
+      "api_release_url": "https://api.stlouisfed.org/fred/series/release?series_id=NAPMNEWO&api_key={api_key}&file_type=json",
+      "api_vintages_url": "https://api.stlouisfed.org/fred/series/vintagedates?series_id=NAPMNEWO&api_key={api_key}&file_type=json",
+      "notes": ["Best forward-looking sub-index; leads GDP direction by 2-3 months"],
+      "pipeline_flags": {
+        "supports_standard_monthly_ingestion": true,
+        "model_group": "ISMIndicators"
+      }
+    },
+    "NAPMEMPL": {
+      "title": "ISM Manufacturing: Employment Index",
+      "source": "Institute for Supply Management",
+      "release": "Manufacturing ISM Report on Business",
+      "frequency": "Monthly",
+      "units": "Index",
+      "seasonal_adjustment": "Not Seasonally Adjusted",
+      "series_page_url": "https://fred.stlouisfed.org/series/NAPMEMPL",
+      "data_download_url": "https://fred.stlouisfed.org/data/NAPMEMPL",
+      "api_series_url": "https://api.stlouisfed.org/fred/series?series_id=NAPMEMPL&api_key={api_key}&file_type=json",
+      "api_observations_url": "https://api.stlouisfed.org/fred/series/observations?series_id=NAPMEMPL&api_key={api_key}&file_type=json",
+      "api_release_url": "https://api.stlouisfed.org/fred/series/release?series_id=NAPMEMPL&api_key={api_key}&file_type=json",
+      "api_vintages_url": "https://api.stlouisfed.org/fred/series/vintagedates?series_id=NAPMEMPL&api_key={api_key}&file_type=json",
+      "pipeline_flags": {
+        "supports_standard_monthly_ingestion": true,
+        "model_group": "ISMIndicators"
+      }
+    },
+    "NAPMVNDR": {
+      "title": "ISM Manufacturing: Supplier Deliveries Index",
+      "source": "Institute for Supply Management",
+      "release": "Manufacturing ISM Report on Business",
+      "frequency": "Monthly",
+      "units": "Index",
+      "seasonal_adjustment": "Not Seasonally Adjusted",
+      "series_page_url": "https://fred.stlouisfed.org/series/NAPMVNDR",
+      "data_download_url": "https://fred.stlouisfed.org/data/NAPMVNDR",
+      "api_series_url": "https://api.stlouisfed.org/fred/series?series_id=NAPMVNDR&api_key={api_key}&file_type=json",
+      "api_observations_url": "https://api.stlouisfed.org/fred/series/observations?series_id=NAPMVNDR&api_key={api_key}&file_type=json",
+      "api_release_url": "https://api.stlouisfed.org/fred/series/release?series_id=NAPMVNDR&api_key={api_key}&file_type=json",
+      "api_vintages_url": "https://api.stlouisfed.org/fred/series/vintagedates?series_id=NAPMVNDR&api_key={api_key}&file_type=json",
+      "notes": ["Supply chain stress proxy; inverted — higher = slower deliveries = more stress"],
+      "pipeline_flags": {
+        "supports_standard_monthly_ingestion": true,
+        "model_group": "ISMIndicators"
+      }
+    },
+    "MCUMFN": {
+      "title": "Capacity Utilization: Manufacturing (NAICS)",
+      "source": "Board of Governors of the Federal Reserve System (US)",
+      "release": "G.17 Industrial Production and Capacity Utilization",
+      "frequency": "Monthly",
+      "units": "Percent of Capacity",
+      "seasonal_adjustment": "Seasonally Adjusted",
+      "series_page_url": "https://fred.stlouisfed.org/series/MCUMFN",
+      "data_download_url": "https://fred.stlouisfed.org/data/MCUMFN",
+      "api_series_url": "https://api.stlouisfed.org/fred/series?series_id=MCUMFN&api_key={api_key}&file_type=json",
+      "api_observations_url": "https://api.stlouisfed.org/fred/series/observations?series_id=MCUMFN&api_key={api_key}&file_type=json",
+      "api_release_url": "https://api.stlouisfed.org/fred/series/release?series_id=MCUMFN&api_key={api_key}&file_type=json",
+      "api_vintages_url": "https://api.stlouisfed.org/fred/series/vintagedates?series_id=MCUMFN&api_key={api_key}&file_type=json",
+      "pipeline_flags": {
+        "supports_standard_monthly_ingestion": true,
+        "model_group": "CapacityUtilSector"
+      }
+    },
+    "CAPUTLG211S": {
+      "title": "Capacity Utilization: Mining (NAICS)",
+      "source": "Board of Governors of the Federal Reserve System (US)",
+      "release": "G.17 Industrial Production and Capacity Utilization",
+      "frequency": "Monthly",
+      "units": "Percent of Capacity",
+      "seasonal_adjustment": "Seasonally Adjusted",
+      "series_page_url": "https://fred.stlouisfed.org/series/CAPUTLG211S",
+      "data_download_url": "https://fred.stlouisfed.org/data/CAPUTLG211S",
+      "api_series_url": "https://api.stlouisfed.org/fred/series?series_id=CAPUTLG211S&api_key={api_key}&file_type=json",
+      "api_observations_url": "https://api.stlouisfed.org/fred/series/observations?series_id=CAPUTLG211S&api_key={api_key}&file_type=json",
+      "api_release_url": "https://api.stlouisfed.org/fred/series/release?series_id=CAPUTLG211S&api_key={api_key}&file_type=json",
+      "api_vintages_url": "https://api.stlouisfed.org/fred/series/vintagedates?series_id=CAPUTLG211S&api_key={api_key}&file_type=json",
+      "pipeline_flags": {
+        "supports_standard_monthly_ingestion": true,
+        "model_group": "CapacityUtilSector"
+      }
+    },
+    "CAPUTLB58SQ": {
+      "title": "Capacity Utilization: Durable Goods",
+      "source": "Board of Governors of the Federal Reserve System (US)",
+      "release": "G.17 Industrial Production and Capacity Utilization",
+      "frequency": "Quarterly",
+      "units": "Percent of Capacity",
+      "seasonal_adjustment": "Seasonally Adjusted",
+      "series_page_url": "https://fred.stlouisfed.org/series/CAPUTLB58SQ",
+      "data_download_url": "https://fred.stlouisfed.org/data/CAPUTLB58SQ",
+      "api_series_url": "https://api.stlouisfed.org/fred/series?series_id=CAPUTLB58SQ&api_key={api_key}&file_type=json",
+      "api_observations_url": "https://api.stlouisfed.org/fred/series/observations?series_id=CAPUTLB58SQ&api_key={api_key}&file_type=json",
+      "api_release_url": "https://api.stlouisfed.org/fred/series/release?series_id=CAPUTLB58SQ&api_key={api_key}&file_type=json",
+      "api_vintages_url": "https://api.stlouisfed.org/fred/series/vintagedates?series_id=CAPUTLB58SQ&api_key={api_key}&file_type=json",
+      "pipeline_flags": {
+        "supports_standard_quarterly_ingestion": true,
+        "model_group": "CapacityUtilSector",
+        "resample_to_monthly": "ffill"
+      }
+    },
+    "BUSLOANS": {
+      "title": "Commercial and Industrial Loans, All Commercial Banks",
+      "source": "Board of Governors of the Federal Reserve System (US)",
+      "release": "H.8 Assets and Liabilities of Commercial Banks in the United States",
+      "frequency": "Weekly",
+      "units": "Billions of Dollars",
+      "seasonal_adjustment": "Seasonally Adjusted",
+      "series_page_url": "https://fred.stlouisfed.org/series/BUSLOANS",
+      "data_download_url": "https://fred.stlouisfed.org/data/BUSLOANS",
+      "api_series_url": "https://api.stlouisfed.org/fred/series?series_id=BUSLOANS&api_key={api_key}&file_type=json",
+      "api_observations_url": "https://api.stlouisfed.org/fred/series/observations?series_id=BUSLOANS&api_key={api_key}&file_type=json",
+      "api_release_url": "https://api.stlouisfed.org/fred/series/release?series_id=BUSLOANS&api_key={api_key}&file_type=json",
+      "api_vintages_url": "https://api.stlouisfed.org/fred/series/vintagedates?series_id=BUSLOANS&api_key={api_key}&file_type=json",
+      "pipeline_flags": {
+        "supports_standard_monthly_ingestion": true,
+        "model_group": "CreditIndicators",
+        "resample_to_monthly": "mean"
+      }
+    },
+    "REALLN": {
+      "title": "Real Estate Loans, All Commercial Banks",
+      "source": "Board of Governors of the Federal Reserve System (US)",
+      "release": "H.8 Assets and Liabilities of Commercial Banks in the United States",
+      "frequency": "Weekly",
+      "units": "Billions of Dollars",
+      "seasonal_adjustment": "Seasonally Adjusted",
+      "series_page_url": "https://fred.stlouisfed.org/series/REALLN",
+      "data_download_url": "https://fred.stlouisfed.org/data/REALLN",
+      "api_series_url": "https://api.stlouisfed.org/fred/series?series_id=REALLN&api_key={api_key}&file_type=json",
+      "api_observations_url": "https://api.stlouisfed.org/fred/series/observations?series_id=REALLN&api_key={api_key}&file_type=json",
+      "api_release_url": "https://api.stlouisfed.org/fred/series/release?series_id=REALLN&api_key={api_key}&file_type=json",
+      "api_vintages_url": "https://api.stlouisfed.org/fred/series/vintagedates?series_id=REALLN&api_key={api_key}&file_type=json",
+      "pipeline_flags": {
+        "supports_standard_monthly_ingestion": true,
+        "model_group": "CreditIndicators",
+        "resample_to_monthly": "mean"
+      }
+    },
+    "CONSUMER": {
+      "title": "Consumer Loans, All Commercial Banks",
+      "source": "Board of Governors of the Federal Reserve System (US)",
+      "release": "H.8 Assets and Liabilities of Commercial Banks in the United States",
+      "frequency": "Weekly",
+      "units": "Billions of Dollars",
+      "seasonal_adjustment": "Seasonally Adjusted",
+      "series_page_url": "https://fred.stlouisfed.org/series/CONSUMER",
+      "data_download_url": "https://fred.stlouisfed.org/data/CONSUMER",
+      "api_series_url": "https://api.stlouisfed.org/fred/series?series_id=CONSUMER&api_key={api_key}&file_type=json",
+      "api_observations_url": "https://api.stlouisfed.org/fred/series/observations?series_id=CONSUMER&api_key={api_key}&file_type=json",
+      "api_release_url": "https://api.stlouisfed.org/fred/series/release?series_id=CONSUMER&api_key={api_key}&file_type=json",
+      "api_vintages_url": "https://api.stlouisfed.org/fred/series/vintagedates?series_id=CONSUMER&api_key={api_key}&file_type=json",
+      "pipeline_flags": {
+        "supports_standard_monthly_ingestion": true,
+        "model_group": "CreditIndicators",
+        "resample_to_monthly": "mean"
+      }
+    },
+    "WPU05": {
+      "title": "Producer Price Index by Commodity: Fuels and Related Products and Power",
+      "source": "U.S. Bureau of Labor Statistics",
+      "release": "Producer Price Indexes",
+      "frequency": "Monthly",
+      "units": "Index 1982=100",
+      "seasonal_adjustment": "Not Seasonally Adjusted",
+      "series_page_url": "https://fred.stlouisfed.org/series/WPU05",
+      "data_download_url": "https://fred.stlouisfed.org/data/WPU05",
+      "api_series_url": "https://api.stlouisfed.org/fred/series?series_id=WPU05&api_key={api_key}&file_type=json",
+      "api_observations_url": "https://api.stlouisfed.org/fred/series/observations?series_id=WPU05&api_key={api_key}&file_type=json",
+      "api_release_url": "https://api.stlouisfed.org/fred/series/release?series_id=WPU05&api_key={api_key}&file_type=json",
+      "api_vintages_url": "https://api.stlouisfed.org/fred/series/vintagedates?series_id=WPU05&api_key={api_key}&file_type=json",
+      "pipeline_flags": {
+        "supports_standard_monthly_ingestion": true,
+        "model_group": "CreditIndicators"
+      }
+    },
+    "WPU10": {
+      "title": "Producer Price Index by Commodity: Farm Products",
+      "source": "U.S. Bureau of Labor Statistics",
+      "release": "Producer Price Indexes",
+      "frequency": "Monthly",
+      "units": "Index 1982=100",
+      "seasonal_adjustment": "Not Seasonally Adjusted",
+      "series_page_url": "https://fred.stlouisfed.org/series/WPU10",
+      "data_download_url": "https://fred.stlouisfed.org/data/WPU10",
+      "api_series_url": "https://api.stlouisfed.org/fred/series?series_id=WPU10&api_key={api_key}&file_type=json",
+      "api_observations_url": "https://api.stlouisfed.org/fred/series/observations?series_id=WPU10&api_key={api_key}&file_type=json",
+      "api_release_url": "https://api.stlouisfed.org/fred/series/release?series_id=WPU10&api_key={api_key}&file_type=json",
+      "api_vintages_url": "https://api.stlouisfed.org/fred/series/vintagedates?series_id=WPU10&api_key={api_key}&file_type=json",
+      "pipeline_flags": {
+        "supports_standard_monthly_ingestion": true,
+        "model_group": "CreditIndicators"
+      }
     }
   },
   "release_buckets": {

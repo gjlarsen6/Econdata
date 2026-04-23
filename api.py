@@ -52,21 +52,34 @@ REQUIRED_RESULTS: dict[str, Path] = {
 }
 
 OPTIONAL_RESULTS: dict[str, Path] = {
-    "sector_bls":        OUTPUT_DIR / "results_sector_bls.json",
-    "sector_bea":        OUTPUT_DIR / "results_sector_bea.json",
-    "sector_worldbank":  OUTPUT_DIR / "results_sector_worldbank.json",
-    "vc_ai":             OUTPUT_DIR / "results_vc_ai.json",
-    "vc_fintech":        OUTPUT_DIR / "results_vc_fintech.json",
-    "vc_healthcare":     OUTPUT_DIR / "results_vc_healthcare.json",
+    # Sector — BLS/BEA/WorldBank (original)
+    "sector_bls":           OUTPUT_DIR / "results_sector_bls.json",
+    "sector_bea":           OUTPUT_DIR / "results_sector_bea.json",
+    "sector_worldbank":     OUTPUT_DIR / "results_sector_worldbank.json",
+    # Sector — BLS subgroups (Priority 3)
+    "sector_bls_wages":     OUTPUT_DIR / "results_sector_bls_wages.json",
+    "sector_bls_hours":     OUTPUT_DIR / "results_sector_bls_hours.json",
+    "sector_jolts":         OUTPUT_DIR / "results_sector_jolts.json",
+    # Sector — ETFs (Priority 4)
+    "sector_etf":           OUTPUT_DIR / "results_sector_etf.json",
+    # Venture Capital
+    "vc_ai":                OUTPUT_DIR / "results_vc_ai.json",
+    "vc_fintech":           OUTPUT_DIR / "results_vc_fintech.json",
+    "vc_healthcare":        OUTPUT_DIR / "results_vc_healthcare.json",
     # Phase 0 — free FRED extensions
-    "market_risk":       OUTPUT_DIR / "results_market_risk.json",
-    "commodities":       OUTPUT_DIR / "results_commodities.json",
-    "yield_curve":       OUTPUT_DIR / "results_yield_curve.json",
-    "financial_stress":  OUTPUT_DIR / "results_financial_stress.json",
-    "regime":            OUTPUT_DIR / "regime_history.json",
+    "market_risk":          OUTPUT_DIR / "results_market_risk.json",
+    "commodities":          OUTPUT_DIR / "results_commodities.json",
+    "yield_curve":          OUTPUT_DIR / "results_yield_curve.json",
+    "financial_stress":     OUTPUT_DIR / "results_financial_stress.json",
+    "regime":               OUTPUT_DIR / "regime_history.json",
+    # Phase 1 — Industrial / ISM PMI / Capacity Util / Credit (industrial_model.py)
+    "industrial_production":      OUTPUT_DIR / "results_industrial_production.json",
+    "industrial_ism_pmi":         OUTPUT_DIR / "results_industrial_ism_pmi.json",
+    "industrial_capacity_util":   OUTPUT_DIR / "results_industrial_capacity_util.json",
+    "industrial_credit":          OUTPUT_DIR / "results_industrial_credit.json",
     # Phase 2 — Financial News ML
-    "news_sentiment":    OUTPUT_DIR / "results_news_sentiment.json",
-    "news_volume":       OUTPUT_DIR / "results_news_volume.json",
+    "news_sentiment":       OUTPUT_DIR / "results_news_sentiment.json",
+    "news_volume":          OUTPUT_DIR / "results_news_volume.json",
 }
 
 ALL_RESULTS: dict[str, Path] = {**REQUIRED_RESULTS, **OPTIONAL_RESULTS}
@@ -111,6 +124,32 @@ _HISTORY_FILE_MAP: dict[str, Path] = {
     "DGS5":            DATA_DIR / "YieldCurve" / "DGS5.csv",
     "DGS10":           DATA_DIR / "YieldCurve" / "DGS10.csv",
     "DGS30":           DATA_DIR / "YieldCurve" / "DGS30.csv",
+    # IndustrialProduction (Phase 1)
+    "IPMAN":           DATA_DIR / "IndustrialProduction" / "IPMAN.csv",
+    "IPUTIL":          DATA_DIR / "IndustrialProduction" / "IPUTIL.csv",
+    "IPMINE":          DATA_DIR / "IndustrialProduction" / "IPMINE.csv",
+    "IPCONGD":         DATA_DIR / "IndustrialProduction" / "IPCONGD.csv",
+    "IPBUSEQ":         DATA_DIR / "IndustrialProduction" / "IPBUSEQ.csv",
+    "IPMAT":           DATA_DIR / "IndustrialProduction" / "IPMAT.csv",
+    "IPDCONGD":        DATA_DIR / "IndustrialProduction" / "IPDCONGD.csv",
+    "IPNCONGD":        DATA_DIR / "IndustrialProduction" / "IPNCONGD.csv",
+    # ISMIndicators (Phase 1)
+    "NAPM":            DATA_DIR / "ISMIndicators" / "NAPM.csv",
+    "NMFCI":           DATA_DIR / "ISMIndicators" / "NMFCI.csv",
+    "NAPMPROD":        DATA_DIR / "ISMIndicators" / "NAPMPROD.csv",
+    "NAPMNEWO":        DATA_DIR / "ISMIndicators" / "NAPMNEWO.csv",
+    "NAPMEMPL":        DATA_DIR / "ISMIndicators" / "NAPMEMPL.csv",
+    "NAPMVNDR":        DATA_DIR / "ISMIndicators" / "NAPMVNDR.csv",
+    # CapacityUtilSector (Phase 1)
+    "MCUMFN":          DATA_DIR / "CapacityUtilSector" / "MCUMFN.csv",
+    "CAPUTLG211S":     DATA_DIR / "CapacityUtilSector" / "CAPUTLG211S.csv",
+    "CAPUTLB58SQ":     DATA_DIR / "CapacityUtilSector" / "CAPUTLB58SQ.csv",
+    # CreditIndicators (Phase 1)
+    "BUSLOANS":        DATA_DIR / "CreditIndicators" / "BUSLOANS.csv",
+    "REALLN":          DATA_DIR / "CreditIndicators" / "REALLN.csv",
+    "CONSUMER":        DATA_DIR / "CreditIndicators" / "CONSUMER.csv",
+    "WPU05":           DATA_DIR / "CreditIndicators" / "WPU05.csv",
+    "WPU10":           DATA_DIR / "CreditIndicators" / "WPU10.csv",
 }
 
 # ── Pydantic models ───────────────────────────────────────────────────────────
@@ -314,6 +353,92 @@ _ENDPOINT_DESCRIPTORS: list[dict] = [
         ),
         "group": "Sector — World Bank",
         "key": "sector_worldbank",
+        "optional": True,
+    },
+    {
+        "path": "/api/sector/bls-wages",
+        "description": (
+            "Optional: 12-month forecasts for BLS average hourly earnings by sector (6 series). "
+            "Generate with: python fred_refresh.py --sector bls_wages"
+        ),
+        "group": "Sector — BLS Wages",
+        "key": "sector_bls_wages",
+        "optional": True,
+    },
+    {
+        "path": "/api/sector/bls-hours",
+        "description": (
+            "Optional: 12-month forecasts for BLS average weekly hours by sector (3 series). "
+            "Generate with: python fred_refresh.py --sector bls_hours"
+        ),
+        "group": "Sector — BLS Hours",
+        "key": "sector_bls_hours",
+        "optional": True,
+    },
+    {
+        "path": "/api/sector/jolts",
+        "description": (
+            "Optional: 12-month forecasts for JOLTS job openings by sector (7 series). "
+            "Generate with: python fred_refresh.py --sector jolts"
+        ),
+        "group": "Sector — JOLTS Job Openings",
+        "key": "sector_jolts",
+        "optional": True,
+    },
+    {
+        "path": "/api/sector/etf",
+        "description": (
+            "Optional: 12-month forecasts for S&P 500 sector ETF prices (11 tickers, monthly close). "
+            "Generate with: python fred_refresh.py --sector etf"
+        ),
+        "group": "Sector — ETFs",
+        "key": "sector_etf",
+        "optional": True,
+    },
+    # ── Phase 1: Industrial / ISM / Capacity / Credit ─────────────────────────
+    {
+        "path": "/api/industrial/production",
+        "description": (
+            "12-month LightGBM forecasts for 8 IP sector breakdowns: "
+            "Manufacturing, Utilities, Mining, Consumer Goods, Business Equipment, "
+            "Materials, Durable Consumer Goods, Nondurable Consumer Goods. "
+            "Generated automatically by fred_refresh.py."
+        ),
+        "group": "Industrial Production",
+        "key": "industrial_production",
+        "optional": True,
+    },
+    {
+        "path": "/api/industrial/ism-pmi",
+        "description": (
+            "12-month LightGBM forecasts for ISM Manufacturing and Services PMI composite "
+            "and sub-indices (New Orders, Production, Employment, Vendor Deliveries). "
+            "Generated automatically by fred_refresh.py."
+        ),
+        "group": "ISM PMI Leading Indicators",
+        "key": "industrial_ism_pmi",
+        "optional": True,
+    },
+    {
+        "path": "/api/industrial/capacity-utilization",
+        "description": (
+            "12-month LightGBM forecasts for sector-level capacity utilization: "
+            "Manufacturing, Mining, and Durable Goods. "
+            "Generated automatically by fred_refresh.py."
+        ),
+        "group": "Capacity Utilization by Sector",
+        "key": "industrial_capacity_util",
+        "optional": True,
+    },
+    {
+        "path": "/api/industrial/credit",
+        "description": (
+            "12-month LightGBM forecasts for commercial/real estate/consumer loans "
+            "and PPI commodity prices (fuels, farm products). "
+            "Generated automatically by fred_refresh.py."
+        ),
+        "group": "Credit & PPI Indicators",
+        "key": "industrial_credit",
         "optional": True,
     },
     {
@@ -919,6 +1044,145 @@ def get_sector_worldbank() -> GroupResponse:
     **Requires prior run:** `python fred_refresh.py --sector worldbank`
     """
     return _load_result(OPTIONAL_RESULTS["sector_worldbank"], "sector_worldbank", optional=True)
+
+
+@app.get(
+    "/api/sector/bls-wages",
+    response_model=GroupResponse,
+    tags=["Sector Models (Optional)"],
+    summary="BLS average hourly earnings by sector forecasts",
+)
+def get_sector_bls_wages() -> GroupResponse:
+    """
+    12-month LightGBM forecasts for BLS average hourly earnings by sector (6 series).
+
+    **Requires prior run:** `python fred_refresh.py --sector bls_wages`
+    """
+    return _load_result(OPTIONAL_RESULTS["sector_bls_wages"], "sector_bls_wages", optional=True)
+
+
+@app.get(
+    "/api/sector/bls-hours",
+    response_model=GroupResponse,
+    tags=["Sector Models (Optional)"],
+    summary="BLS average weekly hours by sector forecasts",
+)
+def get_sector_bls_hours() -> GroupResponse:
+    """
+    12-month LightGBM forecasts for BLS average weekly hours by sector (3 series).
+
+    **Requires prior run:** `python fred_refresh.py --sector bls_hours`
+    """
+    return _load_result(OPTIONAL_RESULTS["sector_bls_hours"], "sector_bls_hours", optional=True)
+
+
+@app.get(
+    "/api/sector/jolts",
+    response_model=GroupResponse,
+    tags=["Sector Models (Optional)"],
+    summary="JOLTS job openings by sector forecasts",
+)
+def get_sector_jolts() -> GroupResponse:
+    """
+    12-month LightGBM forecasts for JOLTS job openings by sector (7 series).
+
+    **Requires prior run:** `python fred_refresh.py --sector jolts`
+    """
+    return _load_result(OPTIONAL_RESULTS["sector_jolts"], "sector_jolts", optional=True)
+
+
+@app.get(
+    "/api/sector/etf",
+    response_model=GroupResponse,
+    tags=["Sector Models (Optional)"],
+    summary="S&P 500 sector ETF price forecasts",
+)
+def get_sector_etf() -> GroupResponse:
+    """
+    12-month LightGBM forecasts for S&P 500 sector ETF monthly close prices (11 tickers):
+    XLK, XLF, XLV, XLE, XLI, XLP, XLY, XLU, XLRE, XLB, XLC.
+
+    **Requires prior run:** `python fred_refresh.py --sector etf`
+    """
+    return _load_result(OPTIONAL_RESULTS["sector_etf"], "sector_etf", optional=True)
+
+
+# ── Industrial Models (Phase 1) ───────────────────────────────────────────────
+
+@app.get(
+    "/api/industrial/production",
+    response_model=GroupResponse,
+    tags=["Industrial Models (Phase 1)"],
+    summary="Industrial production sector breakdowns — 12-month forecast",
+)
+def get_industrial_production() -> GroupResponse:
+    """
+    12-month LightGBM forecasts for 8 IP sector breakdowns (IPMAN, IPUTIL, IPMINE,
+    IPCONGD, IPBUSEQ, IPMAT, IPDCONGD, IPNCONGD). History starts 1939–1919.
+
+    Generated automatically by `industrial_model.py` on every `fred_refresh.py` run.
+    """
+    return _load_result(
+        OPTIONAL_RESULTS["industrial_production"], "industrial_production", optional=True
+    )
+
+
+@app.get(
+    "/api/industrial/ism-pmi",
+    response_model=GroupResponse,
+    tags=["Industrial Models (Phase 1)"],
+    summary="ISM PMI leading indicators — 12-month forecast",
+)
+def get_industrial_ism_pmi() -> GroupResponse:
+    """
+    12-month LightGBM forecasts for ISM Manufacturing PMI (NAPM), Services PMI (NMFCI),
+    and sub-indices: New Orders (NAPMNEWO), Production (NAPMPROD),
+    Employment (NAPMEMPL), Vendor Deliveries (NAPMVNDR).
+
+    New Orders leads GDP direction by 2–3 months — the most forward-looking sub-index.
+
+    Generated automatically by `industrial_model.py` on every `fred_refresh.py` run.
+    """
+    return _load_result(
+        OPTIONAL_RESULTS["industrial_ism_pmi"], "industrial_ism_pmi", optional=True
+    )
+
+
+@app.get(
+    "/api/industrial/capacity-utilization",
+    response_model=GroupResponse,
+    tags=["Industrial Models (Phase 1)"],
+    summary="Sector-level capacity utilization — 12-month forecast",
+)
+def get_industrial_capacity_util() -> GroupResponse:
+    """
+    12-month LightGBM forecasts for sector-level capacity utilization:
+    Manufacturing (MCUMFN), Mining (CAPUTLG211S), Durable Goods (CAPUTLB58SQ).
+
+    Generated automatically by `industrial_model.py` on every `fred_refresh.py` run.
+    """
+    return _load_result(
+        OPTIONAL_RESULTS["industrial_capacity_util"], "industrial_capacity_util", optional=True
+    )
+
+
+@app.get(
+    "/api/industrial/credit",
+    response_model=GroupResponse,
+    tags=["Industrial Models (Phase 1)"],
+    summary="Credit and PPI sector indicators — 12-month forecast",
+)
+def get_industrial_credit() -> GroupResponse:
+    """
+    12-month LightGBM forecasts for commercial and industrial loans (BUSLOANS),
+    real estate loans (REALLN), consumer loans (CONSUMER),
+    PPI fuels (WPU05), and PPI farm products (WPU10).
+
+    Generated automatically by `industrial_model.py` on every `fred_refresh.py` run.
+    """
+    return _load_result(
+        OPTIONAL_RESULTS["industrial_credit"], "industrial_credit", optional=True
+    )
 
 
 # ── Venture Capital ───────────────────────────────────────────────────────────
