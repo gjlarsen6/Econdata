@@ -1,17 +1,17 @@
 {
   "group": "Financial Stress Index",
-  "run_at": "2026-04-22T15:11:17",
+  "run_at": "2026-04-23T12:14:23",
   "series": [
     {
       "series_id": "FSI",
       "label": "Financial Stress Index",
       "unit": "Score (0\u20131)",
       "last_date": "2026-04",
-      "last_value": 0.4595,
+      "last_value": 0.4541,
       "validation": {
-        "mae": 0.1057,
-        "rmse": 0.1309,
-        "r2": -0.0153
+        "mae": 0.1055,
+        "rmse": 0.1307,
+        "r2": -0.0158
       },
       "forecast": [
         {

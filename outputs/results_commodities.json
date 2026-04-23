@@ -1,6 +1,6 @@
 {
   "group": "Commodities",
-  "run_at": "2026-04-22T15:13:14",
+  "run_at": "2026-04-23T12:14:03",
   "series": [
     {
       "series_id": "DCOILWTICO",
@@ -93,11 +93,11 @@
       "label": "Gold Price Index (NASDAQ)",
       "unit": "Index",
       "last_date": "2026-04",
-      "last_value": 3015.7357,
+      "last_value": 3015.0587,
       "validation": {
-        "mae": 253.0285,
-        "rmse": 301.5621,
-        "r2": -5.1209
+        "mae": 252.9721,
+        "rmse": 301.5007,
+        "r2": -5.1186
       },
       "forecast": [
         {

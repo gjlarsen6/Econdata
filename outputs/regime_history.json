@@ -1,7 +1,7 @@
 {
-  "generated_at": "2026-04-22T15:11:17",
+  "generated_at": "2026-04-23T12:14:23",
   "current_regime": "contraction",
-  "current_fsi": 0.4595,
+  "current_fsi": 0.4541,
   "regime_distribution": {
     "expansion": 0.3077,
     "slowdown": 0.4615,
@@ -199,7 +199,7 @@
     },
     {
       "date": "2026-04-01",
-      "fsi": 0.4595,
+      "fsi": 0.4541,
       "regime": "contraction"
     }
   ]

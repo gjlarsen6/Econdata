@@ -718,6 +718,103 @@ def print_summary_table(results_files: list[Path], title: str = "MACRO MODEL SUM
     print("  Val R² : negative values are normal for trending non-stationary series")
     print("           (MAE is the more meaningful metric for those)")
 
+def print_model_update_summary(
+    model_results: list[dict],
+    sector_model_result: dict | None,
+    vc_model_result: dict | None,
+    sector_refresh_results: list[dict],
+    fred_series_ok: int,
+    fred_series_errors: int,
+) -> None:
+    """Print a compact model-update status table at the end of every run."""
+    from collections import defaultdict
+
+    rows = []
+
+    # FRED data series row
+    fred_status = "OK" if fred_series_errors == 0 else f"WARNINGS"
+    rows.append({
+        "Component":  "FRED data series",
+        "Status":     fred_status,
+        "Detail":     f"{fred_series_ok} series refreshed, {fred_series_errors} errors",
+    })
+
+    # One row per FRED LightGBM model script
+    for mr in model_results:
+        ok      = mr["ok"]
+        elapsed = mr["elapsed"]
+        err_snip = (mr.get("stderr") or "").strip().splitlines()
+        err_hint = err_snip[-1][:80] if err_snip else ""
+        rows.append({
+            "Component":  mr["script"],
+            "Status":     "OK" if ok else "FAILED",
+            "Detail":     f"{elapsed}s" if ok else f"{elapsed}s — {err_hint}",
+        })
+
+    # Sector model
+    if sector_model_result is not None:
+        ok      = sector_model_result["ok"]
+        elapsed = sector_model_result["elapsed"]
+        err_snip = (sector_model_result.get("stderr") or "").strip().splitlines()
+        err_hint = err_snip[-1][:80] if err_snip else ""
+        rows.append({
+            "Component":  "sector_model.py",
+            "Status":     "OK" if ok else "FAILED",
+            "Detail":     f"{elapsed}s" if ok else f"{elapsed}s — {err_hint}",
+        })
+
+    # Sector data refresh — one row per source
+    if sector_refresh_results:
+        source_counts: dict = defaultdict(lambda: {"ok": 0, "error": 0, "errors": []})
+        for r in sector_refresh_results:
+            src = r.get("source", "?").split("/")[0]
+            if r["status"] == "ok":
+                source_counts[src]["ok"] += 1
+            else:
+                source_counts[src]["error"] += 1
+                err = (r.get("error") or "")[:70]
+                if err and err not in source_counts[src]["errors"]:
+                    source_counts[src]["errors"].append(err)
+        for src, counts in source_counts.items():
+            ok_n  = counts["ok"]
+            err_n = counts["error"]
+            total = ok_n + err_n
+            err_hint = counts["errors"][0][:70] if counts["errors"] else ""
+            if err_n == 0:
+                status = "OK"
+            elif ok_n == 0:
+                status = "FAILED"
+            else:
+                status = f"PARTIAL ({ok_n}/{total} ok)"
+            detail = f"{ok_n} ok, {err_n} errors"
+            if err_hint:
+                detail += f" — {err_hint}"
+            rows.append({
+                "Component":  f"Sector data: {src}",
+                "Status":     status,
+                "Detail":     detail,
+            })
+
+    # VC model
+    if vc_model_result is not None:
+        ok      = vc_model_result["ok"]
+        elapsed = vc_model_result["elapsed"]
+        err_snip = (vc_model_result.get("stderr") or "").strip().splitlines()
+        err_hint = err_snip[-1][:80] if err_snip else ""
+        rows.append({
+            "Component":  "vc_model.py",
+            "Status":     "OK" if ok else "FAILED",
+            "Detail":     f"{elapsed}s" if ok else f"{elapsed}s — {err_hint}",
+        })
+
+    bar = "═" * 110
+    print(f"\n{bar}")
+    print("  MODEL UPDATE SUMMARY")
+    print(f"{bar}")
+    print(tabulate(rows, headers="keys", tablefmt="rounded_outline", stralign="left"))
+    print(f"{bar}\n")
+
+
 # ── Main ──────────────────────────────────────────────────────────────────────
 
 def main():
@@ -1006,6 +1103,14 @@ def main():
         table_title = "MACRO MODEL SUMMARY — FRED Weekly Refresh"
     print_market_snapshot(OUTPUT_DIR)
     print_summary_table(all_results_files, title=table_title)
+    print_model_update_summary(
+        model_results,
+        sector_model_result,
+        vc_model_result,
+        sector_refresh_results,
+        ok_count,
+        err_count,
+    )
 
     # Final status
     all_fred_ok   = all(mr["ok"] for mr in model_results)

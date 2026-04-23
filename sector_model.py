@@ -147,6 +147,8 @@ def load_sector_csv(path: Path, series_col: str) -> pd.DataFrame:
     existing model scripts).
     """
     df = pd.read_csv(path, parse_dates=["observation_date"])
+    if df.empty or not pd.api.types.is_datetime64_any_dtype(df["observation_date"]):
+        return pd.DataFrame(columns=["date", series_col])
     df["date"]    = df["observation_date"].dt.to_period("M").dt.to_timestamp()
     df[series_col] = pd.to_numeric(df[series_col], errors="coerce")
     return df[["date", series_col]].dropna().sort_values("date").reset_index(drop=True)

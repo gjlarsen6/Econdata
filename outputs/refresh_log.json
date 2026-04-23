@@ -466,5 +466,1950 @@
     ],
     "sector_refresh_details": [],
     "crunchbase_refresh_details": []
+  },
+  {
+    "run_at": "2026-04-23T09:59:36",
+    "series_ok": 45,
+    "series_errors": 8,
+    "models_ok": 8,
+    "models_failed": 0,
+    "sector_sources_enabled": [
+      "all"
+    ],
+    "sector_series_refreshed": 30,
+    "sector_model_ok": false,
+    "crunchbase_enabled": false,
+    "crunchbase_segments_refreshed": 0,
+    "vc_model_ok": null,
+    "refresh_details": [
+      {
+        "series_id": "UMCSENT",
+        "status": "ok",
+        "new_rows": 0,
+        "error": null,
+        "elapsed": 1.0
+      },
+      {
+        "series_id": "RSAFS",
+        "status": "ok",
+        "new_rows": 0,
+        "error": null,
+        "elapsed": 0.8
+      },
+      {
+        "series_id": "PCE",
+        "status": "ok",
+        "new_rows": 0,
+        "error": null,
+        "elapsed": 0.9
+      },
+      {
+        "series_id": "DSPIC96",
+        "status": "ok",
+        "new_rows": 0,
+        "error": null,
+        "elapsed": 1.4
+      },
+      {
+        "series_id": "INDPRO",
+        "status": "ok",
+        "new_rows": 0,
+        "error": null,
+        "elapsed": 1.0
+      },
+      {
+        "series_id": "CAPUTLB50001SQ",
+        "status": "ok",
+        "new_rows": 0,
+        "error": null,
+        "elapsed": 1.0
+      },
+      {
+        "series_id": "TCU",
+        "status": "ok",
+        "new_rows": 0,
+        "error": null,
+        "elapsed": 1.3
+      },
+      {
+        "series_id": "FEDFUNDS",
+        "status": "ok",
+        "new_rows": 0,
+        "error": null,
+        "elapsed": 1.8
+      },
+      {
+        "series_id": "DFF",
+        "status": "ok",
+        "new_rows": 0,
+        "error": null,
+        "elapsed": 1.5
+      },
+      {
+        "series_id": "PRIME",
+        "status": "ok",
+        "new_rows": 0,
+        "error": null,
+        "elapsed": 0.9
+      },
+      {
+        "series_id": "DPRIME",
+        "status": "ok",
+        "new_rows": 0,
+        "error": null,
+        "elapsed": 0.9
+      },
+      {
+        "series_id": "T10Y2Y",
+        "status": "ok",
+        "new_rows": 0,
+        "error": null,
+        "elapsed": 0.9
+      },
+      {
+        "series_id": "T10Y3M",
+        "status": "ok",
+        "new_rows": 0,
+        "error": null,
+        "elapsed": 1.3
+      },
+      {
+        "series_id": "RECPROUSM156N",
+        "status": "ok",
+        "new_rows": 0,
+        "error": null,
+        "elapsed": 1.0
+      },
+      {
+        "series_id": "PCEPILFE",
+        "status": "ok",
+        "new_rows": 0,
+        "error": null,
+        "elapsed": 0.9
+      },
+      {
+        "series_id": "RRSFS",
+        "status": "ok",
+        "new_rows": 0,
+        "error": null,
+        "elapsed": 0.8
+      },
+      {
+        "series_id": "PAYEMS",
+        "status": "ok",
+        "new_rows": 0,
+        "error": null,
+        "elapsed": 1.2
+      },
+      {
+        "series_id": "VIXCLS",
+        "status": "ok",
+        "new_rows": 1,
+        "error": null,
+        "elapsed": 0.9
+      },
+      {
+        "series_id": "BAMLH0A0HYM2",
+        "status": "ok",
+        "new_rows": 1,
+        "error": null,
+        "elapsed": 0.9
+      },
+      {
+        "series_id": "BAMLC0A0CM",
+        "status": "ok",
+        "new_rows": 1,
+        "error": null,
+        "elapsed": 0.9
+      },
+      {
+        "series_id": "DTWEXBGS",
+        "status": "ok",
+        "new_rows": 0,
+        "error": null,
+        "elapsed": 0.9
+      },
+      {
+        "series_id": "DCOILWTICO",
+        "status": "ok",
+        "new_rows": 0,
+        "error": null,
+        "elapsed": 0.9
+      },
+      {
+        "series_id": "NASDAQQGLDI",
+        "status": "ok",
+        "new_rows": 1,
+        "error": null,
+        "elapsed": 1.4
+      },
+      {
+        "series_id": "DGS1MO",
+        "status": "ok",
+        "new_rows": 0,
+        "error": null,
+        "elapsed": 0.9
+      },
+      {
+        "series_id": "DGS3MO",
+        "status": "ok",
+        "new_rows": 0,
+        "error": null,
+        "elapsed": 0.9
+      },
+      {
+        "series_id": "DGS6MO",
+        "status": "ok",
+        "new_rows": 0,
+        "error": null,
+        "elapsed": 0.8
+      },
+      {
+        "series_id": "DGS1",
+        "status": "ok",
+        "new_rows": 0,
+        "error": null,
+        "elapsed": 1.0
+      },
+      {
+        "series_id": "DGS2",
+        "status": "ok",
+        "new_rows": 0,
+        "error": null,
+        "elapsed": 0.9
+      },
+      {
+        "series_id": "DGS5",
+        "status": "ok",
+        "new_rows": 0,
+        "error": null,
+        "elapsed": 0.9
+      },
+      {
+        "series_id": "DGS10",
+        "status": "ok",
+        "new_rows": 0,
+        "error": null,
+        "elapsed": 0.9
+      },
+      {
+        "series_id": "DGS30",
+        "status": "ok",
+        "new_rows": 0,
+        "error": null,
+        "elapsed": 0.9
+      },
+      {
+        "series_id": "IPMAN",
+        "status": "ok",
+        "new_rows": 651,
+        "error": null,
+        "elapsed": 0.9
+      },
+      {
+        "series_id": "IPUTIL",
+        "status": "ok",
+        "new_rows": 1047,
+        "error": null,
+        "elapsed": 1.0
+      },
+      {
+        "series_id": "IPMINE",
+        "status": "ok",
+        "new_rows": 1287,
+        "error": null,
+        "elapsed": 1.1
+      },
+      {
+        "series_id": "IPCONGD",
+        "status": "ok",
+        "new_rows": 1047,
+        "error": null,
+        "elapsed": 1.2
+      },
+      {
+        "series_id": "IPBUSEQ",
+        "status": "ok",
+        "new_rows": 951,
+        "error": null,
+        "elapsed": 0.9
+      },
+      {
+        "series_id": "IPMAT",
+        "status": "ok",
+        "new_rows": 1047,
+        "error": null,
+        "elapsed": 1.1
+      },
+      {
+        "series_id": "IPDCONGD",
+        "status": "ok",
+        "new_rows": 951,
+        "error": null,
+        "elapsed": 1.4
+      },
+      {
+        "series_id": "IPNCONGD",
+        "status": "ok",
+        "new_rows": 951,
+        "error": null,
+        "elapsed": 0.9
+      },
+      {
+        "series_id": "NAPM",
+        "status": "error",
+        "new_rows": 0,
+        "error": "400 Client Error: Bad Request for url: https://api.stlouisfed.org/fred/series/observations?series_id=NAPM&api_key=ccb5af8da71f5fd69cdecda30a293205&file_type=json",
+        "elapsed": 0.3
+      },
+      {
+        "series_id": "NMFCI",
+        "status": "error",
+        "new_rows": 0,
+        "error": "400 Client Error: Bad Request for url: https://api.stlouisfed.org/fred/series/observations?series_id=NMFCI&api_key=ccb5af8da71f5fd69cdecda30a293205&file_type=json",
+        "elapsed": 0.2
+      },
+      {
+        "series_id": "NAPMPROD",
+        "status": "error",
+        "new_rows": 0,
+        "error": "400 Client Error: Bad Request for url: https://api.stlouisfed.org/fred/series/observations?series_id=NAPMPROD&api_key=ccb5af8da71f5fd69cdecda30a293205&file_type=json",
+        "elapsed": 0.2
+      },
+      {
+        "series_id": "NAPMNEWO",
+        "status": "error",
+        "new_rows": 0,
+        "error": "400 Client Error: Bad Request for url: https://api.stlouisfed.org/fred/series/observations?series_id=NAPMNEWO&api_key=ccb5af8da71f5fd69cdecda30a293205&file_type=json",
+        "elapsed": 0.3
+      },
+      {
+        "series_id": "NAPMEMPL",
+        "status": "error",
+        "new_rows": 0,
+        "error": "400 Client Error: Bad Request for url: https://api.stlouisfed.org/fred/series/observations?series_id=NAPMEMPL&api_key=ccb5af8da71f5fd69cdecda30a293205&file_type=json",
+        "elapsed": 0.2
+      },
+      {
+        "series_id": "NAPMVNDR",
+        "status": "error",
+        "new_rows": 0,
+        "error": "400 Client Error: Bad Request for url: https://api.stlouisfed.org/fred/series/observations?series_id=NAPMVNDR&api_key=ccb5af8da71f5fd69cdecda30a293205&file_type=json",
+        "elapsed": 0.2
+      },
+      {
+        "series_id": "MCUMFN",
+        "status": "ok",
+        "new_rows": 651,
+        "error": null,
+        "elapsed": 0.8
+      },
+      {
+        "series_id": "CAPUTLG211S",
+        "status": "ok",
+        "new_rows": 651,
+        "error": null,
+        "elapsed": 0.9
+      },
+      {
+        "series_id": "CAPUTLB58SQ",
+        "status": "error",
+        "new_rows": 0,
+        "error": "400 Client Error: Bad Request for url: https://api.stlouisfed.org/fred/series/observations?series_id=CAPUTLB58SQ&api_key=ccb5af8da71f5fd69cdecda30a293205&file_type=json",
+        "elapsed": 0.2
+      },
+      {
+        "series_id": "BUSLOANS",
+        "status": "ok",
+        "new_rows": 951,
+        "error": null,
+        "elapsed": 0.9
+      },
+      {
+        "series_id": "REALLN",
+        "status": "ok",
+        "new_rows": 951,
+        "error": null,
+        "elapsed": 0.8
+      },
+      {
+        "series_id": "CONSUMER",
+        "status": "ok",
+        "new_rows": 951,
+        "error": null,
+        "elapsed": 0.8
+      },
+      {
+        "series_id": "WPU05",
+        "status": "error",
+        "new_rows": 0,
+        "error": "400 Client Error: Bad Request for url: https://api.stlouisfed.org/fred/series/observations?series_id=WPU05&api_key=ccb5af8da71f5fd69cdecda30a293205&file_type=json",
+        "elapsed": 0.5
+      },
+      {
+        "series_id": "WPU10",
+        "status": "ok",
+        "new_rows": 1203,
+        "error": null,
+        "elapsed": 0.8
+      }
+    ],
+    "sector_refresh_details": [
+      {
+        "series_id": "CES3000000001",
+        "source": "BLS",
+        "status": "ok",
+        "new_rows": 120,
+        "error": null,
+        "elapsed": 0.6
+      },
+      {
+        "series_id": "CES4000000001",
+        "source": "BLS",
+        "status": "ok",
+        "new_rows": 120,
+        "error": null,
+        "elapsed": 0.5
+      },
+      {
+        "series_id": "CES5500000001",
+        "source": "BLS",
+        "status": "ok",
+        "new_rows": 120,
+        "error": null,
+        "elapsed": 0.5
+      },
+      {
+        "series_id": "CES6000000001",
+        "source": "BLS",
+        "status": "ok",
+        "new_rows": 120,
+        "error": null,
+        "elapsed": 0.5
+      },
+      {
+        "series_id": "CEU6500000001",
+        "source": "BLS",
+        "status": "ok",
+        "new_rows": 120,
+        "error": null,
+        "elapsed": 0.5
+      },
+      {
+        "series_id": "CEU7000000001",
+        "source": "BLS",
+        "status": "ok",
+        "new_rows": 120,
+        "error": null,
+        "elapsed": 0.5
+      },
+      {
+        "series_id": "CES1000000001",
+        "source": "BLS",
+        "status": "ok",
+        "new_rows": 120,
+        "error": null,
+        "elapsed": 0.5
+      },
+      {
+        "series_id": "CES2000000001",
+        "source": "BLS",
+        "status": "ok",
+        "new_rows": 120,
+        "error": null,
+        "elapsed": 0.5
+      },
+      {
+        "series_id": "CES5000000001",
+        "source": "BLS",
+        "status": "ok",
+        "new_rows": 120,
+        "error": null,
+        "elapsed": 0.5
+      },
+      {
+        "series_id": "CES9000000001",
+        "source": "BLS",
+        "status": "ok",
+        "new_rows": 120,
+        "error": null,
+        "elapsed": 0.5
+      },
+      {
+        "series_id": "CES3000000008",
+        "source": "BLS/BLS_Wages",
+        "status": "ok",
+        "new_rows": 120,
+        "error": null,
+        "elapsed": 0.5
+      },
+      {
+        "series_id": "CES4000000008",
+        "source": "BLS/BLS_Wages",
+        "status": "ok",
+        "new_rows": 120,
+        "error": null,
+        "elapsed": 0.4
+      },
+      {
+        "series_id": "CES5500000008",
+        "source": "BLS/BLS_Wages",
+        "status": "ok",
+        "new_rows": 120,
+        "error": null,
+        "elapsed": 0.5
+      },
+      {
+        "series_id": "CES6000000008",
+        "source": "BLS/BLS_Wages",
+        "status": "ok",
+        "new_rows": 120,
+        "error": null,
+        "elapsed": 0.5
+      },
+      {
+        "series_id": "CES2000000008",
+        "source": "BLS/BLS_Wages",
+        "status": "ok",
+        "new_rows": 120,
+        "error": null,
+        "elapsed": 0.5
+      },
+      {
+        "series_id": "CES5000000008",
+        "source": "BLS/BLS_Wages",
+        "status": "ok",
+        "new_rows": 120,
+        "error": null,
+        "elapsed": 0.5
+      },
+      {
+        "series_id": "CES3000000007",
+        "source": "BLS/BLS_Hours",
+        "status": "ok",
+        "new_rows": 120,
+        "error": null,
+        "elapsed": 0.5
+      },
+      {
+        "series_id": "CES6000000007",
+        "source": "BLS/BLS_Hours",
+        "status": "ok",
+        "new_rows": 120,
+        "error": null,
+        "elapsed": 0.5
+      },
+      {
+        "series_id": "CES2000000007",
+        "source": "BLS/BLS_Hours",
+        "status": "ok",
+        "new_rows": 120,
+        "error": null,
+        "elapsed": 0.5
+      },
+      {
+        "series_id": "JTS3000JOL",
+        "source": "BLS/JOLTS",
+        "status": "ok",
+        "new_rows": 0,
+        "error": null,
+        "elapsed": 0.5
+      },
+      {
+        "series_id": "JTS4000JOL",
+        "source": "BLS/JOLTS",
+        "status": "ok",
+        "new_rows": 0,
+        "error": null,
+        "elapsed": 0.5
+      },
+      {
+        "series_id": "JTS5500JOL",
+        "source": "BLS/JOLTS",
+        "status": "ok",
+        "new_rows": 0,
+        "error": null,
+        "elapsed": 0.5
+      },
+      {
+        "series_id": "JTS6000JOL",
+        "source": "BLS/JOLTS",
+        "status": "ok",
+        "new_rows": 0,
+        "error": null,
+        "elapsed": 0.5
+      },
+      {
+        "series_id": "JTS6500JOL",
+        "source": "BLS/JOLTS",
+        "status": "ok",
+        "new_rows": 0,
+        "error": null,
+        "elapsed": 0.5
+      },
+      {
+        "series_id": "JTS7000JOL",
+        "source": "BLS/JOLTS",
+        "status": "ok",
+        "new_rows": 0,
+        "error": null,
+        "elapsed": 0.5
+      },
+      {
+        "series_id": "JTS2300JOL",
+        "source": "BLS/JOLTS",
+        "status": "ok",
+        "new_rows": 0,
+        "error": null,
+        "elapsed": 0.5
+      },
+      {
+        "series_id": "ETF_all",
+        "source": "yfinance",
+        "status": "error",
+        "new_rows": 0,
+        "elapsed": 0.0,
+        "error": "yfinance not installed"
+      },
+      {
+        "series_id": "NV.IND.MANF.ZS",
+        "source": "WorldBank",
+        "status": "ok",
+        "new_rows": 352,
+        "error": null,
+        "elapsed": 0.9
+      },
+      {
+        "series_id": "NV.SRV.TOTL.ZS",
+        "source": "WorldBank",
+        "status": "ok",
+        "new_rows": 352,
+        "error": null,
+        "elapsed": 0.7
+      },
+      {
+        "series_id": "NV.IND.TOTL.ZS",
+        "source": "WorldBank",
+        "status": "ok",
+        "new_rows": 352,
+        "error": null,
+        "elapsed": 0.6
+      }
+    ],
+    "crunchbase_refresh_details": []
+  },
+  {
+    "run_at": "2026-04-23T11:38:30",
+    "series_ok": 51,
+    "series_errors": 0,
+    "models_ok": 8,
+    "models_failed": 0,
+    "sector_sources_enabled": [
+      "all"
+    ],
+    "sector_series_refreshed": 30,
+    "sector_model_ok": false,
+    "crunchbase_enabled": false,
+    "crunchbase_segments_refreshed": 0,
+    "vc_model_ok": null,
+    "refresh_details": [
+      {
+        "series_id": "UMCSENT",
+        "status": "ok",
+        "new_rows": 0,
+        "error": null,
+        "elapsed": 1.2
+      },
+      {
+        "series_id": "RSAFS",
+        "status": "ok",
+        "new_rows": 0,
+        "error": null,
+        "elapsed": 1.0
+      },
+      {
+        "series_id": "PCE",
+        "status": "ok",
+        "new_rows": 0,
+        "error": null,
+        "elapsed": 0.9
+      },
+      {
+        "series_id": "DSPIC96",
+        "status": "ok",
+        "new_rows": 0,
+        "error": null,
+        "elapsed": 0.9
+      },
+      {
+        "series_id": "INDPRO",
+        "status": "ok",
+        "new_rows": 0,
+        "error": null,
+        "elapsed": 0.9
+      },
+      {
+        "series_id": "CAPUTLB50001SQ",
+        "status": "ok",
+        "new_rows": 0,
+        "error": null,
+        "elapsed": 1.0
+      },
+      {
+        "series_id": "TCU",
+        "status": "ok",
+        "new_rows": 0,
+        "error": null,
+        "elapsed": 0.9
+      },
+      {
+        "series_id": "FEDFUNDS",
+        "status": "ok",
+        "new_rows": 0,
+        "error": null,
+        "elapsed": 0.9
+      },
+      {
+        "series_id": "DFF",
+        "status": "ok",
+        "new_rows": 0,
+        "error": null,
+        "elapsed": 0.9
+      },
+      {
+        "series_id": "PRIME",
+        "status": "ok",
+        "new_rows": 0,
+        "error": null,
+        "elapsed": 0.8
+      },
+      {
+        "series_id": "DPRIME",
+        "status": "ok",
+        "new_rows": 0,
+        "error": null,
+        "elapsed": 0.9
+      },
+      {
+        "series_id": "T10Y2Y",
+        "status": "ok",
+        "new_rows": 0,
+        "error": null,
+        "elapsed": 1.8
+      },
+      {
+        "series_id": "T10Y3M",
+        "status": "ok",
+        "new_rows": 0,
+        "error": null,
+        "elapsed": 2.5
+      },
+      {
+        "series_id": "RECPROUSM156N",
+        "status": "ok",
+        "new_rows": 0,
+        "error": null,
+        "elapsed": 1.1
+      },
+      {
+        "series_id": "PCEPILFE",
+        "status": "ok",
+        "new_rows": 0,
+        "error": null,
+        "elapsed": 0.9
+      },
+      {
+        "series_id": "RRSFS",
+        "status": "ok",
+        "new_rows": 0,
+        "error": null,
+        "elapsed": 1.0
+      },
+      {
+        "series_id": "PAYEMS",
+        "status": "ok",
+        "new_rows": 0,
+        "error": null,
+        "elapsed": 0.9
+      },
+      {
+        "series_id": "VIXCLS",
+        "status": "ok",
+        "new_rows": 0,
+        "error": null,
+        "elapsed": 0.9
+      },
+      {
+        "series_id": "BAMLH0A0HYM2",
+        "status": "ok",
+        "new_rows": 0,
+        "error": null,
+        "elapsed": 1.0
+      },
+      {
+        "series_id": "BAMLC0A0CM",
+        "status": "ok",
+        "new_rows": 0,
+        "error": null,
+        "elapsed": 0.9
+      },
+      {
+        "series_id": "DTWEXBGS",
+        "status": "ok",
+        "new_rows": 0,
+        "error": null,
+        "elapsed": 0.9
+      },
+      {
+        "series_id": "DCOILWTICO",
+        "status": "ok",
+        "new_rows": 0,
+        "error": null,
+        "elapsed": 0.9
+      },
+      {
+        "series_id": "NASDAQQGLDI",
+        "status": "ok",
+        "new_rows": 0,
+        "error": null,
+        "elapsed": 1.3
+      },
+      {
+        "series_id": "DGS1MO",
+        "status": "ok",
+        "new_rows": 0,
+        "error": null,
+        "elapsed": 0.9
+      },
+      {
+        "series_id": "DGS3MO",
+        "status": "ok",
+        "new_rows": 0,
+        "error": null,
+        "elapsed": 0.9
+      },
+      {
+        "series_id": "DGS6MO",
+        "status": "ok",
+        "new_rows": 0,
+        "error": null,
+        "elapsed": 0.9
+      },
+      {
+        "series_id": "DGS1",
+        "status": "ok",
+        "new_rows": 0,
+        "error": null,
+        "elapsed": 0.9
+      },
+      {
+        "series_id": "DGS2",
+        "status": "ok",
+        "new_rows": 0,
+        "error": null,
+        "elapsed": 0.9
+      },
+      {
+        "series_id": "DGS5",
+        "status": "ok",
+        "new_rows": 0,
+        "error": null,
+        "elapsed": 0.9
+      },
+      {
+        "series_id": "DGS10",
+        "status": "ok",
+        "new_rows": 0,
+        "error": null,
+        "elapsed": 0.9
+      },
+      {
+        "series_id": "DGS30",
+        "status": "ok",
+        "new_rows": 0,
+        "error": null,
+        "elapsed": 0.9
+      },
+      {
+        "series_id": "IPMAN",
+        "status": "ok",
+        "new_rows": 0,
+        "error": null,
+        "elapsed": 0.9
+      },
+      {
+        "series_id": "IPUTIL",
+        "status": "ok",
+        "new_rows": 0,
+        "error": null,
+        "elapsed": 1.0
+      },
+      {
+        "series_id": "IPMINE",
+        "status": "ok",
+        "new_rows": 0,
+        "error": null,
+        "elapsed": 1.1
+      },
+      {
+        "series_id": "IPCONGD",
+        "status": "ok",
+        "new_rows": 0,
+        "error": null,
+        "elapsed": 1.0
+      },
+      {
+        "series_id": "IPBUSEQ",
+        "status": "ok",
+        "new_rows": 0,
+        "error": null,
+        "elapsed": 1.1
+      },
+      {
+        "series_id": "IPMAT",
+        "status": "ok",
+        "new_rows": 0,
+        "error": null,
+        "elapsed": 1.2
+      },
+      {
+        "series_id": "IPDCONGD",
+        "status": "ok",
+        "new_rows": 0,
+        "error": null,
+        "elapsed": 1.1
+      },
+      {
+        "series_id": "IPNCONGD",
+        "status": "ok",
+        "new_rows": 0,
+        "error": null,
+        "elapsed": 0.9
+      },
+      {
+        "series_id": "NEWORDER",
+        "status": "ok",
+        "new_rows": 697,
+        "error": null,
+        "elapsed": 0.8
+      },
+      {
+        "series_id": "DGORDER",
+        "status": "ok",
+        "new_rows": 817,
+        "error": null,
+        "elapsed": 1.2
+      },
+      {
+        "series_id": "AMTUNO",
+        "status": "ok",
+        "new_rows": 409,
+        "error": null,
+        "elapsed": 1.6
+      },
+      {
+        "series_id": "MNFCTRIRSA",
+        "status": "ok",
+        "new_rows": 410,
+        "error": null,
+        "elapsed": 1.3
+      },
+      {
+        "series_id": "MCUMFN",
+        "status": "ok",
+        "new_rows": 0,
+        "error": null,
+        "elapsed": 1.0
+      },
+      {
+        "series_id": "CAPUTLG211S",
+        "status": "ok",
+        "new_rows": 0,
+        "error": null,
+        "elapsed": 1.1
+      },
+      {
+        "series_id": "CAPUTLG331S",
+        "status": "ok",
+        "new_rows": 711,
+        "error": null,
+        "elapsed": 1.0
+      },
+      {
+        "series_id": "BUSLOANS",
+        "status": "ok",
+        "new_rows": 0,
+        "error": null,
+        "elapsed": 1.0
+      },
+      {
+        "series_id": "REALLN",
+        "status": "ok",
+        "new_rows": 0,
+        "error": null,
+        "elapsed": 1.7
+      },
+      {
+        "series_id": "CONSUMER",
+        "status": "ok",
+        "new_rows": 0,
+        "error": null,
+        "elapsed": 2.0
+      },
+      {
+        "series_id": "WPU054",
+        "status": "ok",
+        "new_rows": 819,
+        "error": null,
+        "elapsed": 0.9
+      },
+      {
+        "series_id": "WPU01",
+        "status": "ok",
+        "new_rows": 1359,
+        "error": null,
+        "elapsed": 1.1
+      }
+    ],
+    "sector_refresh_details": [
+      {
+        "series_id": "CES3000000001",
+        "source": "BLS",
+        "status": "error",
+        "new_rows": 0,
+        "error": "BLS API error: ['Request could not be serviced, as the daily threshold for total number of requests allocated to the user with registration key  has been reached.']",
+        "elapsed": 0.6
+      },
+      {
+        "series_id": "CES4000000001",
+        "source": "BLS",
+        "status": "error",
+        "new_rows": 0,
+        "error": "BLS API error: ['Request could not be serviced, as the daily threshold for total number of requests allocated to the user with registration key  has been reached.']",
+        "elapsed": 0.4
+      },
+      {
+        "series_id": "CES5500000001",
+        "source": "BLS",
+        "status": "error",
+        "new_rows": 0,
+        "error": "BLS API error: ['Request could not be serviced, as the daily threshold for total number of requests allocated to the user with registration key  has been reached.']",
+        "elapsed": 0.4
+      },
+      {
+        "series_id": "CES6000000001",
+        "source": "BLS",
+        "status": "error",
+        "new_rows": 0,
+        "error": "BLS API error: ['Request could not be serviced, as the daily threshold for total number of requests allocated to the user with registration key  has been reached.']",
+        "elapsed": 0.9
+      },
+      {
+        "series_id": "CEU6500000001",
+        "source": "BLS",
+        "status": "error",
+        "new_rows": 0,
+        "error": "BLS API error: ['Request could not be serviced, as the daily threshold for total number of requests allocated to the user with registration key  has been reached.']",
+        "elapsed": 0.4
+      },
+      {
+        "series_id": "CEU7000000001",
+        "source": "BLS",
+        "status": "error",
+        "new_rows": 0,
+        "error": "BLS API error: ['Request could not be serviced, as the daily threshold for total number of requests allocated to the user with registration key  has been reached.']",
+        "elapsed": 0.4
+      },
+      {
+        "series_id": "CES1000000001",
+        "source": "BLS",
+        "status": "error",
+        "new_rows": 0,
+        "error": "BLS API error: ['Request could not be serviced, as the daily threshold for total number of requests allocated to the user with registration key  has been reached.']",
+        "elapsed": 0.4
+      },
+      {
+        "series_id": "CES2000000001",
+        "source": "BLS",
+        "status": "error",
+        "new_rows": 0,
+        "error": "BLS API error: ['Request could not be serviced, as the daily threshold for total number of requests allocated to the user with registration key  has been reached.']",
+        "elapsed": 0.4
+      },
+      {
+        "series_id": "CES5000000001",
+        "source": "BLS",
+        "status": "error",
+        "new_rows": 0,
+        "error": "BLS API error: ['Request could not be serviced, as the daily threshold for total number of requests allocated to the user with registration key  has been reached.']",
+        "elapsed": 0.4
+      },
+      {
+        "series_id": "CES9000000001",
+        "source": "BLS",
+        "status": "error",
+        "new_rows": 0,
+        "error": "BLS API error: ['Request could not be serviced, as the daily threshold for total number of requests allocated to the user with registration key  has been reached.']",
+        "elapsed": 0.6
+      },
+      {
+        "series_id": "CES3000000008",
+        "source": "BLS/BLS_Wages",
+        "status": "error",
+        "new_rows": 0,
+        "error": "BLS API error: ['Request could not be serviced, as the daily threshold for total number of requests allocated to the user with registration key  has been reached.']",
+        "elapsed": 0.4
+      },
+      {
+        "series_id": "CES4000000008",
+        "source": "BLS/BLS_Wages",
+        "status": "error",
+        "new_rows": 0,
+        "error": "BLS API error: ['Request could not be serviced, as the daily threshold for total number of requests allocated to the user with registration key  has been reached.']",
+        "elapsed": 0.4
+      },
+      {
+        "series_id": "CES5500000008",
+        "source": "BLS/BLS_Wages",
+        "status": "error",
+        "new_rows": 0,
+        "error": "BLS API error: ['Request could not be serviced, as the daily threshold for total number of requests allocated to the user with registration key  has been reached.']",
+        "elapsed": 0.4
+      },
+      {
+        "series_id": "CES6000000008",
+        "source": "BLS/BLS_Wages",
+        "status": "error",
+        "new_rows": 0,
+        "error": "BLS API error: ['Request could not be serviced, as the daily threshold for total number of requests allocated to the user with registration key  has been reached.']",
+        "elapsed": 0.4
+      },
+      {
+        "series_id": "CES2000000008",
+        "source": "BLS/BLS_Wages",
+        "status": "error",
+        "new_rows": 0,
+        "error": "BLS API error: ['Request could not be serviced, as the daily threshold for total number of requests allocated to the user with registration key  has been reached.']",
+        "elapsed": 0.4
+      },
+      {
+        "series_id": "CES5000000008",
+        "source": "BLS/BLS_Wages",
+        "status": "error",
+        "new_rows": 0,
+        "error": "BLS API error: ['Request could not be serviced, as the daily threshold for total number of requests allocated to the user with registration key  has been reached.']",
+        "elapsed": 0.4
+      },
+      {
+        "series_id": "CES3000000007",
+        "source": "BLS/BLS_Hours",
+        "status": "error",
+        "new_rows": 0,
+        "error": "BLS API error: ['Request could not be serviced, as the daily threshold for total number of requests allocated to the user with registration key  has been reached.']",
+        "elapsed": 0.4
+      },
+      {
+        "series_id": "CES6000000007",
+        "source": "BLS/BLS_Hours",
+        "status": "error",
+        "new_rows": 0,
+        "error": "BLS API error: ['Request could not be serviced, as the daily threshold for total number of requests allocated to the user with registration key  has been reached.']",
+        "elapsed": 0.4
+      },
+      {
+        "series_id": "CES2000000007",
+        "source": "BLS/BLS_Hours",
+        "status": "error",
+        "new_rows": 0,
+        "error": "BLS API error: ['Request could not be serviced, as the daily threshold for total number of requests allocated to the user with registration key  has been reached.']",
+        "elapsed": 0.4
+      },
+      {
+        "series_id": "JTS3000JOL",
+        "source": "BLS/JOLTS",
+        "status": "error",
+        "new_rows": 0,
+        "error": "BLS API error: ['Request could not be serviced, as the daily threshold for total number of requests allocated to the user with registration key  has been reached.']",
+        "elapsed": 0.4
+      },
+      {
+        "series_id": "JTS4000JOL",
+        "source": "BLS/JOLTS",
+        "status": "error",
+        "new_rows": 0,
+        "error": "BLS API error: ['Request could not be serviced, as the daily threshold for total number of requests allocated to the user with registration key  has been reached.']",
+        "elapsed": 0.4
+      },
+      {
+        "series_id": "JTS5500JOL",
+        "source": "BLS/JOLTS",
+        "status": "error",
+        "new_rows": 0,
+        "error": "BLS API error: ['Request could not be serviced, as the daily threshold for total number of requests allocated to the user with registration key  has been reached.']",
+        "elapsed": 0.4
+      },
+      {
+        "series_id": "JTS6000JOL",
+        "source": "BLS/JOLTS",
+        "status": "error",
+        "new_rows": 0,
+        "error": "BLS API error: ['Request could not be serviced, as the daily threshold for total number of requests allocated to the user with registration key  has been reached.']",
+        "elapsed": 0.4
+      },
+      {
+        "series_id": "JTS6500JOL",
+        "source": "BLS/JOLTS",
+        "status": "error",
+        "new_rows": 0,
+        "error": "BLS API error: ['Request could not be serviced, as the daily threshold for total number of requests allocated to the user with registration key  has been reached.']",
+        "elapsed": 0.4
+      },
+      {
+        "series_id": "JTS7000JOL",
+        "source": "BLS/JOLTS",
+        "status": "error",
+        "new_rows": 0,
+        "error": "BLS API error: ['Request could not be serviced, as the daily threshold for total number of requests allocated to the user with registration key  has been reached.']",
+        "elapsed": 0.4
+      },
+      {
+        "series_id": "JTS2300JOL",
+        "source": "BLS/JOLTS",
+        "status": "error",
+        "new_rows": 0,
+        "error": "BLS API error: ['Request could not be serviced, as the daily threshold for total number of requests allocated to the user with registration key  has been reached.']",
+        "elapsed": 0.4
+      },
+      {
+        "series_id": "ETF_all",
+        "source": "yfinance",
+        "status": "error",
+        "new_rows": 0,
+        "elapsed": 0.0,
+        "error": "yfinance not installed"
+      },
+      {
+        "series_id": "NV.IND.MANF.ZS",
+        "source": "WorldBank",
+        "status": "ok",
+        "new_rows": 0,
+        "error": null,
+        "elapsed": 0.3
+      },
+      {
+        "series_id": "NV.SRV.TOTL.ZS",
+        "source": "WorldBank",
+        "status": "ok",
+        "new_rows": 0,
+        "error": null,
+        "elapsed": 0.3
+      },
+      {
+        "series_id": "NV.IND.TOTL.ZS",
+        "source": "WorldBank",
+        "status": "ok",
+        "new_rows": 0,
+        "error": null,
+        "elapsed": 0.4
+      }
+    ],
+    "crunchbase_refresh_details": []
+  },
+  {
+    "run_at": "2026-04-23T12:16:37",
+    "series_ok": 51,
+    "series_errors": 0,
+    "models_ok": 8,
+    "models_failed": 0,
+    "sector_sources_enabled": [
+      "all"
+    ],
+    "sector_series_refreshed": 40,
+    "sector_model_ok": false,
+    "crunchbase_enabled": false,
+    "crunchbase_segments_refreshed": 0,
+    "vc_model_ok": null,
+    "refresh_details": [
+      {
+        "series_id": "UMCSENT",
+        "status": "ok",
+        "new_rows": 0,
+        "error": null,
+        "elapsed": 1.0
+      },
+      {
+        "series_id": "RSAFS",
+        "status": "ok",
+        "new_rows": 0,
+        "error": null,
+        "elapsed": 0.8
+      },
+      {
+        "series_id": "PCE",
+        "status": "ok",
+        "new_rows": 0,
+        "error": null,
+        "elapsed": 0.8
+      },
+      {
+        "series_id": "DSPIC96",
+        "status": "ok",
+        "new_rows": 0,
+        "error": null,
+        "elapsed": 0.9
+      },
+      {
+        "series_id": "INDPRO",
+        "status": "ok",
+        "new_rows": 0,
+        "error": null,
+        "elapsed": 0.8
+      },
+      {
+        "series_id": "CAPUTLB50001SQ",
+        "status": "ok",
+        "new_rows": 0,
+        "error": null,
+        "elapsed": 0.8
+      },
+      {
+        "series_id": "TCU",
+        "status": "ok",
+        "new_rows": 0,
+        "error": null,
+        "elapsed": 0.8
+      },
+      {
+        "series_id": "FEDFUNDS",
+        "status": "ok",
+        "new_rows": 0,
+        "error": null,
+        "elapsed": 0.8
+      },
+      {
+        "series_id": "DFF",
+        "status": "ok",
+        "new_rows": 0,
+        "error": null,
+        "elapsed": 0.9
+      },
+      {
+        "series_id": "PRIME",
+        "status": "ok",
+        "new_rows": 0,
+        "error": null,
+        "elapsed": 0.8
+      },
+      {
+        "series_id": "DPRIME",
+        "status": "ok",
+        "new_rows": 0,
+        "error": null,
+        "elapsed": 0.9
+      },
+      {
+        "series_id": "T10Y2Y",
+        "status": "ok",
+        "new_rows": 0,
+        "error": null,
+        "elapsed": 0.8
+      },
+      {
+        "series_id": "T10Y3M",
+        "status": "ok",
+        "new_rows": 0,
+        "error": null,
+        "elapsed": 0.8
+      },
+      {
+        "series_id": "RECPROUSM156N",
+        "status": "ok",
+        "new_rows": 0,
+        "error": null,
+        "elapsed": 0.9
+      },
+      {
+        "series_id": "PCEPILFE",
+        "status": "ok",
+        "new_rows": 0,
+        "error": null,
+        "elapsed": 0.9
+      },
+      {
+        "series_id": "RRSFS",
+        "status": "ok",
+        "new_rows": 0,
+        "error": null,
+        "elapsed": 0.8
+      },
+      {
+        "series_id": "PAYEMS",
+        "status": "ok",
+        "new_rows": 0,
+        "error": null,
+        "elapsed": 0.8
+      },
+      {
+        "series_id": "VIXCLS",
+        "status": "ok",
+        "new_rows": 0,
+        "error": null,
+        "elapsed": 0.9
+      },
+      {
+        "series_id": "BAMLH0A0HYM2",
+        "status": "ok",
+        "new_rows": 0,
+        "error": null,
+        "elapsed": 0.8
+      },
+      {
+        "series_id": "BAMLC0A0CM",
+        "status": "ok",
+        "new_rows": 0,
+        "error": null,
+        "elapsed": 0.8
+      },
+      {
+        "series_id": "DTWEXBGS",
+        "status": "ok",
+        "new_rows": 0,
+        "error": null,
+        "elapsed": 0.9
+      },
+      {
+        "series_id": "DCOILWTICO",
+        "status": "ok",
+        "new_rows": 0,
+        "error": null,
+        "elapsed": 0.9
+      },
+      {
+        "series_id": "NASDAQQGLDI",
+        "status": "ok",
+        "new_rows": 0,
+        "error": null,
+        "elapsed": 0.9
+      },
+      {
+        "series_id": "DGS1MO",
+        "status": "ok",
+        "new_rows": 0,
+        "error": null,
+        "elapsed": 0.9
+      },
+      {
+        "series_id": "DGS3MO",
+        "status": "ok",
+        "new_rows": 0,
+        "error": null,
+        "elapsed": 0.9
+      },
+      {
+        "series_id": "DGS6MO",
+        "status": "ok",
+        "new_rows": 0,
+        "error": null,
+        "elapsed": 0.8
+      },
+      {
+        "series_id": "DGS1",
+        "status": "ok",
+        "new_rows": 0,
+        "error": null,
+        "elapsed": 0.9
+      },
+      {
+        "series_id": "DGS2",
+        "status": "ok",
+        "new_rows": 0,
+        "error": null,
+        "elapsed": 0.9
+      },
+      {
+        "series_id": "DGS5",
+        "status": "ok",
+        "new_rows": 0,
+        "error": null,
+        "elapsed": 0.9
+      },
+      {
+        "series_id": "DGS10",
+        "status": "ok",
+        "new_rows": 0,
+        "error": null,
+        "elapsed": 0.9
+      },
+      {
+        "series_id": "DGS30",
+        "status": "ok",
+        "new_rows": 0,
+        "error": null,
+        "elapsed": 0.9
+      },
+      {
+        "series_id": "IPMAN",
+        "status": "ok",
+        "new_rows": 0,
+        "error": null,
+        "elapsed": 0.8
+      },
+      {
+        "series_id": "IPUTIL",
+        "status": "ok",
+        "new_rows": 0,
+        "error": null,
+        "elapsed": 0.9
+      },
+      {
+        "series_id": "IPMINE",
+        "status": "ok",
+        "new_rows": 0,
+        "error": null,
+        "elapsed": 0.9
+      },
+      {
+        "series_id": "IPCONGD",
+        "status": "ok",
+        "new_rows": 0,
+        "error": null,
+        "elapsed": 0.9
+      },
+      {
+        "series_id": "IPBUSEQ",
+        "status": "ok",
+        "new_rows": 0,
+        "error": null,
+        "elapsed": 0.8
+      },
+      {
+        "series_id": "IPMAT",
+        "status": "ok",
+        "new_rows": 0,
+        "error": null,
+        "elapsed": 0.8
+      },
+      {
+        "series_id": "IPDCONGD",
+        "status": "ok",
+        "new_rows": 0,
+        "error": null,
+        "elapsed": 0.8
+      },
+      {
+        "series_id": "IPNCONGD",
+        "status": "ok",
+        "new_rows": 0,
+        "error": null,
+        "elapsed": 0.8
+      },
+      {
+        "series_id": "NEWORDER",
+        "status": "ok",
+        "new_rows": 0,
+        "error": null,
+        "elapsed": 0.8
+      },
+      {
+        "series_id": "DGORDER",
+        "status": "ok",
+        "new_rows": 0,
+        "error": null,
+        "elapsed": 0.9
+      },
+      {
+        "series_id": "AMTUNO",
+        "status": "ok",
+        "new_rows": 0,
+        "error": null,
+        "elapsed": 1.0
+      },
+      {
+        "series_id": "MNFCTRIRSA",
+        "status": "ok",
+        "new_rows": 0,
+        "error": null,
+        "elapsed": 0.9
+      },
+      {
+        "series_id": "MCUMFN",
+        "status": "ok",
+        "new_rows": 0,
+        "error": null,
+        "elapsed": 0.8
+      },
+      {
+        "series_id": "CAPUTLG211S",
+        "status": "ok",
+        "new_rows": 0,
+        "error": null,
+        "elapsed": 0.8
+      },
+      {
+        "series_id": "CAPUTLG331S",
+        "status": "ok",
+        "new_rows": 0,
+        "error": null,
+        "elapsed": 0.9
+      },
+      {
+        "series_id": "BUSLOANS",
+        "status": "ok",
+        "new_rows": 0,
+        "error": null,
+        "elapsed": 0.8
+      },
+      {
+        "series_id": "REALLN",
+        "status": "ok",
+        "new_rows": 0,
+        "error": null,
+        "elapsed": 0.8
+      },
+      {
+        "series_id": "CONSUMER",
+        "status": "ok",
+        "new_rows": 0,
+        "error": null,
+        "elapsed": 0.8
+      },
+      {
+        "series_id": "WPU054",
+        "status": "ok",
+        "new_rows": 0,
+        "error": null,
+        "elapsed": 0.8
+      },
+      {
+        "series_id": "WPU01",
+        "status": "ok",
+        "new_rows": 0,
+        "error": null,
+        "elapsed": 0.9
+      }
+    ],
+    "sector_refresh_details": [
+      {
+        "series_id": "CES3000000001",
+        "source": "BLS",
+        "status": "error",
+        "new_rows": 0,
+        "error": "BLS API error: ['Request could not be serviced, as the daily threshold for total number of requests allocated to the user with registration key  has been reached.']",
+        "elapsed": 0.6
+      },
+      {
+        "series_id": "CES4000000001",
+        "source": "BLS",
+        "status": "error",
+        "new_rows": 0,
+        "error": "BLS API error: ['Request could not be serviced, as the daily threshold for total number of requests allocated to the user with registration key  has been reached.']",
+        "elapsed": 0.4
+      },
+      {
+        "series_id": "CES5500000001",
+        "source": "BLS",
+        "status": "error",
+        "new_rows": 0,
+        "error": "BLS API error: ['Request could not be serviced, as the daily threshold for total number of requests allocated to the user with registration key  has been reached.']",
+        "elapsed": 0.4
+      },
+      {
+        "series_id": "CES6000000001",
+        "source": "BLS",
+        "status": "error",
+        "new_rows": 0,
+        "error": "BLS API error: ['Request could not be serviced, as the daily threshold for total number of requests allocated to the user with registration key  has been reached.']",
+        "elapsed": 0.4
+      },
+      {
+        "series_id": "CEU6500000001",
+        "source": "BLS",
+        "status": "error",
+        "new_rows": 0,
+        "error": "BLS API error: ['Request could not be serviced, as the daily threshold for total number of requests allocated to the user with registration key  has been reached.']",
+        "elapsed": 0.4
+      },
+      {
+        "series_id": "CEU7000000001",
+        "source": "BLS",
+        "status": "error",
+        "new_rows": 0,
+        "error": "BLS API error: ['Request could not be serviced, as the daily threshold for total number of requests allocated to the user with registration key  has been reached.']",
+        "elapsed": 0.4
+      },
+      {
+        "series_id": "CES1000000001",
+        "source": "BLS",
+        "status": "error",
+        "new_rows": 0,
+        "error": "BLS API error: ['Request could not be serviced, as the daily threshold for total number of requests allocated to the user with registration key  has been reached.']",
+        "elapsed": 0.4
+      },
+      {
+        "series_id": "CES2000000001",
+        "source": "BLS",
+        "status": "error",
+        "new_rows": 0,
+        "error": "BLS API error: ['Request could not be serviced, as the daily threshold for total number of requests allocated to the user with registration key  has been reached.']",
+        "elapsed": 0.4
+      },
+      {
+        "series_id": "CES5000000001",
+        "source": "BLS",
+        "status": "error",
+        "new_rows": 0,
+        "error": "BLS API error: ['Request could not be serviced, as the daily threshold for total number of requests allocated to the user with registration key  has been reached.']",
+        "elapsed": 0.4
+      },
+      {
+        "series_id": "CES9000000001",
+        "source": "BLS",
+        "status": "error",
+        "new_rows": 0,
+        "error": "BLS API error: ['Request could not be serviced, as the daily threshold for total number of requests allocated to the user with registration key  has been reached.']",
+        "elapsed": 0.4
+      },
+      {
+        "series_id": "CES3000000008",
+        "source": "BLS/BLS_Wages",
+        "status": "error",
+        "new_rows": 0,
+        "error": "BLS API error: ['Request could not be serviced, as the daily threshold for total number of requests allocated to the user with registration key  has been reached.']",
+        "elapsed": 1.0
+      },
+      {
+        "series_id": "CES4000000008",
+        "source": "BLS/BLS_Wages",
+        "status": "error",
+        "new_rows": 0,
+        "error": "BLS API error: ['Request could not be serviced, as the daily threshold for total number of requests allocated to the user with registration key  has been reached.']",
+        "elapsed": 0.4
+      },
+      {
+        "series_id": "CES5500000008",
+        "source": "BLS/BLS_Wages",
+        "status": "error",
+        "new_rows": 0,
+        "error": "BLS API error: ['Request could not be serviced, as the daily threshold for total number of requests allocated to the user with registration key  has been reached.']",
+        "elapsed": 0.4
+      },
+      {
+        "series_id": "CES6000000008",
+        "source": "BLS/BLS_Wages",
+        "status": "error",
+        "new_rows": 0,
+        "error": "BLS API error: ['Request could not be serviced, as the daily threshold for total number of requests allocated to the user with registration key  has been reached.']",
+        "elapsed": 0.4
+      },
+      {
+        "series_id": "CES2000000008",
+        "source": "BLS/BLS_Wages",
+        "status": "error",
+        "new_rows": 0,
+        "error": "BLS API error: ['Request could not be serviced, as the daily threshold for total number of requests allocated to the user with registration key  has been reached.']",
+        "elapsed": 0.4
+      },
+      {
+        "series_id": "CES5000000008",
+        "source": "BLS/BLS_Wages",
+        "status": "error",
+        "new_rows": 0,
+        "error": "BLS API error: ['Request could not be serviced, as the daily threshold for total number of requests allocated to the user with registration key  has been reached.']",
+        "elapsed": 0.4
+      },
+      {
+        "series_id": "CES3000000007",
+        "source": "BLS/BLS_Hours",
+        "status": "error",
+        "new_rows": 0,
+        "error": "BLS API error: ['Request could not be serviced, as the daily threshold for total number of requests allocated to the user with registration key  has been reached.']",
+        "elapsed": 0.4
+      },
+      {
+        "series_id": "CES6000000007",
+        "source": "BLS/BLS_Hours",
+        "status": "error",
+        "new_rows": 0,
+        "error": "BLS API error: ['Request could not be serviced, as the daily threshold for total number of requests allocated to the user with registration key  has been reached.']",
+        "elapsed": 0.4
+      },
+      {
+        "series_id": "CES2000000007",
+        "source": "BLS/BLS_Hours",
+        "status": "error",
+        "new_rows": 0,
+        "error": "BLS API error: ['Request could not be serviced, as the daily threshold for total number of requests allocated to the user with registration key  has been reached.']",
+        "elapsed": 0.4
+      },
+      {
+        "series_id": "JTS3000JOL",
+        "source": "BLS/JOLTS",
+        "status": "error",
+        "new_rows": 0,
+        "error": "BLS API error: ['Request could not be serviced, as the daily threshold for total number of requests allocated to the user with registration key  has been reached.']",
+        "elapsed": 0.4
+      },
+      {
+        "series_id": "JTS4000JOL",
+        "source": "BLS/JOLTS",
+        "status": "error",
+        "new_rows": 0,
+        "error": "BLS API error: ['Request could not be serviced, as the daily threshold for total number of requests allocated to the user with registration key  has been reached.']",
+        "elapsed": 0.4
+      },
+      {
+        "series_id": "JTS5500JOL",
+        "source": "BLS/JOLTS",
+        "status": "error",
+        "new_rows": 0,
+        "error": "BLS API error: ['Request could not be serviced, as the daily threshold for total number of requests allocated to the user with registration key  has been reached.']",
+        "elapsed": 0.4
+      },
+      {
+        "series_id": "JTS6000JOL",
+        "source": "BLS/JOLTS",
+        "status": "error",
+        "new_rows": 0,
+        "error": "BLS API error: ['Request could not be serviced, as the daily threshold for total number of requests allocated to the user with registration key  has been reached.']",
+        "elapsed": 0.4
+      },
+      {
+        "series_id": "JTS6500JOL",
+        "source": "BLS/JOLTS",
+        "status": "error",
+        "new_rows": 0,
+        "error": "BLS API error: ['Request could not be serviced, as the daily threshold for total number of requests allocated to the user with registration key  has been reached.']",
+        "elapsed": 0.4
+      },
+      {
+        "series_id": "JTS7000JOL",
+        "source": "BLS/JOLTS",
+        "status": "error",
+        "new_rows": 0,
+        "error": "BLS API error: ['Request could not be serviced, as the daily threshold for total number of requests allocated to the user with registration key  has been reached.']",
+        "elapsed": 0.4
+      },
+      {
+        "series_id": "JTS2300JOL",
+        "source": "BLS/JOLTS",
+        "status": "error",
+        "new_rows": 0,
+        "error": "BLS API error: ['Request could not be serviced, as the daily threshold for total number of requests allocated to the user with registration key  has been reached.']",
+        "elapsed": 0.4
+      },
+      {
+        "series_id": "XLK",
+        "source": "yfinance/ETF",
+        "status": "ok",
+        "new_rows": 316,
+        "error": null,
+        "elapsed": 0.7
+      },
+      {
+        "series_id": "XLF",
+        "source": "yfinance/ETF",
+        "status": "ok",
+        "new_rows": 316,
+        "error": null,
+        "elapsed": 0.3
+      },
+      {
+        "series_id": "XLV",
+        "source": "yfinance/ETF",
+        "status": "ok",
+        "new_rows": 316,
+        "error": null,
+        "elapsed": 0.2
+      },
+      {
+        "series_id": "XLE",
+        "source": "yfinance/ETF",
+        "status": "ok",
+        "new_rows": 316,
+        "error": null,
+        "elapsed": 0.4
+      },
+      {
+        "series_id": "XLI",
+        "source": "yfinance/ETF",
+        "status": "ok",
+        "new_rows": 316,
+        "error": null,
+        "elapsed": 0.3
+      },
+      {
+        "series_id": "XLP",
+        "source": "yfinance/ETF",
+        "status": "ok",
+        "new_rows": 316,
+        "error": null,
+        "elapsed": 0.3
+      },
+      {
+        "series_id": "XLY",
+        "source": "yfinance/ETF",
+        "status": "ok",
+        "new_rows": 316,
+        "error": null,
+        "elapsed": 0.3
+      },
+      {
+        "series_id": "XLU",
+        "source": "yfinance/ETF",
+        "status": "ok",
+        "new_rows": 316,
+        "error": null,
+        "elapsed": 0.3
+      },
+      {
+        "series_id": "XLRE",
+        "source": "yfinance/ETF",
+        "status": "ok",
+        "new_rows": 127,
+        "error": null,
+        "elapsed": 0.2
+      },
+      {
+        "series_id": "XLB",
+        "source": "yfinance/ETF",
+        "status": "ok",
+        "new_rows": 316,
+        "error": null,
+        "elapsed": 0.4
+      },
+      {
+        "series_id": "XLC",
+        "source": "yfinance/ETF",
+        "status": "ok",
+        "new_rows": 95,
+        "error": null,
+        "elapsed": 0.2
+      },
+      {
+        "series_id": "NV.IND.MANF.ZS",
+        "source": "WorldBank",
+        "status": "ok",
+        "new_rows": 0,
+        "error": null,
+        "elapsed": 0.5
+      },
+      {
+        "series_id": "NV.SRV.TOTL.ZS",
+        "source": "WorldBank",
+        "status": "ok",
+        "new_rows": 0,
+        "error": null,
+        "elapsed": 0.3
+      },
+      {
+        "series_id": "NV.IND.TOTL.ZS",
+        "source": "WorldBank",
+        "status": "ok",
+        "new_rows": 0,
+        "error": null,
+        "elapsed": 0.2
+      }
+    ],
+    "crunchbase_refresh_details": []
   }
 ]
