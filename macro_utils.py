@@ -94,13 +94,17 @@ def train_series_models(series_cols, X_tr, y_tr_dict, X_vl, y_vl_dict,
 # ── Recursive forecasting ─────────────────────────────────────────────────────
 
 def joint_recursive_forecast(df_base, models, feature_cols, series_cols,
-                              clip_ranges, horizon=12):
+                              clip_ranges, horizon=12, feature_engineer=None):
     """
     Jointly forecast all series for `horizon` months using recursive prediction.
-    df_base : DataFrame with 'date' + series_cols columns (full historical data)
-    models  : {col: {"mid", "lo", "hi"}}
+    df_base          : DataFrame with 'date' + series_cols columns (full historical data)
+    models           : {col: {"mid", "lo", "hi"}}
+    feature_engineer : optional callable(df, series_cols) -> df_with_features;
+                       defaults to engineer_features if None
     Returns : {col: DataFrame(date, mid, lo, hi)}
     """
+    if feature_engineer is None:
+        feature_engineer = engineer_features
     work = df_base[["date"] + series_cols].copy()
     out  = {col: {"dates": [], "mid": [], "lo": [], "hi": []}
             for col in series_cols if col in models}
@@ -110,7 +114,7 @@ def joint_recursive_forecast(df_base, models, feature_cols, series_cols,
         placeholder = {col: np.nan for col in series_cols}
         placeholder["date"] = next_date
         temp      = pd.concat([work, pd.DataFrame([placeholder])], ignore_index=True)
-        temp_feat = engineer_features(temp, series_cols)
+        temp_feat = feature_engineer(temp, series_cols)
         feat_row  = temp_feat[feature_cols].iloc[[-1]]
 
         step_preds = {}

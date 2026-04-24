@@ -14,6 +14,7 @@ Via fred_refresh.py:
 
 from __future__ import annotations
 
+import bisect
 import csv
 import logging
 import os
@@ -57,7 +58,56 @@ ENRICHED_EXTRA_COLS: list[str] = [
     "trailing_pe", "market_cap", "eps_trailing",
     "week52_high", "week52_low", "price_momentum_30d",
     "ev_ebitda", "revenue_growth_yoy", "debt_to_equity",
+    "spy_cross_9_20", "spy_cross_20_50",
 ]
+
+
+# ── SPY market bias signals ───────────────────────────────────────────────────
+
+def _load_spy_signal_table() -> list[tuple[str, dict]]:
+    """Return a sorted list of (date_str, signals_dict) from the SPY cache.
+
+    Uses MarketBiasConnector to fetch/update the SPY daily cache and compute
+    9/20/50-day SMA crossover signals.  Returns [] on any failure so the rest
+    of enrichment proceeds unaffected.
+    """
+    try:
+        from connectors.market_bias import MarketBiasConnector
+        connector = MarketBiasConnector()
+        spy = connector.load()
+        signals_df = connector._compute_signals(spy)
+        table = [
+            (
+                row["date"].strftime("%Y-%m-%d"),
+                {
+                    "spy_cross_9_20":  row["spy_cross_9_20"],
+                    "spy_cross_20_50": row["spy_cross_20_50"],
+                },
+            )
+            for _, row in signals_df.iterrows()
+            if row["spy_cross_9_20"] is not None and str(row["spy_cross_9_20"]) != "<NA>"
+        ]
+        table.sort(key=lambda x: x[0])
+        log.info("[ENRICH] SPY signal table loaded: %d trading days", len(table))
+        return table
+    except Exception as exc:
+        log.warning("[ENRICH] SPY signal table unavailable — %s", exc)
+        return []
+
+
+def _spy_signals_for_date(date_str: str, table: list[tuple[str, dict]]) -> dict:
+    """Return the most recent SPY crossover signals on or before *date_str*.
+
+    Uses binary search for O(log n) lookup.  Returns {} if the table is empty
+    or all entries are after *date_str*.
+    """
+    if not table:
+        return {}
+    keys = [row[0] for row in table]
+    idx = bisect.bisect_right(keys, date_str) - 1
+    if idx < 0:
+        return {}
+    return table[idx][1]
 
 
 # ── yfinance signals ──────────────────────────────────────────────────────────
@@ -192,11 +242,17 @@ def enrich_articles(articles: list[dict], api_keys: dict) -> list[dict]:
         for ticker in sp500_tickers:
             fmp_cache[ticker] = fetch_fmp_fundamentals(fmp_key, ticker)
 
+    # SPY market bias signals (loaded once, looked up per article date)
+    spy_table = _load_spy_signal_table()
+
     # Merge signals into each article
     enriched: list[dict] = []
     for art in articles:
         t = (art.get("ticker") or "").strip().upper()
         signals = {**yf_cache.get(t, {}), **fmp_cache.get(t, {})}
+        # Add SPY crossover signal for this article's publication date
+        ts = (art.get("timestamp") or "")[:10]  # "YYYY-MM-DD" prefix
+        signals.update(_spy_signals_for_date(ts, spy_table))
         merged = dict(art)
         for col in ENRICHED_EXTRA_COLS:
             merged[col] = signals.get(col)

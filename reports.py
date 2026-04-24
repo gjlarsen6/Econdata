@@ -42,6 +42,24 @@ RESULT_FILES = [
     ("results_sector_bea",               "BEA Industry GDP"),
     ("results_sector_jolts",             "JOLTS Labor Turnover"),
     ("results_sector_etf",               "S&P 500 Sector ETFs"),
+    # ── Weather climate models ─────────────────────────────────────────────────
+    # National (always included when weather models have been trained)
+    ("results_weather_temperature_national",      "Weather: Temperature & Energy (National)"),
+    ("results_weather_precipitation_national",    "Weather: Precipitation & Disruption (National)"),
+    ("results_weather_extremes_national",         "Weather: Extreme Events & Renewables (National)"),
+    # Regional — silently skipped if not yet generated
+    ("results_weather_temperature_northeast",     "Weather: Temperature & Energy (Northeast)"),
+    ("results_weather_temperature_midwest",       "Weather: Temperature & Energy (Midwest)"),
+    ("results_weather_temperature_south",         "Weather: Temperature & Energy (South)"),
+    ("results_weather_temperature_west",          "Weather: Temperature & Energy (West)"),
+    ("results_weather_precipitation_northeast",   "Weather: Precipitation & Disruption (Northeast)"),
+    ("results_weather_precipitation_midwest",     "Weather: Precipitation & Disruption (Midwest)"),
+    ("results_weather_precipitation_south",       "Weather: Precipitation & Disruption (South)"),
+    ("results_weather_precipitation_west",        "Weather: Precipitation & Disruption (West)"),
+    ("results_weather_extremes_northeast",        "Weather: Extreme Events & Renewables (Northeast)"),
+    ("results_weather_extremes_midwest",          "Weather: Extreme Events & Renewables (Midwest)"),
+    ("results_weather_extremes_south",            "Weather: Extreme Events & Renewables (South)"),
+    ("results_weather_extremes_west",             "Weather: Extreme Events & Renewables (West)"),
 ]
 
 # Signal paragraphs keyed by group name. {placeholders} are filled with live data.
@@ -201,6 +219,28 @@ _SIGNALS: dict[str, str] = {
         "Communications (XLC) weighting in the S&P 500 makes their relative performance "
         "a dominant driver of index-level returns."
     ),
+    # ── Weather climate models ─────────────────────────────────────────────────
+    "Weather: Temperature & Energy (National)": (
+        "National mean temperature for the latest month was {temp_mean_last}°F "
+        "(anomaly: {temp_anom_last}°F vs 2000–2019 baseline). Heating Degree Days "
+        "({hdd_last} → {hdd_12m} forecast) proxy residential and commercial gas/electric "
+        "demand. Cooling Degree Days ({cdd_last} → {cdd_12m}) drive peak summer electricity "
+        "load. Positive temperature anomalies signal above-baseline energy demand."
+    ),
+    "Weather: Precipitation & Disruption (National)": (
+        "Monthly precipitation total: {precip_total_last} in across {precip_days_last} wet days. "
+        "Extreme precipitation events ({extreme_precip_days_last} days >1 in) are a leading "
+        "indicator of supply chain disruption and construction delays. Snow depth "
+        "({snow_total_last} in) affects logistics and retail foot traffic. "
+        "Forecast: {precip_total_12m} in by month +12."
+    ),
+    "Weather: Extreme Events & Renewables (National)": (
+        "Extreme heat days (>90°F): {extreme_heat_days_last}; "
+        "extreme cold days (<32°F): {extreme_cold_days_last}. "
+        "Wind speed ({wind_mean_last} mph → {wind_mean_12m} mph) proxies wind energy output. "
+        "Cloud cover ({cloud_cover_mean_last}%) inversely tracks solar generation potential. "
+        "Elevated extremes correlate with utility earnings volatility and agricultural commodity shocks."
+    ),
 }
 
 # Series ID → short alias for use in signal templates
@@ -277,6 +317,19 @@ _ALIASES: dict[str, str] = {
     "NV.IND.MANF.ZS": "mfg_gdp_pct",
     "NV.IND.TOTL.ZS":  "ind_gdp_pct",
     "NV.SRV.TOTL.ZS":  "svc_gdp_pct",
+    # Weather climate series (identity aliases — series IDs are already human-readable)
+    "temp_mean":            "temp_mean",
+    "hdd":                  "hdd",
+    "cdd":                  "cdd",
+    "temp_anom":            "temp_anom",
+    "precip_total":         "precip_total",
+    "precip_days":          "precip_days",
+    "snow_total":           "snow_total",
+    "extreme_precip_days":  "extreme_precip_days",
+    "extreme_heat_days":    "extreme_heat_days",
+    "extreme_cold_days":    "extreme_cold_days",
+    "wind_mean":            "wind_mean",
+    "cloud_cover_mean":     "cloud_cover_mean",
 }
 
 

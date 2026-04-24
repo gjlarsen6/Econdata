@@ -1,0 +1,130 @@
+{
+  "date": "2026-04-23",
+  "generated_at": "2026-04-23T18:34:51",
+  "article_count": 118,
+  "top_stories": [
+    {
+      "timestamp": "2026-04-23T16:31:35.000000Z",
+      "source_name": "seekingalpha.com",
+      "sector": "banking",
+      "ticker": "IBCP",
+      "headline": "Independent Bank Corporation (IBCP) Q1 2026 Earnings Call Transcript",
+      "sentiment": 0.448525,
+      "sentiment_label": "positive",
+      "macro_tag": "earnings",
+      "market_impact_score": 0.5621
+    },
+    {
+      "timestamp": "2026-04-23T16:02:24Z",
+      "source_name": "Reuters",
+      "sector": "equities",
+      "ticker": NaN,
+      "headline": "Wall St muted as Middle East impasse, mixed earnings hurt sentiment - Reuters",
+      "sentiment": null,
+      "sentiment_label": NaN,
+      "macro_tag": "earnings",
+      "market_impact_score": 0.55
+    },
+    {
+      "timestamp": "2026-04-23T14:21:02Z",
+      "source_name": "Reuters",
+      "sector": "macro",
+      "ticker": NaN,
+      "headline": "Iran war impact seeps ever deeper into global economy - Reuters",
+      "sentiment": null,
+      "sentiment_label": NaN,
+      "macro_tag": "earnings",
+      "market_impact_score": 0.55
+    },
+    {
+      "timestamp": "2026-04-23T00:29:00Z",
+      "source_name": "Reuters",
+      "sector": "macro",
+      "ticker": NaN,
+      "headline": "Japan's Nikkei reverses below 60,000 level as profit-taking steps in - Reuters",
+      "sentiment": null,
+      "sentiment_label": NaN,
+      "macro_tag": "earnings",
+      "market_impact_score": 0.55
+    },
+    {
+      "timestamp": "2026-04-23T16:32:34.000000Z",
+      "source_name": "seekingalpha.com",
+      "sector": "macro",
+      "ticker": "KALU",
+      "headline": "Kaiser Aluminum raises 2026 outlook, targeting 10%-15% conversion revenue growth and 20%-30% EBITDA growth (NASDAQ:KALU)",
+      "sentiment": 0.6369,
+      "sentiment_label": "positive",
+      "macro_tag": NaN,
+      "market_impact_score": 0.5192
+    },
+    {
+      "timestamp": "2026-04-23T18:08:51.000000Z",
+      "source_name": "benzinga.com",
+      "sector": "equities",
+      "ticker": "ACN",
+      "headline": "What's Going On With Accenture Stock Today? - Accenture (NYSE:ACN)",
+      "sentiment": 0.144963,
+      "sentiment_label": "positive",
+      "macro_tag": NaN,
+      "market_impact_score": 0.4962
+    },
+    {
+      "timestamp": "2026-04-23T01:12:20Z",
+      "source_name": "CNBC",
+      "sector": "macro",
+      "ticker": NaN,
+      "headline": "Microsoft looked at buying Cursor before SpaceX deal, sources say",
+      "sentiment": null,
+      "sentiment_label": NaN,
+      "macro_tag": "ipo",
+      "market_impact_score": 0.49
+    },
+    {
+      "timestamp": "2026-04-23T16:31:39.000000Z",
+      "source_name": "seekingalpha.com",
+      "sector": "energy",
+      "ticker": "NEE-PQ",
+      "headline": "NextEra Energy, Inc. (NEE) Q1 2026 Earnings Call Transcript",
+      "sentiment": 0.1484,
+      "sentiment_label": "positive",
+      "macro_tag": "earnings",
+      "market_impact_score": 0.4871
+    },
+    {
+      "timestamp": "2026-04-23T05:00:21Z",
+      "source_name": "Reuters",
+      "sector": "macro",
+      "ticker": NaN,
+      "headline": "China's LNG imports plunge, helping Asia adjust to Iran war losses - Reuters",
+      "sentiment": null,
+      "sentiment_label": NaN,
+      "macro_tag": NaN,
+      "market_impact_score": 0.46
+    },
+    {
+      "timestamp": "2026-04-23T13:10:47Z",
+      "source_name": "Reuters",
+      "sector": "macro",
+      "ticker": NaN,
+      "headline": "Iran takes seized ships to port, countries check on seafarers' safety - Reuters",
+      "sentiment": null,
+      "sentiment_label": NaN,
+      "macro_tag": NaN,
+      "market_impact_score": 0.46
+    }
+  ],
+  "sector_mood": {
+    "banking": 0.449,
+    "energy": 0.103,
+    "equities": 0.145,
+    "macro": 0.637
+  },
+  "macro_signals": [
+    "Market regime: Contraction (FSI=0.454)",
+    "6 earnings articles today",
+    "Macro sentiment positive (+0.637)",
+    "Banking sentiment positive (+0.449)"
+  ],
+  "alerts": []
+}

@@ -308,8 +308,8 @@ def refresh_series(series_id: str, api_key: str,
 def _parse_args() -> argparse.Namespace:
     p = argparse.ArgumentParser(
         description=(
-            "FRED Weekly Refresh + optional Sector API refresh.\n"
-            "FRED data refresh always runs. Sector APIs are opt-in via --sector."
+            "FRED Weekly Refresh + optional Sector API / Weather refresh.\n"
+            "FRED data refresh always runs. Sector APIs and weather are opt-in."
         )
     )
     p.add_argument(
@@ -364,6 +364,71 @@ def _parse_args() -> argparse.Namespace:
             "Requires yfinance installed. FMP fundamentals require FMP_API_KEY. "
             "Writes data/FinancialNews/enriched/news_enriched.csv."
         ),
+    )
+    p.add_argument(
+        "--weather",
+        action="store_true",
+        default=False,
+        help=(
+            "Refresh local Visual Crossing weather database with missing year files. "
+            "Requires VISUAL_CROSSING_API_KEY in environment or .env file. "
+            "By default fetches 2020 to present for all cities. "
+            "Use --weather-state / --weather-city to target a single location."
+        ),
+    )
+    p.add_argument(
+        "--weather-state",
+        default=None,
+        metavar="XX",
+        help="2-letter state code to refresh (e.g. CA). Requires --weather.",
+    )
+    p.add_argument(
+        "--weather-city",
+        default=None,
+        metavar="NAME",
+        help="City name to refresh (e.g. 'Bakersfield'). Requires --weather and --weather-state.",
+    )
+    p.add_argument(
+        "--weather-from-year",
+        type=int,
+        default=2020,
+        metavar="YYYY",
+        help="First year to fetch for weather refresh (default: 2020).",
+    )
+    p.add_argument(
+        "--weather-to-year",
+        type=int,
+        default=datetime.now().year,
+        metavar="YYYY",
+        help=f"Last year to fetch for weather refresh (default: {datetime.now().year}).",
+    )
+    p.add_argument(
+        "--weather-models",
+        action="store_true",
+        default=False,
+        help=(
+            "Train weather LightGBM climate models (temperature, precipitation, extremes). "
+            "Aggregates all city/state data to monthly regional indices and trains "
+            "12-month forecasting models. Runs after --weather data refresh if both flags "
+            "are provided. Use --weather-models-geo and --weather-models-source to restrict scope."
+        ),
+    )
+    p.add_argument(
+        "--weather-models-geo",
+        nargs="+",
+        choices=["northeast", "midwest", "south", "west", "national", "all"],
+        default=["national"],
+        metavar="GEO",
+        help="Geographies to train weather models for (default: national).",
+    )
+    p.add_argument(
+        "--weather-models-source",
+        nargs="+",
+        choices=["temperature_energy", "precipitation_disruption",
+                 "extremes_composite", "all"],
+        default=["all"],
+        metavar="SOURCE",
+        help="Weather source groups to train (default: all).",
     )
     return p.parse_args()
 
@@ -510,6 +575,34 @@ def run_sector_model_script(sources: list[str]) -> dict:
     return {"script": SECTOR_MODEL_SCRIPT, "ok": ok,
             "elapsed": elapsed, "stderr": ret.stderr}
 
+def run_weather_model_script(
+    geo: list[str],
+    source: list[str],
+) -> dict:
+    """Run weather_model.py as a subprocess for the given geo/source combinations.
+
+    Mirrors run_sector_model_script() exactly.
+    Returns a dict with keys: ok, elapsed, stderr.
+    """
+    script = "weather_model.py"
+    log.info("  Running %s --geo %s --source %s ...",
+             script, " ".join(geo), " ".join(source))
+    t0  = time.time()
+    ret = subprocess.run(
+        [sys.executable, str(BASE_DIR / script),
+         "--geo"] + geo + ["--source"] + source,
+        capture_output=True, text=True, cwd=str(BASE_DIR),
+    )
+    elapsed = round(time.time() - t0, 1)
+    ok = ret.returncode == 0
+    if not ok:
+        log.warning(
+            "  %s exited %d:\n%s",
+            script, ret.returncode, ret.stderr[-800:],
+        )
+    return {"script": script, "ok": ok, "elapsed": elapsed, "stderr": ret.stderr}
+
+
 # ── Crunchbase VC data refresh ────────────────────────────────────────────────
 
 def refresh_crunchbase_data(api_key: str | None) -> list[dict]:
@@ -534,6 +627,72 @@ def refresh_crunchbase_data(api_key: str | None) -> list[dict]:
 
     log.info("  Refreshing Crunchbase VC data (AI, Fintech, Healthcare) ...")
     return crunchbase_apis.refresh_crunchbase(api_key)
+
+
+# ── Weather data refresh ──────────────────────────────────────────────────────
+
+def refresh_weather_data(
+    state: str | None = None,
+    city: str | None = None,
+    from_year: int = 2020,
+    to_year: int | None = None,
+) -> list[dict]:
+    """
+    Import weather_refresh and update the local Visual Crossing weather database.
+
+    Behaviour:
+      - state + city  → refresh that single city only
+      - state only    → refresh all cities in the state
+      - neither       → refresh all cities in the entire database
+
+    Missing or invalid VISUAL_CROSSING_API_KEY causes a warning + empty return
+    rather than crashing the FRED pipeline.
+    """
+    try:
+        import weather_refresh as wr  # lazy import — not required for non-weather runs
+    except ImportError:
+        log.error("weather_refresh.py not found — weather refresh unavailable.")
+        return []
+
+    vc_key = os.getenv("VISUAL_CROSSING_API_KEY", "").strip()
+    if not vc_key:
+        log.warning(
+            "  Weather refresh skipped — VISUAL_CROSSING_API_KEY not set "
+            "in environment or .env file."
+        )
+        return []
+
+    _to_year = to_year or datetime.now().year
+    kwargs: dict = dict(
+        api_key=vc_key,
+        from_year=from_year,
+        to_year=_to_year,
+        overwrite=False,
+    )
+
+    if state and city:
+        log.info("  Refreshing weather for %s / %s (%d–%d) ...",
+                 state.upper(), city, from_year, _to_year)
+        return wr.refresh_city(state, city, **kwargs)
+
+    if state:
+        log.info("  Refreshing weather for all cities in %s (%d–%d) ...",
+                 state.upper(), from_year, _to_year)
+        state_dir = wr.WEATHER_DIR / state.upper()
+        if not state_dir.exists():
+            log.warning("  Weather state directory not found: %s", state_dir)
+            return []
+        results: list[dict] = []
+        row_counter: list[int] = [0]
+        for city_dir in sorted(d for d in state_dir.iterdir() if d.is_dir()):
+            results.extend(
+                wr.refresh_city(state, city_dir.name,
+                                _row_counter=row_counter, **kwargs)
+            )
+        return results
+
+    log.info("  Refreshing weather for all cities (%d–%d) ...", from_year, _to_year)
+    return wr.refresh_all(**kwargs)
 
 
 def detect_new_vc_csvs_needing_models() -> list[str]:
@@ -725,6 +884,7 @@ def print_model_update_summary(
     sector_refresh_results: list[dict],
     fred_series_ok: int,
     fred_series_errors: int,
+    weather_model_result: dict | None = None,
 ) -> None:
     """Print a compact model-update status table at the end of every run."""
     from collections import defaultdict
@@ -807,6 +967,18 @@ def print_model_update_summary(
             "Detail":     f"{elapsed}s" if ok else f"{elapsed}s — {err_hint}",
         })
 
+    # Weather ML model
+    if weather_model_result is not None:
+        ok      = weather_model_result["ok"]
+        elapsed = weather_model_result["elapsed"]
+        err_snip = (weather_model_result.get("stderr") or "").strip().splitlines()
+        err_hint = err_snip[-1][:80] if err_snip else ""
+        rows.append({
+            "Component":  "weather_model.py",
+            "Status":     "OK" if ok else "FAILED",
+            "Detail":     f"{elapsed}s" if ok else f"{elapsed}s — {err_hint}",
+        })
+
     bar = "═" * 110
     print(f"\n{bar}")
     print("  MODEL UPDATE SUMMARY")
@@ -828,6 +1000,15 @@ def main():
         log.info("Crunchbase VC refresh enabled (AI, Fintech, Healthcare)")
     if args.news:
         log.info("Financial news refresh enabled: %s", args.news)
+    if args.weather:
+        loc = (f"{args.weather_state.upper()}/{args.weather_city}"
+               if args.weather_state and args.weather_city
+               else (args.weather_state.upper() if args.weather_state else "all cities"))
+        log.info("Weather refresh enabled: %s (%d–%d)",
+                 loc, args.weather_from_year, args.weather_to_year)
+    if args.weather_models and not args.skip_models:
+        log.info("Weather ML models enabled: geo=%s  source=%s",
+                 args.weather_models_geo, args.weather_models_source)
     if args.skip_models:
         log.info("--skip-models: model re-training and briefing generation disabled")
     log.info("=" * 65)
@@ -856,6 +1037,10 @@ def main():
     if args.news:
         total_steps += 2 if not args.skip_models else 1
     if args.enrich:
+        total_steps += 1
+    if args.weather:
+        total_steps += 1
+    if args.weather_models:
         total_steps += 1
 
     # ── Step 1: Refresh all FRED series ──────────────────────────────────────
@@ -1018,10 +1203,55 @@ def main():
                 enrichment_apis.save_enriched(enriched)
                 log.info("[ENRICH] %d articles enriched", len(enriched))
 
+    # ── Step 1f: Optional weather database refresh ────────────────────────────
+    weather_refresh_results: list[dict] = []
+    if args.weather:
+        weather_step = (
+            2
+            + (1 if args.sector else 0)
+            + (1 if args.crunchbase else 0)
+            + ((2 if not args.skip_models else 1) if args.news else 0)
+            + (1 if args.enrich else 0)
+        )
+        log.info("\n[%d/%d] Refreshing Visual Crossing weather database ...",
+                 weather_step, total_steps)
+        weather_refresh_results = refresh_weather_data(
+            state=args.weather_state,
+            city=args.weather_city,
+            from_year=args.weather_from_year,
+            to_year=args.weather_to_year,
+        )
+        w_ok  = sum(1 for r in weather_refresh_results if r.get("status") == "ok")
+        w_skip = sum(1 for r in weather_refresh_results if r.get("status") == "skipped")
+        w_err = sum(1 for r in weather_refresh_results if r.get("status") == "error")
+        w_rows = sum(r.get("rows", 0) for r in weather_refresh_results)
+        if weather_refresh_results:
+            from tabulate import tabulate as _tab
+            w_table = [
+                {
+                    "State":   r.get("state", "?"),
+                    "City":    r.get("city", "?"),
+                    "Year":    r.get("year", "?"),
+                    "Rows":    r.get("rows", 0),
+                    "Status":  r.get("status", "?"),
+                    "Elapsed": f"{r.get('elapsed', 0):.1f}s",
+                }
+                for r in weather_refresh_results
+                if r.get("status") != "skipped"   # hide skipped rows for brevity
+            ]
+            if w_table:
+                print("\n")
+                print(_tab(w_table, headers="keys",
+                           tablefmt="rounded_outline", stralign="right"))
+        log.info(
+            "Weather refresh complete: %d fetched (%s rows)  %d skipped  %d errors",
+            w_ok, f"{w_rows:,}", w_skip, w_err,
+        )
+
     # ── Step 2: Re-train FRED LightGBM models ────────────────────────────────
     fred_step = 2 + (1 if args.sector else 0) + (1 if args.crunchbase else 0) + (
         (2 if not args.skip_models else 1) if args.news else 0
-    ) + (1 if args.enrich else 0)
+    ) + (1 if args.enrich else 0) + (1 if args.weather else 0)
     model_results: list[dict] = []
 
     if args.skip_models:
@@ -1074,6 +1304,25 @@ def main():
         log.info("  %-35s  %s  (%ss)",
                  VC_MODEL_SCRIPT, status, vc_model_result["elapsed"])
 
+    # ── Step 2d: Train weather ML models ─────────────────────────────────────
+    weather_model_result: dict | None = None
+    if args.weather_models and not args.skip_models:
+        weather_model_step = (
+            fred_step
+            + (1 if args.sector else 0)
+            + (1 if args.crunchbase else 0)
+            + 1
+        )
+        log.info("\n[%d/%d] Training weather LightGBM climate models ...",
+                 weather_model_step, total_steps)
+        weather_model_result = run_weather_model_script(
+            geo=args.weather_models_geo,
+            source=args.weather_models_source,
+        )
+        status = "OK" if weather_model_result["ok"] else "FAILED"
+        log.info("  %-35s  %s  (%ss)",
+                 "weather_model.py", status, weather_model_result["elapsed"])
+
     # ── Step 3: Print unified summary table ───────────────────────────────────
     summary_step = total_steps
     log.info("\n[%d/%d] Building unified summary table ...",
@@ -1089,18 +1338,21 @@ def main():
     if args.crunchbase:
         vc_results = sorted(OUTPUT_DIR.glob(VC_RESULTS_PATTERN))
         all_results_files.extend(vc_results)
+    if args.weather_models:
+        weather_model_results = sorted(OUTPUT_DIR.glob("results_weather_*.json"))
+        all_results_files.extend(weather_model_results)
 
     has_industrial = bool(industrial_results)
-    if args.sector and args.crunchbase:
-        table_title = "MACRO + INDUSTRIAL + SECTOR + VC MODEL SUMMARY — FRED Weekly Refresh"
-    elif args.sector:
-        table_title = "MACRO + INDUSTRIAL + SECTOR MODEL SUMMARY — FRED Weekly Refresh"
-    elif args.crunchbase:
-        table_title = "MACRO + INDUSTRIAL + VC MODEL SUMMARY — FRED Weekly Refresh"
-    elif has_industrial:
-        table_title = "MACRO + INDUSTRIAL MODEL SUMMARY — FRED Weekly Refresh"
-    else:
-        table_title = "MACRO MODEL SUMMARY — FRED Weekly Refresh"
+    _parts = ["MACRO"]
+    if has_industrial:
+        _parts.append("INDUSTRIAL")
+    if args.sector:
+        _parts.append("SECTOR")
+    if args.crunchbase:
+        _parts.append("VC")
+    if args.weather_models:
+        _parts.append("WEATHER")
+    table_title = " + ".join(_parts) + " MODEL SUMMARY — FRED Weekly Refresh"
     print_market_snapshot(OUTPUT_DIR)
     print_summary_table(all_results_files, title=table_title)
     print_model_update_summary(
@@ -1110,18 +1362,27 @@ def main():
         sector_refresh_results,
         ok_count,
         err_count,
+        weather_model_result=weather_model_result,
     )
 
     # Final status
-    all_fred_ok   = all(mr["ok"] for mr in model_results)
-    all_sector_ok = (sector_model_result is None or sector_model_result["ok"])
-    all_vc_ok     = (vc_model_result is None or vc_model_result["ok"])
-    all_ok        = all_fred_ok and all_sector_ok and all_vc_ok and err_count == 0
+    all_fred_ok       = all(mr["ok"] for mr in model_results)
+    all_sector_ok     = (sector_model_result is None or sector_model_result["ok"])
+    all_vc_ok         = (vc_model_result is None or vc_model_result["ok"])
+    all_weather_ml_ok = (weather_model_result is None or weather_model_result["ok"])
+    all_ok            = (all_fred_ok and all_sector_ok and all_vc_ok
+                         and all_weather_ml_ok and err_count == 0)
     extras = []
     if args.sector:
         extras.append(f"{len(sector_refresh_results)} sector series refreshed")
     if args.crunchbase:
         extras.append(f"{len(crunchbase_refresh_results)} VC segments refreshed")
+    if args.weather:
+        w_ok_final = sum(1 for r in weather_refresh_results if r.get("status") == "ok")
+        extras.append(f"{w_ok_final} weather year-files fetched")
+    if args.weather_models and weather_model_result is not None:
+        wm_status = "OK" if weather_model_result["ok"] else "FAILED"
+        extras.append(f"weather models {wm_status}")
     log.info(
         "\nRefresh %s  (%d FRED series refreshed, %d FRED models updated%s)",
         "COMPLETED SUCCESSFULLY" if all_ok else "COMPLETED WITH WARNINGS",
@@ -1143,9 +1404,17 @@ def main():
         "crunchbase_enabled":           args.crunchbase,
         "crunchbase_segments_refreshed":len(crunchbase_refresh_results),
         "vc_model_ok":                  vc_model_result["ok"] if vc_model_result else None,
+        "weather_enabled":              args.weather,
+        "weather_files_fetched":        sum(1 for r in weather_refresh_results
+                                            if r.get("status") == "ok"),
+        "weather_errors":               sum(1 for r in weather_refresh_results
+                                            if r.get("status") == "error"),
+        "weather_models_enabled":       args.weather_models,
+        "weather_models_ok":            weather_model_result["ok"] if weather_model_result else None,
         "refresh_details":              refresh_results,
         "sector_refresh_details":       sector_refresh_results,
         "crunchbase_refresh_details":   crunchbase_refresh_results,
+        "weather_refresh_details":      weather_refresh_results,
     }
     log_path = OUTPUT_DIR / "refresh_log.json"
     existing_log: list = []
