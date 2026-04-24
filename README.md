@@ -1,6 +1,6 @@
 # econdata — Macroeconomic Forecasting & Process Monitoring
 
-A production-ready pipeline that refreshes U.S. economic data from public APIs, retrains LightGBM forecasting models, and prints a unified summary table of 12-month outlooks — designed to run weekly with a single command.
+A production-ready pipeline that refreshes U.S. economic data from public APIs, retrains LightGBM forecasting models, and prints a unified summary table of 12-month outlooks — designed to run weekly with a single command. Includes a full weather ML pipeline that aggregates city-level daily climate observations into regional/national monthly series and trains LightGBM forecasters for temperature, precipitation, and extreme-event indicators.
 
 **Phase 0** extensions (no additional API keys required) add market risk indicators (VIX, credit spreads, USD index), commodity prices (WTI oil, gold), the full Treasury yield curve (8 tenors), and a composite Financial Stress Index with market regime classification — all sourced from FRED.
 
@@ -8,7 +8,7 @@ A production-ready pipeline that refreshes U.S. economic data from public APIs, 
 
 **Phase 2** adds yfinance/FMP article enrichment (`enrichment_apis.py`) and a LightGBM ML layer (`news_model.py`) that trains on 30+ days of Phase 1 data to forecast sector sentiment and article volume trends. Enable enrichment with `--enrich`; run `news_model.py` directly after data has accumulated.
 
-Optional modules extend coverage to industry-level employment and GDP data (BLS, BEA, World Bank) and Venture Capital activity by sector (Crunchbase — AI, Fintech, Healthcare).
+Optional modules extend coverage to industry-level employment and GDP data (BLS, BEA, World Bank), Venture Capital activity by sector (Crunchbase — AI, Fintech, Healthcare), and U.S. climate analytics (weather_model.py — 3 model groups × 5 geographies using city-level daily station data).
 
 ---
 
@@ -25,13 +25,15 @@ Steps 1–5 are **flags on the same script** and can be combined into a single c
 | 1 | `python3 fred_refresh.py` | *(base)* Fetch all FRED macro series + retrain core LightGBM models (7 groups) | Weekly |
 | 2 | `+ --sector` | Also fetch BLS/BEA/World Bank sector data + retrain sector models *(optional)* | Weekly |
 | 3 | `+ --crunchbase` | Also fetch Crunchbase VC data + retrain VC model *(optional, requires API key)* | Weekly |
-| 4 | `+ --news daily` | Also ingest latest financial news articles (Phase 1) *(requires ≥1 news API key)* | Daily |
-| 5 | `+ --enrich` | Also enrich news articles with yfinance/FMP signals (Phase 2) *(optional)* | Daily |
-| 6 | `python3 news_model.py` | Separate script — train sentiment & volume forecast models on 30+ days of news data (Phase 2) | Weekly (after ≥30 days of news) |
+| 4 | `+ --weather` | Also refresh city-level weather data for all U.S. states/cities via `weather_refresh.py` *(optional)* | Weekly |
+| 5 | `+ --weather-models` | Also train LightGBM climate forecast models (temperature, precipitation, extremes) *(optional, requires --weather data)* | Weekly |
+| 6 | `+ --news daily` | Also ingest latest financial news articles (Phase 1) *(requires ≥1 news API key)* | Daily |
+| 7 | `+ --enrich` | Also enrich news articles with yfinance/FMP signals (Phase 2) *(optional)* | Daily |
+| 8 | `python3 news_model.py` | Separate script — train sentiment & volume forecast models on 30+ days of news data (Phase 2) | Weekly (after ≥30 days of news) |
 
 > **Full refresh in one command** (combine any flags you need):
 > ```bash
-> python3 fred_refresh.py --sector --crunchbase --news daily --enrich && python3 news_model.py
+> python3 fred_refresh.py --sector --crunchbase --weather --weather-models --news daily --enrich && python3 news_model.py
 > ```
 
 ### Generate Reports
@@ -67,19 +69,20 @@ Steps 1–5 are **flags on the same script** and can be combined into a single c
 5. [Running the Weekly Refresh](#running-the-weekly-refresh)
 6. [Sector API Integration](#sector-api-integration)
 7. [Crunchbase VC Integration](#crunchbase-vc-integration)
-8. [LightGBM Forecasting Models](#lightgbm-forecasting-models)
-9. [Model Scripts](#model-scripts)
-10. [Shared Utilities — macro_utils.py](#shared-utilities--macro_utilspy)
-11. [Summary Table Output](#summary-table-output)
-12. [Reports — reports.py](#reports--reportspy)
-13. [REST API — api.py](#rest-api--apipy)
-14. [API Testing](#api-testing)
-15. [TEP Fault Detection — train.py](#tep-fault-detection--trainpy)
-16. [Output Files Reference](#output-files-reference)
-17. [Data Files Reference](#data-files-reference)
-18. [Scheduling with Cron](#scheduling-with-cron)
-19. [Adding New Series](#adding-new-series)
-20. [Phase Roadmap](#phase-roadmap)
+8. [Weather Data & Climate Models](#weather-data--climate-models)
+9. [LightGBM Forecasting Models](#lightgbm-forecasting-models)
+10. [Model Scripts](#model-scripts)
+11. [Shared Utilities — macro_utils.py](#shared-utilities--macro_utilspy)
+12. [Summary Table Output](#summary-table-output)
+13. [Reports — reports.py](#reports--reportspy)
+14. [REST API — api.py](#rest-api--apipy)
+15. [API Testing](#api-testing)
+16. [TEP Fault Detection — train.py](#tep-fault-detection--trainpy)
+17. [Output Files Reference](#output-files-reference)
+18. [Data Files Reference](#data-files-reference)
+19. [Scheduling with Cron](#scheduling-with-cron)
+20. [Adding New Series](#adding-new-series)
+21. [Phase Roadmap](#phase-roadmap)
 
 ---
 
@@ -104,6 +107,9 @@ Eight model groups cover distinct areas of the economy:
 | Commodities *(Phase 0)* | WTI crude oil, gold | `data/Commodities/` |
 | Yield Curve *(Phase 0)* | 8 Treasury tenors: 1M, 3M, 6M, 1Y, 2Y, 5Y, 10Y, 30Y | `data/YieldCurve/` |
 | Industrial / ISM / Credit *(Phase 1)* | IP sector breakdowns, ISM PMI sub-indices, sector capacity utilization, commercial loans, PPI | `data/IndustrialProduction/`, `data/ISMIndicators/`, `data/CapacityUtilSector/`, `data/CreditIndicators/` |
+| Weather: Temperature & Energy *(Phase 3)* | Mean temperature, HDD, CDD, temperature anomaly — by region/national | `data/Weather/Aggregated/state/` |
+| Weather: Precipitation & Disruption *(Phase 3)* | Total precipitation, precipitation days, snow total, extreme precipitation days | `data/Weather/Aggregated/state/` |
+| Weather: Extreme Events & Renewables *(Phase 3)* | Extreme heat days, extreme cold days, mean wind speed, cloud cover | `data/Weather/Aggregated/state/` |
 
 Phase 0 also produces a **Financial Stress Index (FSI)** and a **Market Regime** label (`expansion / slowdown / contraction / stress / recovery`) from `composite_model.py` using the expanded FRED data — no additional API keys required.
 
@@ -124,6 +130,8 @@ econdata/
 ├── industrial_model.py        # Phase 1: LightGBM trainer for IP, ISM PMI, capacity util, credit/PPI
 ├── crunchbase_apis.py         # Crunchbase VC data fetcher (AI, Fintech, Healthcare)
 ├── vc_model.py                # LightGBM trainer for VC segment weekly data
+├── weather_refresh.py         # Phase 3: City-level daily weather data refresh for all U.S. states/cities
+├── weather_model.py           # Phase 3: LightGBM climate forecaster (3 groups × 5 geographies)
 ├── macro_utils.py             # Shared feature engineering, training, forecasting, plotting
 ├── business_env_model.py      # Business Environment model (INDPRO, TCU, PAYEMS)
 ├── consumer_demand_model.py   # Consumer Demand model (6 series)
@@ -141,6 +149,19 @@ econdata/
 ├── test_api.py                # Comprehensive API test suite (40+ checks incl. Phase 0 + security)
 ├── test_api_quick.py          # Quick smoke test (5 checks, one line each)
 ├── train.py                   # TEP binary fault detection (LR, RF, LightGBM, MLP)
+├── conftest.py                # Pytest configuration (shared fixtures, integration mark)
+│
+├── connectors/                # Data connector modules
+│   ├── __init__.py
+│   ├── base_connector.py      # Abstract base class for all connectors
+│   ├── weather.py             # City-level daily weather reader (used by weather_refresh.py)
+│   ├── lunar.py               # Lunar phase connector
+│   └── market_bias.py        # Market bias connector
+│
+├── tests/                     # Unit + integration test suite
+│   ├── __init__.py
+│   ├── test_weather.py        # Tests for connectors/weather.py
+│   └── test_weather_model.py  # 41 unit tests for weather_model.py (run with pytest)
 │
 ├── .env.example               # API key template — copy to .env and fill in
 │
@@ -181,6 +202,11 @@ econdata/
 │   │   ├── agg_ai_weekly.csv       #  AI segment weekly metrics — modeled by vc_model.py
 │   │   ├── agg_fintech_weekly.csv  #  Fintech segment weekly metrics
 │   │   └── agg_healthcare_weekly.csv #  Healthcare segment weekly metrics
+│   ├── Weather/               # Phase 3: Climate data
+│   │   ├── US_orig/           #   Raw daily city-level station CSV files (per state → per city → per year)
+│   │   └── Aggregated/
+│   │       └── state/         #   Monthly state-level CSVs written by weather_model.py --agg-only
+│   │           └── {STATE}.csv  #   One file per state, ~300 rows, all weather metrics
 │   └── TEP_*.csv              # Tennessee Eastman Process datasets (used by train.py only)
 │
 └── outputs/
@@ -312,7 +338,7 @@ This single command runs the full pipeline:
 ### Command-Line Options
 
 ```
-python3 fred_refresh.py [--sector SOURCE ...] [--crunchbase] [--news MODE] [--skip-models]
+python3 fred_refresh.py [--sector SOURCE ...] [--crunchbase] [--weather] [--weather-models] [--news MODE] [--skip-models]
 ```
 
 | Option | Description |
@@ -328,6 +354,10 @@ python3 fred_refresh.py [--sector SOURCE ...] [--crunchbase] [--news MODE] [--sk
 | `--sector bls bea worldbank` | Multiple sources in one run |
 | `--sector all` | All available sector sources (BLS, BEA, WorldBank, wages, hours, JOLTS, ETF) |
 | `--crunchbase` | Also refresh Crunchbase VC data (AI, Fintech, Healthcare) and train VC models (requires `CRUNCHBASE_API_KEY`) |
+| `--weather` | Also refresh city-level daily weather data for all U.S. states and cities via `weather_refresh.py` *(Phase 3)* |
+| `--weather-models` | Also train LightGBM climate models (temperature/energy, precipitation, extremes) *(Phase 3)* |
+| `--weather-models-geo GEO ...` | Geographies to model: `northeast`, `midwest`, `south`, `west`, `national`, `all` (default: `national`) |
+| `--weather-models-source SRC ...` | Model groups to train: `temperature_energy`, `precipitation_disruption`, `extremes_composite`, `all` (default: `all`) |
 | `--news daily` | Ingest news from all configured sources (once/day); generate daily briefing JSON *(Phase 1)* |
 | `--news realtime` | Ingest Finnhub only — safe to run every 15 min as a cron *(Phase 1)* |
 | `--news all` | All sources with 7-day backfill window — use for manual catch-up runs *(Phase 1)* |
@@ -378,6 +408,21 @@ python3 fred_refresh.py --news daily --enrich
 
 # Phase 2: Train sentiment/volume ML models (after ≥30 days of --news daily runs)
 python3 news_model.py
+
+# Phase 3: Refresh weather data only (no model training)
+python3 fred_refresh.py --weather --skip-models
+
+# Phase 3: Refresh weather data and train national climate models
+python3 fred_refresh.py --weather --weather-models
+
+# Phase 3: Train climate models for specific geographies
+python3 fred_refresh.py --weather-models --weather-models-geo northeast south national
+
+# Phase 3: Smoke test aggregation without running fred_refresh.py (direct script)
+python3 weather_model.py --agg-only --states CA,TX,FL
+
+# Phase 3: Train all climate model groups for the national geography directly
+python3 weather_model.py --geo national --source all
 ```
 
 ### What the Pipeline Does Step by Step
@@ -420,10 +465,21 @@ The step count shown in the log (`[1/N]`) adjusts automatically based on which f
          → Discovers all CSVs in data/Sector/{BLS,BEA,WorldBank,BLS_Wages,BLS_Hours,JOLTS,ETF}/
          → Auto-creates models for any new series without an existing .joblib
 
-[N-1]  Train VC models  (only with --crunchbase + data exists)
+[N-2]  Train VC models  (only with --crunchbase + data exists)
          → Resamples weekly agg CSVs to monthly cadence for LightGBM compatibility
          → Skips gracefully if fewer than 54 monthly rows (needs ~13 months of history)
          → Once sufficient data exists: trains, saves .joblib and results_vc_*.json
+
+[N-1]  Refresh weather data  (only with --weather)
+         → Calls weather_refresh.py to update all city-level daily station CSVs
+         → Covers all U.S. states and cities in data/Weather/US_orig/
+
+[N-1]  Train weather climate models  (only with --weather-models)
+         → Calls weather_model.py for each requested geography and model group
+         → Groups: temperature_energy, precipitation_disruption, extremes_composite
+         → Geographies: northeast, midwest, south, west, national (default: national)
+         → Each group saves .joblib models, PNG plots, and results_weather_*.json
+         → Skips aggregation step if state CSVs already exist (use --force-agg to re-aggregate)
 
 [N]    Print output
          → Prints Market Conditions Snapshot (VIX, FSI, regime label, WTI, gold, 10Y−2Y slope)
@@ -654,6 +710,99 @@ Once sufficient data is available, the script produces:
 ### Rate Limits
 
 The Crunchbase API allows 200 calls per minute. `crunchbase_apis.py` sleeps 0.31 s between every call. A typical weekly run makes approximately 33 calls (18 autocomplete + ~9 round search pages + ~6 org search pages), consuming ~10 seconds of enforced sleep time.
+
+---
+
+## Weather Data & Climate Models
+
+### Overview
+
+The weather pipeline adds a three-tier climate forecasting layer alongside the existing FRED and sector models.
+
+| Tier | Script | Description |
+|---|---|---|
+| **Raw data** | `weather_refresh.py` | Refreshes city-level daily station CSV files for all U.S. states/cities in `data/Weather/US_orig/` |
+| **Aggregation** | `weather_model.py --agg-only` | Aggregates daily city data → monthly state CSVs in `data/Weather/Aggregated/state/` |
+| **ML models** | `weather_model.py` | Trains LightGBM forecasters on regional/national monthly climate series |
+
+### Enabling Weather in fred_refresh.py
+
+```bash
+# Step 1: Refresh raw weather station data (all states + cities)
+python3 fred_refresh.py --weather
+
+# Step 2: Train climate models for the national geography
+python3 fred_refresh.py --weather --weather-models
+
+# Full pipeline: FRED + weather data + weather models
+python3 fred_refresh.py --weather --weather-models --weather-models-geo national
+```
+
+### Geographies
+
+| Geography | States |
+|---|---|
+| `northeast` | CT, ME, MA, NH, RI, VT, NJ, NY, PA |
+| `midwest` | IL, IN, IA, KS, MI, MN, MO, NE, ND, OH, SD, WI |
+| `south` | AL, AR, DE, FL, GA, KY, LA, MD, MS, NC, OK, SC, TN, TX, VA, WV, DC |
+| `west` | AK, AZ, CA, CO, HI, ID, MT, NV, NM, OR, UT, WA, WY |
+| `national` | All states (unweighted mean) |
+
+### Model Groups
+
+| Source Key | Series Modeled | Results File |
+|---|---|---|
+| `temperature_energy` | `temp_mean`, `hdd`, `cdd`, `temp_anom` | `results_weather_temperature_{geo}.json` |
+| `precipitation_disruption` | `precip_total`, `precip_days`, `snow_total`, `extreme_precip_days` | `results_weather_precipitation_{geo}.json` |
+| `extremes_composite` | `extreme_heat_days`, `extreme_cold_days`, `wind_mean`, `cloud_cover_mean` | `results_weather_extremes_{geo}.json` |
+
+**Climate variables defined:**
+- `hdd` — Heating Degree Days: `sum(max(0, 65 − mean_temp))` per month
+- `cdd` — Cooling Degree Days: `sum(max(0, mean_temp − 65))` per month
+- `temp_anom` — temperature anomaly vs. 2000–2019 monthly baseline (NaN if < 10 baseline years)
+- `extreme_heat_days` — days with max_temp > 95°F
+- `extreme_cold_days` — days with min_temp < 10°F
+- `extreme_precip_days` — days with precip > 1 inch
+
+### Feature Engineering
+
+`engineer_weather_features()` extends `macro_utils.engineer_features()` with weather-specific additions:
+
+| Addition | Detail |
+|---|---|
+| **Cyclical month encoding** | `sin_month = sin(2π × month / 12)`, `cos_month = cos(2π × month / 12)` — replaces integer month and quarter |
+| **Cross-climate features** | `hdd_x_precip = hdd_lag1 × precip_total_lag1`, `cdd_x_wind = cdd_lag1 × wind_mean_lag1` |
+
+### Running Directly
+
+```bash
+# Aggregate state CSVs from raw daily files (fast smoke test — 3 states)
+python3 weather_model.py --agg-only --states CA,TX,FL
+
+# Aggregate all states
+python3 weather_model.py --agg-only
+
+# Train national models for all 3 groups
+python3 weather_model.py --geo national --source all
+
+# Train specific group for specific regions
+python3 weather_model.py --geo northeast south --source temperature_energy
+
+# Re-aggregate (overwrite existing state CSVs)
+python3 weather_model.py --agg-only --force-agg
+```
+
+### Tests
+
+```bash
+# Run all unit tests (no live data required — ~16 seconds)
+python3 -m pytest tests/test_weather_model.py -v -k "not integration"
+
+# Run full integration tests (requires weather data in data/Weather/US_orig/)
+python3 -m pytest tests/test_weather_model.py -v -m integration
+```
+
+41 unit tests cover: aggregation logic, temperature anomaly calculation, regional DataFrame construction, weather feature engineering, SOURCE_CONFIG schema validation, model training flow, and save/load CSV round-trip.
 
 ---
 
@@ -954,6 +1103,46 @@ Groups skip gracefully if their data directory is empty. ISM New Orders (`NAPMNE
 
 ---
 
+### weather_model.py *(Phase 3)*
+
+LightGBM climate forecaster that aggregates city-level daily weather station data into monthly regional/national series and trains three model groups. Can be run directly or via `fred_refresh.py --weather-models`.
+
+```bash
+python3 weather_model.py --geo national --source all
+python3 weather_model.py --geo northeast midwest south west national --source all
+python3 weather_model.py --agg-only --states CA,TX,FL   # aggregation only
+```
+
+**Two-phase execution:**
+
+1. **Aggregation** (`--agg-only` or automatic): reads raw daily city CSVs → monthly state CSVs in `data/Weather/Aggregated/state/`. Skips existing state CSVs unless `--force-agg` is set.
+2. **Model training**: loads state CSVs → builds regional/national DataFrames in memory → engineers features → trains 3 LightGBM models (mid/lo/hi) per series.
+
+**Aggregation pipeline per state:**
+
+| Step | Function | Description |
+|---|---|---|
+| 1 | `load_city_daily()` | Reads all year CSVs for a city using internal column map |
+| 2 | `aggregate_city_to_monthly()` | `resample("MS")` with HDD/CDD/extreme counts; drops months with < 20 days |
+| 3 | `aggregate_state_monthly()` | Mean across cities; drops months where < 2 cities contributed |
+| 4 | `add_temperature_anomaly()` | Adds `temp_anom` vs. 2000–2019 baseline |
+| 5 | `save_state_csv()` | Writes `data/Weather/Aggregated/state/{STATE}.csv` |
+
+**Regional assembly (in memory):**
+
+| Function | Description |
+|---|---|
+| `build_region_df()` | Loads state CSVs for a Census region; unweighted mean per month; drops months where < half of states contributed |
+| `build_national_df()` | Wrapper around `build_region_df` with all states |
+
+**Outputs per (source_key, geo_name) pair:**
+
+- `weather_{group}_{geo}_{series}.joblib` — serialized mid-model per series
+- `results_weather_{group}_{geo}.json` — forecasts + validation metrics
+- `weather_{group}_{geo}_{dashboard,validation,importance}.png` — standard three-plot set
+
+---
+
 ### news_apis.py *(Phase 1)*
 
 Fetches and normalizes financial news from up to three sources. Called by `fred_refresh.py` when `--news` is used, or from a cron directly.
@@ -1090,9 +1279,11 @@ Trains a single `lgb.LGBMRegressor` with early stopping. `objective` is `"regres
 
 Trains three regressors (mid, lo, hi) for every series in `series_cols`. Returns `{col: {"mid": model, "lo": model, "hi": model}}`.
 
-### `joint_recursive_forecast(df_base, models, feature_cols, series_cols, clip_ranges, horizon=12)`
+### `joint_recursive_forecast(df_base, models, feature_cols, series_cols, clip_ranges, horizon=12, feature_engineer=None)`
 
 Generates the 12-month forecast as described above. Returns `{col: DataFrame(dates, mid, lo, hi)}`.
+
+The optional `feature_engineer` parameter accepts any callable with the signature `(df, series_cols) -> df_with_features`. When `None` (default), `engineer_features` is used — preserving backward compatibility. `weather_model.py` passes `engineer_weather_features` here so that cyclical month encoding and cross-climate features are applied consistently during both training and recursive forecasting.
 
 ### `save_model_results(group_name, df_hist, fc_dict, y_val_dict, val_preds_dict, series_info, save_path)`
 
@@ -1134,8 +1325,10 @@ After every run, a formatted table is printed to stdout. The title reflects whic
 | `--sector` | `MACRO + SECTOR MODEL SUMMARY — FRED Weekly Refresh` |
 | `--crunchbase` | `MACRO + VC MODEL SUMMARY — FRED Weekly Refresh` |
 | `--sector --crunchbase` | `MACRO + SECTOR + VC MODEL SUMMARY — FRED Weekly Refresh` |
+| `--weather-models` | `MACRO + WEATHER MODEL SUMMARY — FRED Weekly Refresh` |
+| `--sector --crunchbase --weather-models` | `MACRO + SECTOR + VC + WEATHER MODEL SUMMARY — FRED Weekly Refresh` |
 
-VC rows appear in the table only after `vc_model.py` has successfully trained (requires ~13 months of weekly data). During the accumulation period the table shows FRED and sector rows only.
+VC rows appear in the table only after `vc_model.py` has successfully trained (requires ~13 months of weekly data). Weather rows appear after `--weather-models` has run for at least one geography.
 
 ```
 ==============================================================================================================================
@@ -1548,12 +1741,18 @@ Reports are standard Markdown and render in any Markdown viewer:
 - **GitHub** — reports pushed to the repo render automatically
 - **Terminal** — `cat reports/report_*.md | head -100` for a quick read
 
+### Weather Groups in Reports
+
+When weather models have been trained, `reports.py` automatically includes up to 15 weather sections (3 model groups × 5 geographies) in the report. Each section follows the same format as other model groups: forecast table, signal paragraph, and low-confidence warning if applicable.
+
+The 12 weather series with signal paragraphs: `temp_mean`, `hdd`, `cdd`, `temp_anom`, `precip_total`, `precip_days`, `snow_total`, `extreme_precip_days`, `extreme_heat_days`, `extreme_cold_days`, `wind_mean`, `cloud_cover_mean`.
+
 ### Workflow Integration
 
 Run `reports.py` immediately after a model refresh to capture the latest forecasts:
 
 ```bash
-python3 fred_refresh.py --sector --news daily --enrich && \
+python3 fred_refresh.py --sector --weather --weather-models --news daily --enrich && \
 python3 news_model.py && \
 python3 reports.py
 ```
@@ -1575,6 +1774,7 @@ python3 reports.py
 | `composite_model_fsi.joblib` | Phase 0: FSI LightGBM regressor |
 | `sector_{source}_model_{series}.joblib` | Sector model regressors (created on first sector run) |
 | `vc_model_{segment}_{metric}.joblib` | VC segment model regressors (created after ~13 months of data collection) |
+| `weather_{group}_{geo}_{series}.joblib` | Phase 3: Climate model regressors — one per series per (group, geography) pair |
 | `lgbm_model.joblib` | TEP fault detection LightGBM classifier |
 
 All models are saved with `joblib.dump()` and can be loaded with `joblib.load()`.
@@ -1601,6 +1801,9 @@ All models are saved with `joblib.dump()` and can be loaded with `joblib.load()`
 | `daily_briefing_{YYYY-MM-DD}.json` | Phase 1: Daily news briefing — top stories, sector mood, macro signals, alerts, stale flag. Created by `briefing.py` after each `--news daily` run. Only the most recent file is served by the API. |
 | `results_news_sentiment.json` | Phase 2: 12-month LightGBM forecasts for `MACRO_SENT`, `EQUITIES_SENT`, `FINTECH_SENT`, `VC_SENT`. Contains `{"status": "cold_start", ...}` until ≥30 days of data. Created by `news_model.py`. |
 | `results_news_volume.json` | Phase 2: 12-month forecasts for `TOTAL_VOL`, `MACRO_VOL`, `EQUITIES_VOL`, `FINTECH_VOL`. Same cold-start behavior. Created by `news_model.py`. |
+| `results_weather_temperature_{geo}.json` | Phase 3: 12-month forecasts for `temp_mean`, `hdd`, `cdd`, `temp_anom` — one file per geography |
+| `results_weather_precipitation_{geo}.json` | Phase 3: 12-month forecasts for `precip_total`, `precip_days`, `snow_total`, `extreme_precip_days` |
+| `results_weather_extremes_{geo}.json` | Phase 3: 12-month forecasts for `extreme_heat_days`, `extreme_cold_days`, `wind_mean`, `cloud_cover_mean` |
 
 Results JSON structure:
 ```json
@@ -1674,6 +1877,9 @@ Appended after every `fred_refresh.py` run. The last 52 entries are kept.
 | `vc_ai_*.png` | Dashboard, validation, importance for AI VC segment (after model trains) |
 | `vc_fintech_*.png` | Dashboard, validation, importance for Fintech VC segment |
 | `vc_healthcare_*.png` | Dashboard, validation, importance for Healthcare VC segment |
+| `weather_temperature_{geo}_*.png` | Phase 3: Dashboard, validation, importance for temperature/energy group |
+| `weather_precipitation_{geo}_*.png` | Phase 3: Dashboard, validation, importance for precipitation group |
+| `weather_extremes_{geo}_*.png` | Phase 3: Dashboard, validation, importance for extreme events group |
 | `metrics_comparison.png` | TEP model comparison (grouped bar chart) |
 | `roc_curves.png` | TEP ROC curves for all four classifiers |
 | `confusion_matrices.png` | TEP confusion matrices |
@@ -1773,7 +1979,14 @@ Note: `--news daily` and `--news realtime` are safe to overlap — `news_apis.py
 
 `news_model.py` exits cleanly with a cold-start message until 30 days of news data exist — safe to schedule from day 1. Rate limits: NewsAPI and Marketaux are capped at 100 req/day (daily only); Finnhub supports up to 60 req/min (used for realtime).
 
-FRED data typically releases on weekday mornings. Running on Monday morning captures most prior-week releases. The Crunchbase snapshot date is pinned to the Monday of the current ISO week, so the job is idempotent if re-run later in the same week.
+**Phase 3 — Weather data + climate models:**
+
+```cron
+# Weekly weather refresh + national climate model retrain (every Monday at 9 AM)
+0 9 * * 1 cd /path/to/econdata && /path/to/python3 fred_refresh.py --weather --weather-models >> logs/weather.log 2>&1
+```
+
+FRED data typically releases on weekday mornings. Running on Monday morning captures most prior-week releases. The Crunchbase snapshot date is pinned to the Monday of the current ISO week, so the job is idempotent if re-run later in the same week. Weather aggregation is incremental — existing state CSVs are not re-aggregated unless `--force-agg` is passed.
 
 ---
 
@@ -1820,5 +2033,6 @@ Then add the script to `MODEL_SCRIPTS` and its results file to `RESULTS_FILES` i
 | **Phase 0** | ✅ Complete | Free FRED extensions: VIX, credit spreads, USD index, WTI oil, gold, 8-tenor yield curve, FSI, Market Regime | None |
 | **Phase 1** | ✅ Complete | News ingestion pipeline (`news_apis.py` + `briefing.py`): daily briefings, top-stories ranking, rule-based impact alerts. Two new files + targeted changes to `fred_refresh.py`, `api.py`, `test_api.py`. | At least one of `NEWS_API_KEY`, `MARKETAUX_API_KEY`, `FINNHUB_API_KEY` |
 | **Phase 2** | ✅ Complete | Enrichment + Sentiment ML — `enrichment_apis.py` attaches yfinance/FMP signals to ticker-tagged articles; `news_model.py` trains LightGBM on 30+ days of sentiment/volume data; `/api/financial-news/sentiment`, `/api/financial-news/sentiment/{id}`, `/api/financial-news/volume` endpoints with cold-start handling. | `FMP_API_KEY` (optional — yfinance needs no key) |
+| **Phase 3** | ✅ Complete | Weather ML pipeline — `weather_refresh.py` refreshes city-level daily station data; `weather_model.py` aggregates to monthly state/regional/national CSVs and trains 3 LightGBM climate model groups (temperature/energy, precipitation/disruption, extreme events/renewables) × 5 geographies. Integrated into `fred_refresh.py` via `--weather` and `--weather-models` flags. Full results appear in `reports.py` and the unified summary table. | None |
 
-Phase 1 requires at least one news API key (the others are optional additional sources) and works from day 1. Phase 2 enrichment (`--enrich`) requires `yfinance` installed; FMP fundamentals are optional. Phase 2 ML (`news_model.py`) requires Phase 1 having run for ≥30 days but exits cleanly with a cold-start message until then. All phase-specific keys are pre-documented in `.env.example`.
+Phase 1 requires at least one news API key (the others are optional additional sources) and works from day 1. Phase 2 enrichment (`--enrich`) requires `yfinance` installed; FMP fundamentals are optional. Phase 2 ML (`news_model.py`) requires Phase 1 having run for ≥30 days but exits cleanly with a cold-start message until then. Phase 3 requires raw daily weather station data in `data/Weather/US_orig/` (populated by `weather_refresh.py` or pre-existing). All phase-specific keys are pre-documented in `.env.example`.
