@@ -1,17 +1,17 @@
 {
   "group": "Market Risk",
-  "run_at": "2026-04-23T12:14:03",
+  "run_at": "2026-04-24T12:06:43",
   "series": [
     {
       "series_id": "VIXCLS",
       "label": "VIX Volatility Index",
       "unit": "Index",
       "last_date": "2026-04",
-      "last_value": 20.432,
+      "last_value": 20.3619,
       "validation": {
-        "mae": 2.4328,
-        "rmse": 3.0646,
-        "r2": -0.2024
+        "mae": 2.4269,
+        "rmse": 3.0596,
+        "r2": -0.202
       },
       "forecast": [
         {
@@ -93,11 +93,11 @@
       "label": "HY Credit Spread (OAS)",
       "unit": "%",
       "last_date": "2026-04",
-      "last_value": 2.9562,
+      "last_value": 2.9506,
       "validation": {
-        "mae": 0.4932,
-        "rmse": 0.521,
-        "r2": -8.6409
+        "mae": 0.4937,
+        "rmse": 0.5215,
+        "r2": -8.6498
       },
       "forecast": [
         {
@@ -179,11 +179,11 @@
       "label": "IG Credit Spread (OAS)",
       "unit": "%",
       "last_date": "2026-04",
-      "last_value": 0.8263,
+      "last_value": 0.8247,
       "validation": {
-        "mae": 0.2179,
-        "rmse": 0.2251,
-        "r2": -14.8479
+        "mae": 0.218,
+        "rmse": 0.2252,
+        "r2": -14.8699
       },
       "forecast": [
         {

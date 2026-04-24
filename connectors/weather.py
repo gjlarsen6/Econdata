@@ -32,7 +32,7 @@ from .base_connector import BaseConnector
 
 log = logging.getLogger(__name__)
 
-WEATHER_DIR = Path("/gjlarsen/Documents/ClickAI/data/Weather/US_orig")
+WEATHER_DIR = Path("/Users/gjlarsen/Documents/ClickAI/data/Weather/US_orig")
 
 # Columns extracted from VC files and their output names
 _COL_MAP: dict[str, str] = {
