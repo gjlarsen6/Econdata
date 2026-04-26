@@ -62,12 +62,13 @@ FORECAST_HORIZON  = 12
 MIN_ROWS_REQUIRED = VALIDATION_MONTHS + 30
 
 AGG_DIR        = DATA_DIR / "Weather" / "Aggregated" / "state"
+CITY_AGG_DIR   = DATA_DIR / "Weather" / "Aggregated" / "city"
 BASELINE_START = 2000
 BASELINE_END   = 2019
 HDD_BASE       = 65   # °F standard base
 CDD_BASE       = 65   # °F standard base
 MIN_DAY_COUNT  = 20   # minimum valid daily obs for a month to be kept
-MIN_CITIES     = 2    # minimum cities contributing to a state-month
+MIN_CITIES     = 1    # minimum cities contributing to a state-month
 
 GROUP_COLORS = [
     "#3498db", "#e74c3c", "#2ecc71", "#f39c12",
@@ -358,11 +359,17 @@ def add_temperature_anomaly(df_state: pd.DataFrame) -> pd.DataFrame:
 
     df = df_state.copy()
     baseline = df[df["date"].dt.year.between(BASELINE_START, BASELINE_END)].copy()
+
+    if baseline.empty:
+        df["temp_anom"] = float("nan")
+        return df
+
     baseline["month_num"] = baseline["date"].dt.month
 
     baseline_year_counts = (
         baseline.groupby("month_num")["date"]
         .apply(lambda g: g.dt.year.nunique())
+        .astype(int)
     )
     valid_months = baseline_year_counts[baseline_year_counts >= 10].index
     monthly_baseline = (
@@ -391,6 +398,32 @@ def save_state_csv(
 def load_state_csv(state: str, agg_dir: Path = AGG_DIR) -> pd.DataFrame:
     """Load previously saved monthly state CSV. Returns empty DataFrame if absent."""
     path = agg_dir / f"{state.upper()}.csv"
+    if not path.exists():
+        return pd.DataFrame()
+    return pd.read_csv(path, parse_dates=["date"])
+
+
+def save_city_csv(
+    df: pd.DataFrame,
+    state: str,
+    city: str,
+    city_agg_dir: Path = CITY_AGG_DIR,
+) -> Path:
+    """Save monthly city DataFrame to city_agg_dir/{STATE}/{City}/monthly.csv."""
+    out = city_agg_dir / state.upper() / city
+    out.mkdir(parents=True, exist_ok=True)
+    path = out / "monthly.csv"
+    df.to_csv(path, index=False)
+    return path
+
+
+def load_city_csv(
+    state: str,
+    city: str,
+    city_agg_dir: Path = CITY_AGG_DIR,
+) -> pd.DataFrame:
+    """Load monthly city CSV. Returns empty DataFrame if absent."""
+    path = city_agg_dir / state.upper() / city / "monthly.csv"
     if not path.exists():
         return pd.DataFrame()
     return pd.read_csv(path, parse_dates=["date"])
@@ -525,6 +558,7 @@ def run_weather_group(
     source_cfg: dict,
     geo_name: str,
     df: pd.DataFrame,
+    output_dir: Path = OUTPUT_DIR,
 ) -> bool:
     """Train LightGBM models for one (source, geography) pair.
 
@@ -597,7 +631,7 @@ def run_weather_group(
     print_forecast_table(fc, series_info)
 
     for col in series_cols:
-        path = OUTPUT_DIR / f"{model_prefix}_{geo_name}_{col}.joblib"
+        path = output_dir / f"{model_prefix}_{geo_name}_{col}.joblib"
         joblib.dump(models[col]["mid"], str(path))
         print(f"  Saved {path}")
 
@@ -606,24 +640,24 @@ def run_weather_group(
     plot_forecast_dashboard(
         df_model, fc, series_info, last_date,
         title=f"{group_name} [{geo_name.upper()}] — {FORECAST_HORIZON}-Month Outlook",
-        save_path=str(OUTPUT_DIR / f"{plot_prefix}_dashboard.png"),
+        save_path=str(output_dir / f"{plot_prefix}_dashboard.png"),
         ncols=ncols,
     )
     plot_validation_performance(
         dates_val, y_val, val_preds, series_info,
         title=(f"{group_name} [{geo_name.upper()}] — "
                f"Validation (Last {VALIDATION_MONTHS} Months)"),
-        save_path=str(OUTPUT_DIR / f"{plot_prefix}_validation.png"),
+        save_path=str(output_dir / f"{plot_prefix}_validation.png"),
     )
     plot_feature_importance(
         models, feat_cols, series_info,
         title=f"{group_name} [{geo_name.upper()}] — Feature Importance (Gain)",
-        save_path=str(OUTPUT_DIR / f"{plot_prefix}_importance.png"),
+        save_path=str(output_dir / f"{plot_prefix}_importance.png"),
     )
 
     save_model_results(
         group_name, df_model, fc, y_val, val_preds,
-        series_info, str(OUTPUT_DIR / results_file),
+        series_info, str(output_dir / results_file),
     )
     print("\nDone.")
     return True
@@ -681,6 +715,57 @@ def run_aggregation(
     return results
 
 
+def run_aggregation_cities(
+    states: list[str] | None = None,
+    weather_dir: Path = WEATHER_DIR,
+    city_agg_dir: Path = CITY_AGG_DIR,
+    force: bool = False,
+) -> dict[str, int]:
+    """Aggregate every city's daily data to monthly CSVs in city_agg_dir.
+
+    Saves one ``monthly.csv`` per city under ``city_agg_dir/{STATE}/{City}/``.
+    If force=False, skips cities whose monthly.csv already exists.
+
+    Returns ``{state: city_count}`` for all states processed.
+    """
+    if not weather_dir.exists():
+        log.error("run_aggregation_cities: WEATHER_DIR not found: %s", weather_dir)
+        return {}
+
+    if states is None:
+        states = sorted(d.name for d in weather_dir.iterdir() if d.is_dir())
+
+    ok = skipped = failed = 0
+    state_counts: dict[str, int] = {}
+
+    for state in states:
+        state_ok = 0
+        for city in discover_state_cities(state, weather_dir):
+            path = city_agg_dir / state.upper() / city / "monthly.csv"
+            if path.exists() and not force:
+                skipped += 1
+                continue
+            daily = load_city_daily(state, city, weather_dir)
+            if daily.empty:
+                failed += 1
+                continue
+            monthly = aggregate_city_to_monthly(daily)
+            if monthly.empty:
+                failed += 1
+                continue
+            monthly = add_temperature_anomaly(monthly)
+            save_city_csv(monthly, state, city, city_agg_dir)
+            ok += 1
+            state_ok += 1
+        state_counts[state] = state_ok
+
+    log.info(
+        "run_aggregation_cities complete — ok=%d  skipped=%d  failed=%d",
+        ok, skipped, failed,
+    )
+    return state_counts
+
+
 # ── CLI ────────────────────────────────────────────────────────────────────────
 
 def parse_args() -> argparse.Namespace:
@@ -689,9 +774,9 @@ def parse_args() -> argparse.Namespace:
     )
     p.add_argument(
         "--geo", nargs="+",
-        choices=list(CENSUS_REGIONS.keys()) + ["all"],
+        choices=list(CENSUS_REGIONS.keys()) + ["all", "city"],
         default=["national"],
-        help="Geographies to train (default: national).",
+        help="Geographies to train (default: national). Use 'city' for per-city models.",
     )
     p.add_argument(
         "--source", nargs="+",
@@ -706,10 +791,16 @@ def parse_args() -> argparse.Namespace:
         help="Run aggregation step only; skip model training.",
     )
     p.add_argument(
+        "--agg-level",
+        choices=["state", "city", "all"],
+        default="state",
+        help="Aggregation level: state (default), city, or all (both).",
+    )
+    p.add_argument(
         "--force-agg",
         action="store_true",
         default=False,
-        help="Re-aggregate even if state CSVs already exist.",
+        help="Re-aggregate even if CSVs already exist.",
     )
     p.add_argument(
         "--agg-dir",
@@ -717,6 +808,13 @@ def parse_args() -> argparse.Namespace:
         default=AGG_DIR,
         metavar="PATH",
         help=f"Override aggregated state CSV directory (default: {AGG_DIR}).",
+    )
+    p.add_argument(
+        "--city-agg-dir",
+        type=Path,
+        default=CITY_AGG_DIR,
+        metavar="PATH",
+        help=f"Override aggregated city CSV directory (default: {CITY_AGG_DIR}).",
     )
     p.add_argument(
         "--weather-dir",
@@ -729,7 +827,13 @@ def parse_args() -> argparse.Namespace:
         "--states",
         default=None,
         metavar="XX,YY",
-        help="Comma-separated state codes to include in aggregation (default: all).",
+        help="Comma-separated state codes to filter aggregation/city training (default: all).",
+    )
+    p.add_argument(
+        "--city",
+        default=None,
+        metavar="NAME",
+        help="Single city name to train (requires --geo city and --states XX).",
     )
     return p.parse_args()
 
@@ -741,29 +845,40 @@ def main() -> int:
     if args.states:
         agg_states = [s.strip().upper() for s in args.states.split(",")]
 
-    # ── Step 1: Aggregate raw daily → monthly state CSVs ─────────────────────
-    agg_results = run_aggregation(
-        states=agg_states,
-        weather_dir=args.weather_dir,
-        agg_dir=args.agg_dir,
-        force=args.force_agg,
-    )
-    if not any(agg_results.values()):
-        log.error("No state CSVs available — cannot train models.")
-        return 1
+    # ── Step 1: Aggregate raw daily → monthly CSVs ───────────────────────────
+    if args.agg_level in ("state", "all"):
+        agg_results = run_aggregation(
+            states=agg_states,
+            weather_dir=args.weather_dir,
+            agg_dir=args.agg_dir,
+            force=args.force_agg,
+        )
+        if not any(agg_results.values()) and "city" not in args.geo:
+            log.error("No state CSVs available — cannot train models.")
+            return 1
+
+    if args.agg_level in ("city", "all"):
+        run_aggregation_cities(
+            states=agg_states,
+            weather_dir=args.weather_dir,
+            city_agg_dir=args.city_agg_dir,
+            force=args.force_agg,
+        )
 
     if args.agg_only:
         log.info("--agg-only: aggregation complete, skipping model training.")
         return 0
 
     # ── Step 2: Train models for each (geo, source) pair ─────────────────────
-    geos    = list(CENSUS_REGIONS.keys()) if "all" in args.geo    else args.geo
-    sources = list(SOURCE_CONFIG.keys())  if "all" in args.source else args.source
+    requested_geos = list(CENSUS_REGIONS.keys()) if "all" in args.geo else args.geo
+    sources        = list(SOURCE_CONFIG.keys())  if "all" in args.source else args.source
 
     any_failed   = False
     summary_rows: list[dict] = []
 
-    for geo_name in geos:
+    # ── 2a. State / region / national geographies ─────────────────────────────
+    standard_geos = [g for g in requested_geos if g != "city"]
+    for geo_name in standard_geos:
         if geo_name == "national":
             df = build_national_df(args.agg_dir)
         else:
@@ -800,6 +915,55 @@ def main() -> int:
                     "Status":    "FAILED",
                 })
                 any_failed = True
+
+    # ── 2b. City-level geography ──────────────────────────────────────────────
+    if "city" in requested_geos:
+        state_list = agg_states or sorted(
+            d.name for d in args.weather_dir.iterdir() if d.is_dir()
+        )
+        for state in state_list:
+            cities = (
+                [args.city]
+                if args.city
+                else discover_state_cities(state, args.weather_dir)
+            )
+            for city in cities:
+                df_city = load_city_csv(state, city, args.city_agg_dir)
+                if df_city.empty:
+                    log.warning("No city CSV for %s/%s — run --agg-level city first", state, city)
+                    any_failed = True
+                    continue
+
+                city_output_dir = OUTPUT_DIR / "city" / state / city
+                city_output_dir.mkdir(parents=True, exist_ok=True)
+                geo_label = city
+
+                for source_key in sources:
+                    cfg = SOURCE_CONFIG.get(source_key)
+                    if cfg is None:
+                        continue
+                    try:
+                        ok = run_weather_group(
+                            source_key, cfg, geo_label, df_city,
+                            output_dir=city_output_dir,
+                        )
+                        summary_rows.append({
+                            "Geography": f"{state}/{city}",
+                            "Source":    source_key,
+                            "Status":    "OK" if ok else "SKIP",
+                        })
+                        if not ok:
+                            any_failed = True
+                    except Exception as exc:
+                        import traceback
+                        log.error("[%s/%s / %s] ERROR: %s", state, city, source_key, exc)
+                        traceback.print_exc()
+                        summary_rows.append({
+                            "Geography": f"{state}/{city}",
+                            "Source":    source_key,
+                            "Status":    "FAILED",
+                        })
+                        any_failed = True
 
     if summary_rows:
         try:
