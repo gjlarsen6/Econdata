@@ -1,73 +1,73 @@
 {
-  "generated_at": "2026-04-24T12:07:00",
-  "current_regime": "contraction",
-  "current_fsi": 0.4541,
+  "generated_at": "2026-06-10T12:46:21",
+  "current_regime": "slowdown",
+  "current_fsi": 0.3179,
   "regime_distribution": {
-    "expansion": 0.3077,
-    "slowdown": 0.4615,
-    "contraction": 0.2308,
+    "expansion": 0.2857,
+    "slowdown": 0.5357,
+    "contraction": 0.1786,
     "stress": 0.0,
     "recovery": 0.0
   },
   "forecast": [
     {
-      "month": "2026-05",
-      "fsi": 0.3538,
-      "regime": "slowdown"
-    },
-    {
-      "month": "2026-06",
-      "fsi": 0.3538,
-      "regime": "slowdown"
-    },
-    {
       "month": "2026-07",
-      "fsi": 0.3538,
+      "fsi": 0.277,
       "regime": "slowdown"
     },
     {
       "month": "2026-08",
-      "fsi": 0.3538,
+      "fsi": 0.277,
       "regime": "slowdown"
     },
     {
       "month": "2026-09",
-      "fsi": 0.3538,
+      "fsi": 0.277,
       "regime": "slowdown"
     },
     {
       "month": "2026-10",
-      "fsi": 0.3538,
+      "fsi": 0.277,
       "regime": "slowdown"
     },
     {
       "month": "2026-11",
-      "fsi": 0.3538,
+      "fsi": 0.277,
       "regime": "slowdown"
     },
     {
       "month": "2026-12",
-      "fsi": 0.3538,
+      "fsi": 0.277,
       "regime": "slowdown"
     },
     {
       "month": "2027-01",
-      "fsi": 0.3538,
+      "fsi": 0.277,
       "regime": "slowdown"
     },
     {
       "month": "2027-02",
-      "fsi": 0.3538,
+      "fsi": 0.277,
       "regime": "slowdown"
     },
     {
       "month": "2027-03",
-      "fsi": 0.3538,
+      "fsi": 0.277,
       "regime": "slowdown"
     },
     {
       "month": "2027-04",
-      "fsi": 0.3538,
+      "fsi": 0.277,
+      "regime": "slowdown"
+    },
+    {
+      "month": "2027-05",
+      "fsi": 0.277,
+      "regime": "slowdown"
+    },
+    {
+      "month": "2027-06",
+      "fsi": 0.277,
       "regime": "slowdown"
     }
   ],
@@ -184,12 +184,12 @@
     },
     {
       "date": "2026-01-01",
-      "fsi": 0.1559,
+      "fsi": 0.1853,
       "regime": "expansion"
     },
     {
       "date": "2026-02-01",
-      "fsi": 0.3486,
+      "fsi": 0.2829,
       "regime": "slowdown"
     },
     {
@@ -199,8 +199,18 @@
     },
     {
       "date": "2026-04-01",
-      "fsi": 0.4541,
-      "regime": "contraction"
+      "fsi": 0.4216,
+      "regime": "slowdown"
+    },
+    {
+      "date": "2026-05-01",
+      "fsi": 0.3184,
+      "regime": "slowdown"
+    },
+    {
+      "date": "2026-06-01",
+      "fsi": 0.3179,
+      "regime": "slowdown"
     }
   ]
 }

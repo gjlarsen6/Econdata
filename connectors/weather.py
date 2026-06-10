@@ -32,7 +32,7 @@ from .base_connector import BaseConnector
 
 log = logging.getLogger(__name__)
 
-WEATHER_DIR = Path("/Users/gjlarsen/Documents/ClickAI/data/Weather/US_orig")
+WEATHER_DIR = Path(__file__).parent.parent / "data" / "Weather" / "US"
 
 # Columns extracted from VC files and their output names
 _COL_MAP: dict[str, str] = {
@@ -264,6 +264,6 @@ class WeatherConnector(BaseConnector):
 
         for col in _COL_MAP.values():
             if col in merged.columns:
-                merged[col] = merged[col].ffill()
+                merged[col] = merged[col].ffill(limit=7)
 
         return merged.drop(columns=["_merge_date"]).reset_index(drop=True)

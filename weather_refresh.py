@@ -1,24 +1,34 @@
 """
 weather_refresh.py — Visual Crossing Weather Database Updater
 
-Fetches new or missing year files from weather.visualcrossing.com and writes
-them into the existing local weather database:
-  /gjlarsen/Documents/ClickAI/data/Weather/US_orig/{STATE}/{CityName}/YYYY_{City}{STATE}.csv
+Incrementally updates the local weather database at:
+  data/Weather/US/{STATE}/{CityName}/YYYY_{CityNoSpaces}{STATE}.csv
 
-Existing 2000-2019 files are left untouched unless --overwrite is passed.
-Default behaviour adds years 2020 through the current year.
+Behaviour per year-file
+-----------------------
+* Past year, file absent   → fetch full year (Jan 1 – Dec 31), write new file
+* Past year, file present  → check last date in file
+    - last date == Dec 31  → skip (complete)
+    - last date < Dec 31   → fetch gap (last_date+1 – Dec 31), append to file
+* Current year, file absent → fetch Jan 1 – today, write new file
+* Current year, file present → fetch gap (last_date+1 – today), append to file
+* --overwrite              → always re-fetch full year and overwrite file
+
+This means the script is safe to run daily (appends only the new day) or after
+an extended gap (catches up all missing days automatically).  Historical files
+that are already complete are never re-fetched.
 
 Usage:
     python3 weather_refresh.py --state CA --city Bakersfield
-    python3 weather_refresh.py --state ID
+    python3 weather_refresh.py --state CA
     python3 weather_refresh.py --all
-    python3 weather_refresh.py --state CA --city Bakersfield --from-year 2020 --to-year 2026
+    python3 weather_refresh.py --all --from-year 2022
     python3 weather_refresh.py --state CA --city Bakersfield --overwrite
 
-Requires VISUAL_CROSSING_API_KEY in the environment or a .env file in this directory.
+Requires VISUAL_CROSSING_API_KEY in the environment or a .env file.
 
 Rate limits:
-    Free tier  : ~1,000 observations/day  (~2-3 city-years per day)
+    Free tier  : ~1,000 observations/day  (~2–3 city-years per day)
     Basic tier : ~10,000 observations/day (~27 city-years per day)
     The script logs a warning when approaching the configured daily limit.
 """
@@ -30,14 +40,14 @@ import logging
 import os
 import sys
 import time
-from datetime import datetime
+from datetime import date, datetime, timedelta
 from io import StringIO
 from pathlib import Path
 
 import pandas as pd
 import requests
 
-from connectors.weather import WEATHER_DIR, _city_file_stem, _year_file_path
+from connectors.weather import WEATHER_DIR, _year_file_path
 
 # ── Logging ───────────────────────────────────────────────────────────────────
 
@@ -56,9 +66,9 @@ VC_API_BASE = (
     "https://weather.visualcrossing.com/VisualCrossingWebServices"
     "/rest/services/weatherdata/history"
 )
-VC_RATE_SLEEP   = 1.0   # seconds between API calls
-VC_FREE_LIMIT   = 1000  # daily observation limit (free tier)
-VC_WARN_PCT     = 0.80  # warn at this fraction of the daily limit
+VC_RATE_SLEEP = 1.0    # seconds between API calls
+VC_FREE_LIMIT = 1000   # daily observation limit (free tier)
+VC_WARN_PCT   = 0.80   # warn at this fraction of the daily limit
 
 _current_year = datetime.now().year
 
@@ -92,36 +102,93 @@ def _load_vc_api_key() -> str:
     return key
 
 
+# ── Date helpers ──────────────────────────────────────────────────────────────
+
+def _year_end(year: int) -> date:
+    """Last calendar day of the year."""
+    return date(year, 12, 31)
+
+
+def _last_date_in_file(path: Path) -> date | None:
+    """Return the most recent date found in a year-file, or None if unreadable.
+
+    Expects a 'Date time' column in MM/DD/YYYY format.
+    """
+    try:
+        df = pd.read_csv(path, usecols=["Date time"])
+        if df.empty:
+            return None
+        parsed = pd.to_datetime(df["Date time"], format="%m/%d/%Y", errors="coerce").dropna()
+        if parsed.empty:
+            return None
+        return parsed.max().date()
+    except Exception as exc:
+        log.warning("[VC] could not read last date from %s — %s", path, exc)
+        return None
+
+
+# ── File helpers ──────────────────────────────────────────────────────────────
+
+def _append_to_year_file(path: Path, new_df: pd.DataFrame) -> int:
+    """Append new rows to an existing year-file CSV.
+
+    Deduplicates on 'Date time' (new API rows take priority, preserving
+    any revisions), sorts chronologically, and writes the merged result
+    back to disk.
+
+    Returns the number of net-new rows added.
+    """
+    existing = pd.read_csv(path)
+    before   = len(existing)
+    combined = pd.concat([existing, new_df], ignore_index=True)
+    combined = combined.drop_duplicates(subset=["Date time"], keep="last")
+    combined["_sort"] = pd.to_datetime(
+        combined["Date time"], format="%m/%d/%Y", errors="coerce"
+    )
+    combined = (
+        combined.sort_values("_sort")
+        .drop(columns=["_sort"])
+        .reset_index(drop=True)
+    )
+    combined.to_csv(path, index=False)
+    return len(combined) - before
+
+
 # ── Core fetch ────────────────────────────────────────────────────────────────
 
-def fetch_vc_year(
+def fetch_vc_range(
     state: str,
     city: str,
-    year: int,
+    start: date,
+    end: date,
     api_key: str,
 ) -> pd.DataFrame | None:
-    """Fetch one full calendar year of daily weather from the VC API.
+    """Fetch daily weather for an arbitrary date range from the VC API.
 
     Parameters
     ----------
-    state : str   2-letter postal code, e.g. ``"CA"``
-    city  : str   City name, e.g. ``"Bakersfield"``
-    year  : int   Calendar year to fetch
-    api_key : str Visual Crossing API key
+    state   : 2-letter postal code, e.g. ``"CA"``
+    city    : City name exactly as it appears in the directory
+    start   : First date to fetch (inclusive)
+    end     : Last date to fetch (inclusive); capped at today automatically
+    api_key : Visual Crossing API key
 
     Returns
     -------
     pd.DataFrame | None
-        DataFrame with the raw VC columns on success; ``None`` on error.
+        DataFrame with raw VC columns on success; empty DataFrame if the
+        date range contains no data yet; ``None`` on network/parse error.
     """
-    # Cap end date at today for the current year — VC won't return future dates
-    end_date = min(datetime(year, 12, 31), datetime.now()).strftime("%Y-%m-%d")
-    start_date = f"{year}-01-01"
+    today = date.today()
+    end   = min(end, today)
+
+    if start > end:
+        return pd.DataFrame()
 
     params = {
         "aggregateHours":              24,
-        "startDateTime":               f"{start_date}T00:00:00",
-        "endDateTime":                 f"{end_date}T00:00:00",
+        "startDateTime":               f"{start.isoformat()}T00:00:00",
+        "endDateTime":                 f"{end.isoformat()}T00:00:00",
         "collectStationContributions": "false",
         "maxStations":                 -1,
         "maxDistance":                 -1,
@@ -137,31 +204,40 @@ def fetch_vc_year(
     try:
         resp = requests.get(VC_API_BASE, params=params, timeout=30)
     except Exception as exc:
-        log.warning("[VC] %s/%s/%d  request failed — %s", state, city, year, exc)
+        log.warning(
+            "[VC] %s/%s %s→%s  request failed — %s",
+            state, city, start, end, exc,
+        )
         return None
 
     elapsed = time.time() - t0
 
     if resp.status_code != 200:
         log.warning(
-            "[VC] %s/%s/%d  HTTP %d — %s",
-            state, city, year, resp.status_code, resp.text[:200],
+            "[VC] %s/%s %s→%s  HTTP %d — %s",
+            state, city, start, end, resp.status_code, resp.text[:200],
         )
         return None
 
     try:
         df = pd.read_csv(StringIO(resp.text))
     except Exception as exc:
-        log.warning("[VC] %s/%s/%d  CSV parse failed — %s", state, city, year, exc)
+        log.warning(
+            "[VC] %s/%s %s→%s  CSV parse failed — %s",
+            state, city, start, end, exc,
+        )
         return None
 
     if df.empty or "Date time" not in df.columns:
-        log.warning("[VC] %s/%s/%d  empty or missing 'Date time' column", state, city, year)
+        log.warning(
+            "[VC] %s/%s %s→%s  empty or missing 'Date time' column",
+            state, city, start, end,
+        )
         return None
 
     log.info(
-        "[VC] %s/%s/%d  %d rows  (%.1fs)",
-        state, city, year, len(df), elapsed,
+        "[VC] %s/%s %s→%s  %d rows  (%.1fs)",
+        state, city, start, end, len(df), elapsed,
     )
     return df
 
@@ -173,45 +249,78 @@ def refresh_city(
     city: str,
     api_key: str,
     from_year: int = 2020,
-    to_year: int = _current_year,
+    to_year: int | None = None,
     overwrite: bool = False,
     weather_dir: Path = WEATHER_DIR,
     _row_counter: list[int] | None = None,
     daily_limit: int = VC_FREE_LIMIT,
 ) -> list[dict]:
-    """Fetch missing (or all) year files for one city.
+    """Incrementally update year-files for one city.
 
-    Parameters
-    ----------
-    state, city, api_key : str
-    from_year, to_year   : int   Inclusive year range to process
-    overwrite            : bool  Re-fetch even if the local file already exists
-    weather_dir          : Path  Root of the weather database
-    _row_counter         : list[int]  Mutable counter shared with refresh_all for
-                                      rate-limit tracking (single-element list)
-    daily_limit          : int   Warn threshold for daily observation count
+    For each year in ``[from_year, to_year]``:
+
+    * ``overwrite=True``           → re-fetch full year, overwrite file
+    * file absent                  → fetch full year, create file
+    * file present, already current → skip
+    * file present, stale          → fetch gap only, append to file
+
+    A file is considered "current" when its last row date equals Dec 31 for
+    past years, or equals yesterday / today for the current year.
 
     Returns
     -------
-    list[dict]  One entry per year: {state, city, year, rows, status, elapsed}
+    list[dict]
+        One entry per year: ``{state, city, year, rows, status, elapsed}``
+        Status values: ``"skipped"`` | ``"ok"`` | ``"appended"`` | ``"error"``
     """
     if _row_counter is None:
         _row_counter = [0]
+    resolved_to_year = to_year if to_year is not None else datetime.now().year
 
+    today   = date.today()
     results: list[dict] = []
 
-    for year in range(from_year, to_year + 1):
-        path = _year_file_path(state, city, year, weather_dir)
+    for year in range(from_year, resolved_to_year + 1):
+        path        = _year_file_path(state, city, year, weather_dir)
+        target_end  = min(_year_end(year), today)
         record: dict = {
             "state": state.upper(), "city": city, "year": year,
             "rows": 0, "status": "skipped", "elapsed": 0.0,
         }
 
-        if path.exists() and not overwrite:
-            log.debug("[VC] skip  %s/%s/%d — file exists", state, city, year)
+        # ── Determine fetch start and whether to append ────────────────────────
+        if overwrite or not path.exists():
+            fetch_start  = date(year, 1, 1)
+            append_mode  = False
+        else:
+            last = _last_date_in_file(path)
+
+            if last is None:
+                # Unreadable — treat as absent and re-fetch from start
+                log.warning(
+                    "[VC] %s/%s/%d  could not read dates — re-fetching full year",
+                    state, city, year,
+                )
+                fetch_start = date(year, 1, 1)
+                append_mode = False
+            elif last >= target_end:
+                # File is fully current
+                log.debug(
+                    "[VC] skip  %s/%s/%d — current through %s",
+                    state, city, year, last,
+                )
+                results.append(record)
+                continue
+            else:
+                # File exists but is missing days after `last`
+                fetch_start = last + timedelta(days=1)
+                append_mode = True
+
+        if fetch_start > target_end:
             results.append(record)
             continue
 
+        # ── Rate-limit warning ─────────────────────────────────────────────────
         if _row_counter[0] >= daily_limit * VC_WARN_PCT:
             log.warning(
                 "[VC] approaching daily limit (%d / %d rows fetched) — "
@@ -219,8 +328,9 @@ def refresh_city(
                 _row_counter[0], daily_limit,
             )
 
+        # ── Fetch ──────────────────────────────────────────────────────────────
         t0 = time.time()
-        df = fetch_vc_year(state, city, year, api_key)
+        df = fetch_vc_range(state, city, fetch_start, target_end, api_key)
         record["elapsed"] = round(time.time() - t0, 2)
 
         if df is None:
@@ -229,14 +339,33 @@ def refresh_city(
             time.sleep(VC_RATE_SLEEP)
             continue
 
+        if df.empty:
+            # No new rows available yet (e.g. today's data not yet published)
+            log.debug(
+                "[VC] %s/%s/%d  no new data available for %s → %s",
+                state, city, year, fetch_start, target_end,
+            )
+            results.append(record)
+            continue
+
+        # ── Write ──────────────────────────────────────────────────────────────
         path.parent.mkdir(parents=True, exist_ok=True)
-        df.to_csv(path, index=False)
 
-        record["rows"]   = len(df)
-        record["status"] = "ok"
-        _row_counter[0] += len(df)
+        if append_mode and path.exists():
+            added = _append_to_year_file(path, df)
+            record["rows"]   = added
+            record["status"] = "appended"
+            log.info(
+                "[VC] %s/%s/%d  appended %d rows (through %s)",
+                state, city, year, added, target_end,
+            )
+        else:
+            df.to_csv(path, index=False)
+            record["rows"]   = len(df)
+            record["status"] = "ok"
+
+        _row_counter[0] += record["rows"]
         results.append(record)
-
         time.sleep(VC_RATE_SLEEP)
 
     return results
@@ -247,51 +376,54 @@ def refresh_city(
 def refresh_all(
     api_key: str,
     from_year: int = 2020,
-    to_year: int = _current_year,
+    to_year: int | None = None,
     overwrite: bool = False,
     weather_dir: Path = WEATHER_DIR,
     daily_limit: int = VC_FREE_LIMIT,
 ) -> list[dict]:
-    """Refresh every city found in the weather database.
+    """Incrementally refresh every city found in the weather database.
 
     Walks ``weather_dir/{state}/{city}/`` and calls ``refresh_city()`` for
     each city directory found.  A shared row counter tracks total observations
     fetched against the daily limit.
 
-    This is designed for paid tier usage or multi-day runs.  On the free tier
-    (~1000 obs/day) only 2-3 city-years can be fetched before hitting the limit.
+    Designed to run daily: cities already current are skipped in milliseconds;
+    only cities with missing days make API calls.
     """
+    resolved_to_year = to_year if to_year is not None else datetime.now().year
+
     if not weather_dir.exists():
         log.error("[VC] weather_dir not found: %s", weather_dir)
         return []
 
-    row_counter = [0]
+    row_counter  = [0]
     all_results: list[dict] = []
 
     state_dirs = sorted(d for d in weather_dir.iterdir() if d.is_dir())
     log.info("[VC] refresh_all: %d state directories found", len(state_dirs))
 
     for state_dir in state_dirs:
-        state = state_dir.name
+        state     = state_dir.name
         city_dirs = sorted(d for d in state_dir.iterdir() if d.is_dir())
 
         for city_dir in city_dirs:
             city = city_dir.name
             results = refresh_city(
                 state, city, api_key,
-                from_year=from_year, to_year=to_year,
+                from_year=from_year, to_year=resolved_to_year,
                 overwrite=overwrite, weather_dir=weather_dir,
                 _row_counter=row_counter, daily_limit=daily_limit,
             )
             all_results.extend(results)
 
-    ok    = sum(1 for r in all_results if r["status"] == "ok")
-    skip  = sum(1 for r in all_results if r["status"] == "skipped")
-    err   = sum(1 for r in all_results if r["status"] == "error")
-    total = sum(r["rows"] for r in all_results)
+    ok       = sum(1 for r in all_results if r["status"] == "ok")
+    appended = sum(1 for r in all_results if r["status"] == "appended")
+    skipped  = sum(1 for r in all_results if r["status"] == "skipped")
+    err      = sum(1 for r in all_results if r["status"] == "error")
+    total    = sum(r["rows"] for r in all_results)
     log.info(
-        "[VC] refresh_all complete — ok=%d  skipped=%d  errors=%d  total_rows=%d",
-        ok, skip, err, total,
+        "[VC] refresh_all complete — new=%d  appended=%d  skipped=%d  errors=%d  rows=%d",
+        ok, appended, skipped, err, total,
     )
     return all_results
 
@@ -303,15 +435,16 @@ def _print_summary(results: list[dict]) -> None:
         print("No results.")
         return
 
-    ok    = [r for r in results if r["status"] == "ok"]
-    skip  = [r for r in results if r["status"] == "skipped"]
-    err   = [r for r in results if r["status"] == "error"]
+    ok       = [r for r in results if r["status"] == "ok"]
+    appended = [r for r in results if r["status"] == "appended"]
+    skipped  = [r for r in results if r["status"] == "skipped"]
+    err      = [r for r in results if r["status"] == "error"]
 
     print(f"\n{'─'*60}")
-    print(f"  Fetched : {len(ok):>4}  year-files  "
-          f"({sum(r['rows'] for r in ok):,} rows)")
-    print(f"  Skipped : {len(skip):>4}  (already exist)")
-    print(f"  Errors  : {len(err):>4}")
+    print(f"  New files : {len(ok):>4}  ({sum(r['rows'] for r in ok):,} rows written)")
+    print(f"  Appended  : {len(appended):>4}  ({sum(r['rows'] for r in appended):,} rows added to existing files)")
+    print(f"  Skipped   : {len(skipped):>4}  (already current)")
+    print(f"  Errors    : {len(err):>4}")
     if err:
         for r in err:
             print(f"    ✗ {r['state']}/{r['city']}/{r['year']}")
@@ -323,34 +456,31 @@ def _print_summary(results: list[dict]) -> None:
 def main() -> None:
     parser = argparse.ArgumentParser(
         description=(
-            "Update the local Visual Crossing weather database with new year files. "
-            "Requires VISUAL_CROSSING_API_KEY in environment or .env file."
+            "Incrementally update the local Visual Crossing weather database. "
+            "Appends missing days to existing year-files; creates new year-files "
+            "when needed.  Requires VISUAL_CROSSING_API_KEY in environment or .env."
         )
     )
 
     target = parser.add_mutually_exclusive_group(required=True)
-    target.add_argument("--all",    action="store_true",
+    target.add_argument("--all",   action="store_true",
                         help="Refresh every city in the database")
-    target.add_argument("--state",  metavar="XX",
+    target.add_argument("--state", metavar="XX",
                         help="2-letter state code (e.g. CA)")
 
-    parser.add_argument("--city",       metavar="NAME",
+    parser.add_argument("--city",        metavar="NAME",
                         help="City name (requires --state; omit to refresh all "
                              "cities in the state)")
-    parser.add_argument("--from-year",  type=int, default=2020,
-                        metavar="YYYY",
-                        help="First year to fetch (default: 2020)")
-    parser.add_argument("--to-year",    type=int, default=_current_year,
-                        metavar="YYYY",
-                        help=f"Last year to fetch (default: {_current_year})")
-    parser.add_argument("--overwrite",  action="store_true",
-                        help="Re-fetch files that already exist locally")
-    parser.add_argument("--daily-limit", type=int, default=VC_FREE_LIMIT,
-                        metavar="N",
+    parser.add_argument("--from-year",   type=int, default=2020, metavar="YYYY",
+                        help="First year to consider (default: 2020)")
+    parser.add_argument("--to-year",     type=int, default=_current_year, metavar="YYYY",
+                        help=f"Last year to consider (default: {_current_year})")
+    parser.add_argument("--overwrite",   action="store_true",
+                        help="Re-fetch and overwrite files that already exist")
+    parser.add_argument("--daily-limit", type=int, default=VC_FREE_LIMIT, metavar="N",
                         help=f"Daily observation limit for rate warnings "
                              f"(default: {VC_FREE_LIMIT})")
-    parser.add_argument("--weather-dir", type=Path, default=WEATHER_DIR,
-                        metavar="PATH",
+    parser.add_argument("--weather-dir", type=Path, default=WEATHER_DIR, metavar="PATH",
                         help=f"Root of the weather database (default: {WEATHER_DIR})")
 
     args = parser.parse_args()
@@ -380,7 +510,7 @@ def main() -> None:
         if not state_dir.exists():
             log.error("State directory not found: %s", state_dir)
             sys.exit(1)
-        results = []
+        results    = []
         row_counter = [0]
         for city_dir in sorted(d for d in state_dir.iterdir() if d.is_dir()):
             results.extend(

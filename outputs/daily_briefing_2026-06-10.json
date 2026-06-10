@@ -1,0 +1,127 @@
+{
+  "date": "2026-06-10",
+  "generated_at": "2026-06-10T19:22:27",
+  "article_count": 126,
+  "top_stories": [
+    {
+      "timestamp": "2026-06-10T18:48:10.000000Z",
+      "source_name": "seekingalpha.com",
+      "sector": "macro",
+      "ticker": "PYPL",
+      "headline": "PayPal: Goodbye Growth, Hello Deep Value (NASDAQ:PYPL)",
+      "sentiment": 0.7742,
+      "sentiment_label": "positive",
+      "macro_tag": null,
+      "market_impact_score": 0.5535
+    },
+    {
+      "timestamp": "2026-06-10T00:51:00Z",
+      "source_name": "Reuters",
+      "sector": "macro",
+      "ticker": null,
+      "headline": "Dollar eases as US inflation data keeps rate hike at bay - Reuters",
+      "sentiment": null,
+      "sentiment_label": null,
+      "macro_tag": "rate_cuts",
+      "market_impact_score": 0.55
+    },
+    {
+      "timestamp": "2026-06-10T18:12:13.000000Z",
+      "source_name": "seekingalpha.com",
+      "sector": "macro",
+      "ticker": "EPM",
+      "headline": "Evolution Petroleum Corporation (EPM) Discusses Asset Base Growth Strategy and Role of Royalty Acquisitions in Enhancing Shareholder Returns Transcript",
+      "sentiment": 0.6249,
+      "sentiment_label": "positive",
+      "macro_tag": null,
+      "market_impact_score": 0.5162
+    },
+    {
+      "timestamp": "2026-06-10T08:33:43Z",
+      "source_name": "Reuters",
+      "sector": "energy",
+      "ticker": null,
+      "headline": "Germany risks recession as Iran energy shock hits growth, DIW economists say - Reuters",
+      "sentiment": null,
+      "sentiment_label": null,
+      "macro_tag": "gdp",
+      "market_impact_score": 0.505
+    },
+    {
+      "timestamp": "2026-06-10T01:11:00Z",
+      "source_name": "Reuters",
+      "sector": "macro",
+      "ticker": null,
+      "headline": "Gold slides 3% as Middle East escalation fuels inflation, rate-hike concerns - Reuters",
+      "sentiment": null,
+      "sentiment_label": null,
+      "macro_tag": "inflation",
+      "market_impact_score": 0.505
+    },
+    {
+      "timestamp": "2026-06-10T01:44:00Z",
+      "source_name": "Reuters",
+      "sector": "macro",
+      "ticker": null,
+      "headline": "China's factory-gate inflation at nearly 4-year high in May - Reuters",
+      "sentiment": null,
+      "sentiment_label": null,
+      "macro_tag": "inflation",
+      "market_impact_score": 0.505
+    },
+    {
+      "timestamp": "2026-06-10T17:07:28Z",
+      "source_name": "Reuters",
+      "sector": "energy",
+      "ticker": null,
+      "headline": "US consumer inflation breaks above 4% as Iran war raises energy prices - Reuters",
+      "sentiment": null,
+      "sentiment_label": null,
+      "macro_tag": "inflation",
+      "market_impact_score": 0.505
+    },
+    {
+      "timestamp": "2026-06-10T13:35:27Z",
+      "source_name": "CNBC",
+      "sector": "equities",
+      "ticker": null,
+      "headline": "We're trimming another stock to increase cash ahead of any SpaceX IPO volatility",
+      "sentiment": null,
+      "sentiment_label": null,
+      "macro_tag": "ipo",
+      "market_impact_score": 0.49
+    },
+    {
+      "timestamp": "2026-06-10T17:52:18.000000Z",
+      "source_name": "seekingalpha.com",
+      "sector": "macro",
+      "ticker": "ZOM",
+      "headline": "Zomedica Corp. (ZOMDF) Shareholder/Analyst Call Prepared Remarks Transcript",
+      "sentiment": 0.4061,
+      "sentiment_label": "positive",
+      "macro_tag": null,
+      "market_impact_score": 0.4615
+    },
+    {
+      "timestamp": "2026-06-10T15:01:01Z",
+      "source_name": "Reuters",
+      "sector": "equities",
+      "ticker": null,
+      "headline": "IAEA board passes resolution demanding Iran report uranium stocks - Reuters",
+      "sentiment": null,
+      "sentiment_label": null,
+      "macro_tag": null,
+      "market_impact_score": 0.46
+    }
+  ],
+  "sector_mood": {
+    "macro": 0.301
+  },
+  "macro_signals": [
+    "Market regime: Slowdown (FSI=0.447)",
+    "6 inflation articles today",
+    "4 ipo articles today",
+    "Macro sentiment positive (+0.301)"
+  ],
+  "alerts": []
+}

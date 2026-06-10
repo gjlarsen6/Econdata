@@ -197,6 +197,7 @@ def fetch_observations(series_id: str, api_key: str,
     Call the FRED observations endpoint and return a tidy DataFrame
     with columns [observation_date, <series_id>].
     Missing FRED values ('.') are converted to NaN.
+    Retries up to 3 times on transient 5xx / network errors with exponential backoff.
     """
     params: dict = {
         "series_id": series_id,
@@ -206,10 +207,36 @@ def fetch_observations(series_id: str, api_key: str,
     if observation_start:
         params["observation_start"] = observation_start
 
-    resp = requests.get(FRED_API_BASE, params=params, timeout=30)
-    resp.raise_for_status()
-    data = resp.json()
+    max_retries = 3
+    last_exc: Exception | None = None
+    resp = None
+    for attempt in range(max_retries):
+        try:
+            resp = requests.get(FRED_API_BASE, params=params, timeout=30)
+            resp.raise_for_status()
+            last_exc = None
+            break
+        except requests.HTTPError as exc:
+            status = exc.response.status_code if exc.response is not None else 0
+            if status < 500 or attempt == max_retries - 1:
+                raise
+            last_exc = exc
+            wait = 2 ** attempt
+            log.warning("  %s: HTTP %d — retrying in %ds (attempt %d/%d)",
+                        series_id, status, wait, attempt + 1, max_retries)
+            time.sleep(wait)
+        except (requests.ConnectionError, requests.Timeout) as exc:
+            last_exc = exc
+            if attempt == max_retries - 1:
+                raise
+            wait = 2 ** attempt
+            log.warning("  %s: network error (%s) — retrying in %ds (attempt %d/%d)",
+                        series_id, type(exc).__name__, wait, attempt + 1, max_retries)
+            time.sleep(wait)
+    if resp is None or last_exc is not None:
+        raise RuntimeError(f"fetch_observations({series_id}): all retries failed")
 
+    data = resp.json()
     obs = data.get("observations", [])
     if not obs:
         return pd.DataFrame(columns=["observation_date", series_id])
@@ -244,15 +271,23 @@ def merge_and_save(existing: pd.DataFrame, new_rows: pd.DataFrame,
         existing.to_csv(path, index=False)
         return 0
 
+    prev_max = (
+        existing["observation_date"].max()
+        if not existing.empty and not existing["observation_date"].isna().all()
+        else None
+    )
     combined = (
         pd.concat([existing, new_rows], ignore_index=True)
         .drop_duplicates(subset=["observation_date"], keep="last")
         .sort_values("observation_date")
         .reset_index(drop=True)
     )
-    new_count = len(combined) - len(existing)
+    if prev_max is None:
+        new_count = len(combined)
+    else:
+        new_count = int((combined["observation_date"] > prev_max).sum())
     combined.to_csv(path, index=False)
-    return max(new_count, 0)
+    return new_count
 
 # ── Per-series refresh ────────────────────────────────────────────────────────
 
@@ -765,8 +800,8 @@ def _get_last_value(path: Path, series_id: str) -> float | None:
             if s.get("series_id") == series_id:
                 v = s.get("last_value")
                 return float(v) if v is not None else None
-    except Exception:
-        pass
+    except Exception as exc:
+        log.debug("_get_last_value: could not read %s — %s", path, exc)
     return None
 
 
@@ -797,8 +832,8 @@ def print_market_snapshot(output_dir: Path) -> None:
             rh = json.load(fh)
         current_fsi    = rh.get("current_fsi")
         current_regime = rh.get("current_regime")
-    except Exception:
-        pass
+    except Exception as exc:
+        log.debug("print_market_snapshot: could not read %s — %s", rh_path, exc)
 
     # Only print if at least some data is available
     any_data = any(v is not None for v in [vix, dollar, wti, gold, slope, current_fsi])
@@ -1423,11 +1458,53 @@ def main():
             existing_log = json.loads(log_path.read_text())
             if not isinstance(existing_log, list):
                 existing_log = [existing_log]
-        except Exception:
+        except Exception as exc:
+            log.warning("Could not parse run log %s — starting fresh: %s", log_path, exc)
             existing_log = []
     existing_log.append(log_entry)
     log_path.write_text(json.dumps(existing_log[-52:], indent=2))
     log.info("Run log appended → %s", log_path)
+
+    # Auto-commit and push all updated data files to GitHub
+    _git_push_data()
+
+
+def _git_push_data() -> None:
+    """Stage all modified data/outputs files, commit, and push to origin."""
+    try:
+        # Check if there's anything to commit
+        status = subprocess.run(
+            ["git", "status", "--porcelain"],
+            capture_output=True, text=True, cwd=str(BASE_DIR),
+        )
+        if not status.stdout.strip():
+            log.info("git: nothing to commit — already up to date")
+            return
+
+        # Stage data/, outputs/, and any tracked top-level changes
+        subprocess.run(
+            ["git", "add", "data/", "outputs/"],
+            check=True, cwd=str(BASE_DIR),
+        )
+
+        run_date = datetime.now().strftime("%Y-%m-%d")
+        msg = f"Weekly refresh: data + models + weather + news + report ({run_date})"
+        subprocess.run(
+            ["git", "commit", "-m", msg],
+            check=True, cwd=str(BASE_DIR),
+        )
+        log.info("git: committed — %s", msg)
+
+        result = subprocess.run(
+            ["git", "push", "origin", "main"],
+            capture_output=True, text=True, cwd=str(BASE_DIR),
+        )
+        if result.returncode == 0:
+            log.info("git: pushed to origin/main")
+        else:
+            log.warning("git push failed:\n%s", result.stderr.strip())
+    except Exception as exc:
+        log.warning("git auto-push failed — %s", exc)
 
 
 if __name__ == "__main__":

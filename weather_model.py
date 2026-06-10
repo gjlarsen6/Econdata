@@ -99,16 +99,18 @@ CENSUS_REGIONS: dict[str, list[str]] = {
 
 SOURCE_CONFIG: dict[str, dict] = {
     "temperature_energy": {
-        "series": ["temp_mean", "hdd", "cdd", "temp_anom"],
+        "series": ["temp_mean", "temp_std", "hdd", "cdd", "temp_anom", "temp_range_mean"],
         "label_map": {
-            "temp_mean":  "Mean Temperature (°F)",
-            "hdd":        "Heating Degree Days",
-            "cdd":        "Cooling Degree Days",
-            "temp_anom":  "Temperature Anomaly (°F)",
+            "temp_mean":       "Mean Temperature (°F)",
+            "temp_std":        "Temp Volatility (°F std dev)",
+            "hdd":             "Heating Degree Days",
+            "cdd":             "Cooling Degree Days",
+            "temp_anom":       "Temperature Anomaly (°F)",
+            "temp_range_mean": "Mean Daily Temp Range (°F)",
         },
         "units": {
-            "temp_mean": "°F", "hdd": "degree-days",
-            "cdd": "degree-days", "temp_anom": "°F",
+            "temp_mean": "°F", "temp_std": "°F", "hdd": "degree-days",
+            "cdd": "degree-days", "temp_anom": "°F", "temp_range_mean": "°F",
         },
         "group_name":   "Weather: Temperature & Energy Demand",
         "model_prefix": "weather_temperature",
@@ -116,16 +118,20 @@ SOURCE_CONFIG: dict[str, dict] = {
         "plot_prefix":  "weather_temperature_{geo}",
     },
     "precipitation_disruption": {
-        "series": ["precip_total", "precip_days", "snow_total", "extreme_precip_days"],
+        "series": ["precip_total", "precip_max_day", "precip_days",
+                   "snow_total", "extreme_precip_days", "max_consec_dry"],
         "label_map": {
             "precip_total":        "Monthly Precipitation (in)",
+            "precip_max_day":      "Peak Daily Precipitation (in)",
             "precip_days":         "Precipitation Days",
             "snow_total":          "Snow Depth (in)",
             "extreme_precip_days": "Extreme Precip Days (>1in)",
+            "max_consec_dry":      "Max Consecutive Dry Days",
         },
         "units": {
-            "precip_total": "inches", "precip_days": "days",
-            "snow_total": "inches", "extreme_precip_days": "days",
+            "precip_total": "inches", "precip_max_day": "inches",
+            "precip_days": "days", "snow_total": "inches",
+            "extreme_precip_days": "days", "max_consec_dry": "days",
         },
         "group_name":   "Weather: Precipitation & Disruption",
         "model_prefix": "weather_precipitation",
@@ -133,16 +139,22 @@ SOURCE_CONFIG: dict[str, dict] = {
         "plot_prefix":  "weather_precipitation_{geo}",
     },
     "extremes_composite": {
-        "series": ["extreme_heat_days", "extreme_cold_days", "wind_mean", "cloud_cover_mean"],
+        "series": ["extreme_heat_days", "extreme_heat_95_days",
+                   "extreme_cold_days", "extreme_cold_20_days",
+                   "wind_mean", "wind_max", "cloud_cover_mean"],
         "label_map": {
-            "extreme_heat_days":  "Extreme Heat Days (>90°F)",
-            "extreme_cold_days":  "Extreme Cold Days (<32°F)",
-            "wind_mean":          "Mean Wind Speed (mph)",
-            "cloud_cover_mean":   "Mean Cloud Cover (%)",
+            "extreme_heat_days":    "Extreme Heat Days (>90°F)",
+            "extreme_heat_95_days": "Severe Heat Days (>95°F)",
+            "extreme_cold_days":    "Extreme Cold Days (<32°F)",
+            "extreme_cold_20_days": "Hard Freeze Days (<20°F)",
+            "wind_mean":            "Mean Wind Speed (mph)",
+            "wind_max":             "Peak Wind Speed (mph)",
+            "cloud_cover_mean":     "Mean Cloud Cover (%)",
         },
         "units": {
-            "extreme_heat_days": "days", "extreme_cold_days": "days",
-            "wind_mean": "mph", "cloud_cover_mean": "%",
+            "extreme_heat_days": "days", "extreme_heat_95_days": "days",
+            "extreme_cold_days": "days", "extreme_cold_20_days": "days",
+            "wind_mean": "mph", "wind_max": "mph", "cloud_cover_mean": "%",
         },
         "group_name":   "Weather: Extreme Events & Renewables",
         "model_prefix": "weather_extremes",
@@ -253,40 +265,70 @@ def aggregate_city_to_monthly(df_daily: pd.DataFrame) -> pd.DataFrame:
         return pd.DataFrame()
 
     parts: dict[str, pd.Series] = {
-        "temp_mean": mean_t.resample("MS").mean(),
-        "hdd":       mean_t.resample("MS").apply(
+        "temp_mean":  mean_t.resample("MS").mean(),
+        "temp_std":   mean_t.resample("MS").std(),   # intra-month temp volatility
+        "hdd":        mean_t.resample("MS").apply(
             lambda g: (HDD_BASE - g).clip(lower=0).sum()
         ),
-        "cdd":       mean_t.resample("MS").apply(
+        "cdd":        mean_t.resample("MS").apply(
             lambda g: (g - CDD_BASE).clip(lower=0).sum()
         ),
-        "day_count": mean_t.resample("MS").count(),
+        "day_count":  mean_t.resample("MS").count(),
     }
+
+    if max_t is not None and min_t is not None:
+        diurnal = max_t - min_t
+        parts["temp_range_mean"] = diurnal.resample("MS").mean()  # mean daily swing
 
     if precip is not None:
         parts["precip_total"]        = precip.resample("MS").sum()
+        parts["precip_max_day"]      = precip.resample("MS").max()   # peak event
         parts["precip_days"]         = precip.resample("MS").apply(
             lambda g: (g > 0.01).sum()
         )
         parts["extreme_precip_days"] = precip.resample("MS").apply(
             lambda g: (g > 1.0).sum()
         )
+        # Max consecutive dry-day and wet-day streaks
+        def _max_streak(g: pd.Series, wet: bool) -> int:
+            mask = (g > 0.01) if wet else (g <= 0.01)
+            streak = max_streak = cur = 0
+            for v in mask:
+                if v:
+                    cur += 1
+                    max_streak = max(max_streak, cur)
+                else:
+                    cur = 0
+            return max_streak
+        parts["max_consec_dry"] = precip.resample("MS").apply(
+            lambda g: _max_streak(g, wet=False)
+        )
+        parts["max_consec_wet"] = precip.resample("MS").apply(
+            lambda g: _max_streak(g, wet=True)
+        )
 
     if snow is not None:
         parts["snow_total"] = snow.resample("MS").sum()
 
     if max_t is not None:
-        parts["extreme_heat_days"] = max_t.resample("MS").apply(
+        parts["extreme_heat_days"]    = max_t.resample("MS").apply(
             lambda g: (g > 90).sum()
+        )
+        parts["extreme_heat_95_days"] = max_t.resample("MS").apply(
+            lambda g: (g > 95).sum()   # severe heat threshold
         )
 
     if min_t is not None:
-        parts["extreme_cold_days"] = min_t.resample("MS").apply(
+        parts["extreme_cold_days"]    = min_t.resample("MS").apply(
             lambda g: (g < 32).sum()
+        )
+        parts["extreme_cold_20_days"] = min_t.resample("MS").apply(
+            lambda g: (g < 20).sum()   # hard freeze threshold
         )
 
     if wind is not None:
         parts["wind_mean"] = wind.resample("MS").mean()
+        parts["wind_max"]  = wind.resample("MS").max()  # peak wind event
 
     if cloud is not None:
         parts["cloud_cover_mean"] = cloud.resample("MS").mean()
@@ -569,7 +611,10 @@ def run_weather_group(
     model_prefix = source_cfg["model_prefix"]
     plot_prefix  = source_cfg["plot_prefix"].format(geo=geo_name)
     results_file = source_cfg["results_file"].format(geo=geo_name)
-    series_cols  = [c for c in source_cfg["series"] if c in df.columns]
+    # Exclude series that are entirely NaN (e.g. temp_anom for cities with no
+    # pre-2020 baseline) — present in columns but would wipe all rows on dropna.
+    series_cols  = [c for c in source_cfg["series"]
+                    if c in df.columns and df[c].notna().any()]
 
     print("=" * 65)
     print(f"{group_name.upper()} [{geo_name.upper()}] — LightGBM Forecast Model")
@@ -597,7 +642,14 @@ def run_weather_group(
         print(f"  Latest {label}: {val:,.3f}")
 
     print("\nEngineering features...")
-    df_feat   = engineer_weather_features(df_model, series_cols).dropna().reset_index(drop=True)
+    df_feat = engineer_weather_features(df_model, series_cols)
+    # yoy/mom features for sparse series (e.g. extreme_precip_days, snow_total) have
+    # near-100% NaN when the denominator is 0; fill with 0 (no change) before dropna
+    # so valid lag/rolling rows are not discarded.
+    sparse_derived = [c for c in df_feat.columns if c.endswith(("_yoy", "_mom"))]
+    if sparse_derived:
+        df_feat[sparse_derived] = df_feat[sparse_derived].fillna(0)
+    df_feat   = df_feat.dropna().reset_index(drop=True)
     feat_cols = [c for c in df_feat.columns if c not in ["date"] + series_cols]
     print(f"  {len(feat_cols)} features  |  {len(df_feat)} usable rows")
 

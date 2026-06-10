@@ -83,6 +83,7 @@ Steps 1–5 are **flags on the same script** and can be combined into a single c
 19. [Scheduling with Cron](#scheduling-with-cron)
 20. [Adding New Series](#adding-new-series)
 21. [Phase Roadmap](#phase-roadmap)
+22. [Chat Interface] (#chat_interface)
 
 ---
 
@@ -203,10 +204,17 @@ econdata/
 │   │   ├── agg_fintech_weekly.csv  #  Fintech segment weekly metrics
 │   │   └── agg_healthcare_weekly.csv #  Healthcare segment weekly metrics
 │   ├── Weather/               # Phase 3: Climate data
-│   │   ├── US_orig/           #   Raw daily city-level station CSV files (per state → per city → per year)
+│   │   ├── US/                #   Raw daily city-level station CSVs (56 states/territories)
+│   │   │   └── {STATE}/       #     One directory per state
+│   │   │       └── {City}/    #       One directory per city (1,487 total)
+│   │   │           └── {YYYY}_{CityState}.csv  # Per-year file; updated by weather_refresh.py
 │   │   └── Aggregated/
-│   │       └── state/         #   Monthly state-level CSVs written by weather_model.py --agg-only
-│   │           └── {STATE}.csv  #   One file per state, ~300 rows, all weather metrics
+│   │       ├── state/         #   Monthly state-level CSVs (54 states/territories)
+│   │       │   └── {STATE}.csv  #   ~300 rows; unweighted mean across cities
+│   │       └── city/          #   Monthly city-level CSVs (1,486 cities)
+│   │           └── {STATE}/
+│   │               └── {City}/
+│   │                   └── monthly.csv  # 21-column enriched monthly series per city
 │   └── TEP_*.csv              # Tennessee Eastman Process datasets (used by train.py only)
 │
 └── outputs/
@@ -217,7 +225,13 @@ econdata/
     ├── results_news_volume.json          # Phase 2: Article volume forecasts (or cold_start status)
     ├── refresh_log.json       # Run history (last 52 weeks)
     ├── *_model_*.joblib       # Serialized LightGBM models
-    └── *.png                  # Forecast dashboards, validation plots, feature importance
+    ├── *.png                  # Forecast dashboards, validation plots, feature importance
+    └── city/                  # Phase 3: Per-city model outputs
+        └── {STATE}/
+            └── {City}/
+                ├── results_weather_{group}_{City}.json
+                ├── weather_{group}_{City}_{dashboard,validation,importance}.png
+                └── weather_{group}_{City}_{series}.joblib
 ```
 
 All CSV data files share a common format:
@@ -300,6 +314,9 @@ FINNHUB_API_KEY=your_finnhub_key_here
 
 # Phase 2 — financial data enrichment (yfinance needs no key; FMP is optional supplement)
 FMP_API_KEY=your_fmp_key_here
+
+# Phase 3 — required for weather_refresh.py (fetches Visual Crossing daily weather data)
+VISUAL_CROSSING_API_KEY=your_visual_crossing_key_here
 ```
 
 **Where to get keys:**
@@ -418,6 +435,18 @@ python3 fred_refresh.py --weather --weather-models
 # Phase 3: Train climate models for specific geographies
 python3 fred_refresh.py --weather-models --weather-models-geo northeast south national
 
+# Phase 3: Aggregate city monthly CSVs from raw daily data
+python3 weather_model.py --agg-only --agg-level city
+
+# Phase 3: Train city-level models for all cities in a state
+python3 weather_model.py --geo city --states CA
+
+# Phase 3: Train a single city model
+python3 weather_model.py --geo city --states TX --city Houston
+
+# Phase 3: Train all city models (all 1,486 cities — runs several hours)
+python3 weather_model.py --geo city
+
 # Phase 3: Smoke test aggregation without running fred_refresh.py (direct script)
 python3 weather_model.py --agg-only --states CA,TX,FL
 
@@ -471,8 +500,9 @@ The step count shown in the log (`[1/N]`) adjusts automatically based on which f
          → Once sufficient data exists: trains, saves .joblib and results_vc_*.json
 
 [N-1]  Refresh weather data  (only with --weather)
-         → Calls weather_refresh.py to update all city-level daily station CSVs
-         → Covers all U.S. states and cities in data/Weather/US_orig/
+         → Calls weather_refresh.py to incrementally update city-level daily station CSVs
+         → Covers all U.S. states and cities in data/Weather/US/ (1,487 cities)
+         → Appends only missing days — safe to run daily or after an extended gap
 
 [N-1]  Train weather climate models  (only with --weather-models)
          → Calls weather_model.py for each requested geography and model group
@@ -717,79 +747,143 @@ The Crunchbase API allows 200 calls per minute. `crunchbase_apis.py` sleeps 0.31
 
 ### Overview
 
-The weather pipeline adds a three-tier climate forecasting layer alongside the existing FRED and sector models.
+The weather pipeline is a four-tier climate forecasting system that operates at city, state, regional, and national levels.
 
 | Tier | Script | Description |
 |---|---|---|
-| **Raw data** | `weather_refresh.py` | Refreshes city-level daily station CSV files for all U.S. states/cities in `data/Weather/US_orig/` |
-| **Aggregation** | `weather_model.py --agg-only` | Aggregates daily city data → monthly state CSVs in `data/Weather/Aggregated/state/` |
-| **ML models** | `weather_model.py` | Trains LightGBM forecasters on regional/national monthly climate series |
+| **Raw data** | `weather_refresh.py` | Incrementally refreshes city-level daily station CSVs in `data/Weather/US/` — safe to run daily or after a gap |
+| **City aggregation** | `weather_model.py --agg-level city` | Aggregates daily city data → monthly city CSVs in `data/Weather/Aggregated/city/` (21 enriched columns) |
+| **State aggregation** | `weather_model.py --agg-level state` | Averages city monthly data → monthly state CSVs in `data/Weather/Aggregated/state/` |
+| **ML models** | `weather_model.py` | Trains LightGBM forecasters at city, state, regional, and national levels |
+
+**Scale:** 1,487 city directories · 1,486 city monthly CSVs · 1,482 cities fully trained (all 3 model groups) · 54 state/territory CSVs · 5 regional/national geographies
+
+### weather_refresh.py — Incremental Data Refresh
+
+`weather_refresh.py` fetches data from the Visual Crossing Weather API and updates the local database at `data/Weather/US/{STATE}/{City}/{YEAR}_{CityState}.csv`.
+
+**Key behaviour:**
+- Reads the last date in each existing year-file and fetches only the gap forward to today
+- Appends new rows, deduplicates, and sorts — never overwrites existing data
+- Creates new year-files when a new calendar year begins
+- Safe to run daily (appends 1 day) or after a long gap (catches up all missing days)
+
+```bash
+# Refresh all cities from 2020 onward (recommended first run or annual catch-up)
+python3 weather_refresh.py --all --from-year 2020
+
+# Daily incremental run — skips everything already current
+python3 weather_refresh.py --all
+
+# Single state
+python3 weather_refresh.py --state CA
+
+# Single city
+python3 weather_refresh.py --state TX --city Houston
+
+# Force re-fetch and overwrite existing files
+python3 weather_refresh.py --all --overwrite
+```
+
+Requires `VISUAL_CROSSING_API_KEY` in `.env`. Rate limits: free tier ~1,000 obs/day (~2–3 city-years); paid tiers proportionally higher. The script warns when approaching the configured daily limit (`--daily-limit N`).
 
 ### Enabling Weather in fred_refresh.py
 
+The `--weather` and `--weather-models` flags are independent — you can fetch data without retraining models, or retrain on existing data without re-fetching:
+
+| Flag combination | Fetches raw data | Re-aggregates | Trains models |
+|---|---|---|---|
+| `--weather` | ✅ | ❌ | ❌ |
+| `--weather-models` | ❌ | ✅ | ✅ |
+| `--weather --weather-models` | ✅ | ✅ | ✅ |
+
 ```bash
-# Step 1: Refresh raw weather station data (all states + cities)
+# Fetch raw weather data only (no model training)
 python3 fred_refresh.py --weather
 
-# Step 2: Train climate models for the national geography
+# Train/retrain climate models on existing data (no data fetch)
+python3 fred_refresh.py --weather-models
+
+# Full pipeline: fetch data + retrain models
 python3 fred_refresh.py --weather --weather-models
 
-# Full pipeline: FRED + weather data + weather models
+# Full pipeline: FRED + weather data + weather models for a specific geography
 python3 fred_refresh.py --weather --weather-models --weather-models-geo national
 ```
 
 ### Geographies
 
-| Geography | States |
-|---|---|
-| `northeast` | CT, ME, MA, NH, RI, VT, NJ, NY, PA |
-| `midwest` | IL, IN, IA, KS, MI, MN, MO, NE, ND, OH, SD, WI |
-| `south` | AL, AR, DE, FL, GA, KY, LA, MD, MS, NC, OK, SC, TN, TX, VA, WV, DC |
-| `west` | AK, AZ, CA, CO, HI, ID, MT, NV, NM, OR, UT, WA, WY |
-| `national` | All states (unweighted mean) |
+| Geography | Scope | Training Source |
+|---|---|---|
+| `city` | Individual city | `data/Weather/Aggregated/city/{STATE}/{City}/monthly.csv` |
+| `northeast` | CT, ME, MA, NH, RI, VT, NJ, NY, PA | State CSVs averaged |
+| `midwest` | IL, IN, IA, KS, MI, MN, MO, NE, ND, OH, SD, WI | State CSVs averaged |
+| `south` | AL, AR, DE, FL, GA, KY, LA, MD, MS, NC, OK, SC, TN, TX, VA, WV, DC | State CSVs averaged |
+| `west` | AK, AZ, CA, CO, HI, ID, MT, NV, NM, OR, UT, WA, WY | State CSVs averaged |
+| `national` | All states (unweighted mean) | State CSVs averaged |
 
 ### Model Groups
 
+Three model groups are trained at every geography level:
+
 | Source Key | Series Modeled | Results File |
 |---|---|---|
-| `temperature_energy` | `temp_mean`, `hdd`, `cdd`, `temp_anom` | `results_weather_temperature_{geo}.json` |
-| `precipitation_disruption` | `precip_total`, `precip_days`, `snow_total`, `extreme_precip_days` | `results_weather_precipitation_{geo}.json` |
-| `extremes_composite` | `extreme_heat_days`, `extreme_cold_days`, `wind_mean`, `cloud_cover_mean` | `results_weather_extremes_{geo}.json` |
+| `temperature_energy` | `temp_mean`, `temp_std`, `hdd`, `cdd`, `temp_anom`, `temp_range_mean` | `results_weather_temperature_{geo}.json` |
+| `precipitation_disruption` | `precip_total`, `precip_max_day`, `precip_days`, `snow_total`, `extreme_precip_days`, `max_consec_dry` | `results_weather_precipitation_{geo}.json` |
+| `extremes_composite` | `extreme_heat_days`, `extreme_heat_95_days`, `extreme_cold_days`, `extreme_cold_20_days`, `wind_mean`, `wind_max`, `cloud_cover_mean` | `results_weather_extremes_{geo}.json` |
 
 **Climate variables defined:**
 - `hdd` — Heating Degree Days: `sum(max(0, 65 − mean_temp))` per month
 - `cdd` — Cooling Degree Days: `sum(max(0, mean_temp − 65))` per month
-- `temp_anom` — temperature anomaly vs. 2000–2019 monthly baseline (NaN if < 10 baseline years)
-- `extreme_heat_days` — days with max_temp > 95°F
-- `extreme_cold_days` — days with min_temp < 10°F
-- `extreme_precip_days` — days with precip > 1 inch
+- `temp_std` — standard deviation of daily mean temps within month (volatility)
+- `temp_range_mean` — mean daily temperature swing (max − min) within month
+- `temp_anom` — anomaly vs. 2000–2019 monthly baseline; NaN if no baseline data
+- `precip_max_day` — peak single-day precipitation event within month
+- `max_consec_dry` — longest consecutive dry-day streak (precip ≤ 0.01 in) within month
+- `extreme_heat_days` / `extreme_heat_95_days` — days with max_temp > 90°F / > 95°F
+- `extreme_cold_days` / `extreme_cold_20_days` — days with min_temp < 32°F / < 20°F
+- `wind_max` — peak wind speed within month
 
 ### Feature Engineering
 
-`engineer_weather_features()` extends `macro_utils.engineer_features()` with weather-specific additions:
+`engineer_weather_features()` extends `macro_utils.engineer_features()` with:
 
 | Addition | Detail |
 |---|---|
 | **Cyclical month encoding** | `sin_month = sin(2π × month / 12)`, `cos_month = cos(2π × month / 12)` — replaces integer month and quarter |
 | **Cross-climate features** | `hdd_x_precip = hdd_lag1 × precip_total_lag1`, `cdd_x_wind = cdd_lag1 × wind_mean_lag1` |
+| **Sparse series handling** | `_yoy` and `_mom` momentum features for zero-heavy series (e.g. snow, extreme counts) are filled with 0 instead of NaN to prevent row loss |
 
 ### Running Directly
 
 ```bash
-# Aggregate state CSVs from raw daily files (fast smoke test — 3 states)
-python3 weather_model.py --agg-only --states CA,TX,FL
+# ── Aggregation ───────────────────────────────────────────────────────────────
 
-# Aggregate all states
-python3 weather_model.py --agg-only
+# Aggregate state CSVs from raw daily files
+python3 weather_model.py --agg-only                          # all states
+python3 weather_model.py --agg-only --states CA,TX,FL        # subset
 
-# Train national models for all 3 groups
+# Aggregate city monthly CSVs (21-column enriched format)
+python3 weather_model.py --agg-only --agg-level city         # all cities
+python3 weather_model.py --agg-only --agg-level city --states CA  # one state
+
+# Aggregate both state and city CSVs
+python3 weather_model.py --agg-only --agg-level all
+
+# Re-aggregate (overwrite existing CSVs)
+python3 weather_model.py --agg-only --agg-level all --force-agg
+
+# ── Model training ────────────────────────────────────────────────────────────
+
+# Regional/national models
 python3 weather_model.py --geo national --source all
-
-# Train specific group for specific regions
 python3 weather_model.py --geo northeast south --source temperature_energy
+python3 weather_model.py --geo all --source all              # all 5 geographies
 
-# Re-aggregate (overwrite existing state CSVs)
-python3 weather_model.py --agg-only --force-agg
+# City-level models
+python3 weather_model.py --geo city --states TX --city Houston   # single city
+python3 weather_model.py --geo city --states CA              # all cities in CA
+python3 weather_model.py --geo city                          # all 1,486 cities (~2–4 hrs)
 ```
 
 ### Tests
@@ -798,7 +892,7 @@ python3 weather_model.py --agg-only --force-agg
 # Run all unit tests (no live data required — ~16 seconds)
 python3 -m pytest tests/test_weather_model.py -v -k "not integration"
 
-# Run full integration tests (requires weather data in data/Weather/US_orig/)
+# Run full integration tests (requires weather data in data/Weather/US/)
 python3 -m pytest tests/test_weather_model.py -v -m integration
 ```
 
@@ -1105,41 +1199,48 @@ Groups skip gracefully if their data directory is empty. ISM New Orders (`NAPMNE
 
 ### weather_model.py *(Phase 3)*
 
-LightGBM climate forecaster that aggregates city-level daily weather station data into monthly regional/national series and trains three model groups. Can be run directly or via `fred_refresh.py --weather-models`.
+LightGBM climate forecaster that aggregates city-level daily weather data to monthly CSVs at city, state, regional, and national levels, then trains three model groups at each level. Can be run directly or via `fred_refresh.py --weather-models`.
 
 ```bash
 python3 weather_model.py --geo national --source all
-python3 weather_model.py --geo northeast midwest south west national --source all
-python3 weather_model.py --agg-only --states CA,TX,FL   # aggregation only
+python3 weather_model.py --geo city --states TX --city Houston
+python3 weather_model.py --geo city                          # all 1,486 cities
+python3 weather_model.py --agg-only --agg-level all          # aggregate only
 ```
 
-**Two-phase execution:**
+**Execution phases:**
 
-1. **Aggregation** (`--agg-only` or automatic): reads raw daily city CSVs → monthly state CSVs in `data/Weather/Aggregated/state/`. Skips existing state CSVs unless `--force-agg` is set.
-2. **Model training**: loads state CSVs → builds regional/national DataFrames in memory → engineers features → trains 3 LightGBM models (mid/lo/hi) per series.
+1. **Aggregation** (`--agg-only` or automatic before training): reads raw daily city CSVs → monthly CSVs per city and/or state. Controlled by `--agg-level state|city|all`. Skips existing CSVs unless `--force-agg`.
+2. **Model training**: loads city or state CSVs → engineers features → trains 3 LightGBM models (mid/lo/hi) per series.
 
-**Aggregation pipeline per state:**
+**City aggregation pipeline:**
 
 | Step | Function | Description |
 |---|---|---|
-| 1 | `load_city_daily()` | Reads all year CSVs for a city using internal column map |
-| 2 | `aggregate_city_to_monthly()` | `resample("MS")` with HDD/CDD/extreme counts; drops months with < 20 days |
-| 3 | `aggregate_state_monthly()` | Mean across cities; drops months where < 2 cities contributed |
-| 4 | `add_temperature_anomaly()` | Adds `temp_anom` vs. 2000–2019 baseline |
+| 1 | `load_city_daily()` | Reads all year CSVs for a city |
+| 2 | `aggregate_city_to_monthly()` | `resample("MS")` producing 21 enriched columns; drops months with < 20 days |
+| 3 | `add_temperature_anomaly()` | Adds `temp_anom` vs. 2000–2019 baseline; NaN if no baseline |
+| 4 | `save_city_csv()` | Writes `data/Weather/Aggregated/city/{STATE}/{City}/monthly.csv` |
+
+**State aggregation pipeline:**
+
+| Step | Function | Description |
+|---|---|---|
+| 1–3 | (same as city) | Per-city monthly DataFrames |
+| 4 | `aggregate_state_monthly()` | Unweighted mean across cities; drops months where < 1 city contributed |
 | 5 | `save_state_csv()` | Writes `data/Weather/Aggregated/state/{STATE}.csv` |
 
-**Regional assembly (in memory):**
+**Regional/national assembly (in memory):**
 
 | Function | Description |
 |---|---|
-| `build_region_df()` | Loads state CSVs for a Census region; unweighted mean per month; drops months where < half of states contributed |
-| `build_national_df()` | Wrapper around `build_region_df` with all states |
+| `build_region_df()` | Loads state CSVs for a Census region; unweighted mean per month |
+| `build_national_df()` | All states, same as `build_region_df` |
 
-**Outputs per (source_key, geo_name) pair:**
+**Outputs per (source_key, geo) pair:**
 
-- `weather_{group}_{geo}_{series}.joblib` — serialized mid-model per series
-- `results_weather_{group}_{geo}.json` — forecasts + validation metrics
-- `weather_{group}_{geo}_{dashboard,validation,importance}.png` — standard three-plot set
+- State/region/national: `outputs/weather_{group}_{geo}_{series}.joblib`, `results_weather_{group}_{geo}.json`, `weather_{group}_{geo}_*.png`
+- City: `outputs/city/{STATE}/{City}/results_weather_{group}_{city}.json`, `weather_{group}_{city}_*.png`, `weather_{group}_{city}_{series}.joblib`
 
 ---
 
@@ -1417,6 +1518,16 @@ Single-series endpoints return the inner `series` object directly (without the g
 Optional endpoints (sector, VC) return HTTP 404 with an instructive message when their backing results file has not yet been generated, including the exact `fred_refresh.py` command needed to produce it.
 
 ### Endpoint Reference
+
+Existing API Coverage
+
+  All 40+ endpoints are already implemented for:
+  - Macro groups: /api/business-env, /api/consumer-demand, /api/cost-of-capital, /api/risk
+  - Market & financial: /api/market/{vix|spreads|dollar|yield-curve|stress|regime}, /api/commodities/{oil|gold}
+  - Industrial: /api/industrial/{production|ism-pmi|capacity-utilization|credit}
+  - Sectors: /api/sector/{bls|bea|worldbank|bls-wages|bls-hours|jolts|etf}
+  - Venture capital: /api/vc/{ai|fintech|healthcare}
+  - Financial news: /api/financial-news/{briefing|top-stories|alerts|sentiment|volume}
 
 #### Meta
 
@@ -2033,6 +2144,52 @@ Then add the script to `MODEL_SCRIPTS` and its results file to `RESULTS_FILES` i
 | **Phase 0** | ✅ Complete | Free FRED extensions: VIX, credit spreads, USD index, WTI oil, gold, 8-tenor yield curve, FSI, Market Regime | None |
 | **Phase 1** | ✅ Complete | News ingestion pipeline (`news_apis.py` + `briefing.py`): daily briefings, top-stories ranking, rule-based impact alerts. Two new files + targeted changes to `fred_refresh.py`, `api.py`, `test_api.py`. | At least one of `NEWS_API_KEY`, `MARKETAUX_API_KEY`, `FINNHUB_API_KEY` |
 | **Phase 2** | ✅ Complete | Enrichment + Sentiment ML — `enrichment_apis.py` attaches yfinance/FMP signals to ticker-tagged articles; `news_model.py` trains LightGBM on 30+ days of sentiment/volume data; `/api/financial-news/sentiment`, `/api/financial-news/sentiment/{id}`, `/api/financial-news/volume` endpoints with cold-start handling. | `FMP_API_KEY` (optional — yfinance needs no key) |
-| **Phase 3** | ✅ Complete | Weather ML pipeline — `weather_refresh.py` refreshes city-level daily station data; `weather_model.py` aggregates to monthly state/regional/national CSVs and trains 3 LightGBM climate model groups (temperature/energy, precipitation/disruption, extreme events/renewables) × 5 geographies. Integrated into `fred_refresh.py` via `--weather` and `--weather-models` flags. Full results appear in `reports.py` and the unified summary table. | None |
+| **Phase 3** | ✅ Complete | Weather ML pipeline — `weather_refresh.py` incrementally refreshes 1,487 city daily station CSVs (Visual Crossing API, append-only); `weather_model.py` aggregates to 21-column monthly city CSVs and monthly state CSVs, then trains 3 LightGBM climate model groups × city + 5 regional/national geographies. 1,482 cities fully trained. Integrated into `fred_refresh.py` via `--weather` and `--weather-models` flags. | `VISUAL_CROSSING_API_KEY` |
 
-Phase 1 requires at least one news API key (the others are optional additional sources) and works from day 1. Phase 2 enrichment (`--enrich`) requires `yfinance` installed; FMP fundamentals are optional. Phase 2 ML (`news_model.py`) requires Phase 1 having run for ≥30 days but exits cleanly with a cold-start message until then. Phase 3 requires raw daily weather station data in `data/Weather/US_orig/` (populated by `weather_refresh.py` or pre-existing). All phase-specific keys are pre-documented in `.env.example`.
+Phase 1 requires at least one news API key (the others are optional additional sources) and works from day 1. Phase 2 enrichment (`--enrich`) requires `yfinance` installed; FMP fundamentals are optional. Phase 2 ML (`news_model.py`) requires Phase 1 having run for ≥30 days but exits cleanly with a cold-start message until then. Phase 3 requires `VISUAL_CROSSING_API_KEY` for `weather_refresh.py`; the city and state CSVs in `data/Weather/` are pre-populated and models are pre-trained. All phase-specific keys are pre-documented in `.env.example`.
+
+
+### Weather Endpoints
+18 Weather Endpoints Added                                                                                                                                                           
+                                                                                                                                                                                       
+  National (6)                                                                                                                                                                         
+  - GET /api/weather/temperature + /{series_id} — temp_mean, temp_std, hdd, cdd, temp_anom, temp_range_mean                                                                            
+  - GET /api/weather/precipitation + /{series_id} — precip_total, precip_max_day, precip_days, snow_total, extreme_precip_days, max_consec_dry                                         
+  - GET /api/weather/extremes + /{series_id} — extreme heat/cold days, wind_mean, wind_max, cloud_cover_mean                                                                           
+  - GET /api/weather/cloud-cover — cloud_cover_mean with sky condition labels                                                                                                          
+                                                                                                                                                                                       
+  Regional (4) — {region} = northeast | midwest | south | west                                                                                                                         
+  - GET /api/weather/region/{region}/temperature|precipitation|extremes|cloud-cover                                                                                                    
+                                                                                                                                                                                       
+  City (4) — {state} = 2-letter code, {city} = URL-encoded name                                                                                                                        
+  - GET /api/weather/city/{state}/{city}/temperature|precipitation|extremes|cloud-cover                                                                                                
+                                                                                                                                                                                     
+  Discovery (3)                                                                                                                                                                        
+  - GET /api/weather/cities — 1,485 cities available                                                                                                                                   
+  - GET /api/weather/cities/{state} — cities by state                                                                                                                                
+  - GET /api/weather/summary — availability matrix across all geographies                                                                                                              
+                                                                                                                                                                                       
+  Cloud cover sky conditions: Clear (<20%) / Mostly Sunny (20–39%) / Partly Cloudy (40–59%) / Mostly Cloudy (60–79%) / Overcast (80–100%)    
+
+---
+
+## Chat Interface
+
+   # Terminal 1 — start the API
+  python3 api.py
+
+  # Terminal 2 — start the chat UI
+  streamlit run chat.py --server.port 8501
+
+  Then open http://localhost:8501 in your browser.
+
+  What was implemented:
+  - 11 tools mapping to all API endpoint groups as specified in the plan
+  - execute_tool() with full error handling (offline, 404, 500)
+  - run_agent_loop() — standard Anthropic tool-use while loop, collects all tool blocks per turn
+  - check_api_health() for the sidebar status indicator
+  - get_endpoint_statuses() cached 60s via @st.cache_data
+  - Sidebar with green/red API status, Data Availability checklist, and a clear-conversation button
+  - Chat UI with message bubbles and collapsible "Data sources" expanders showing tool name, input, and result preview
+  - Session state — messages for display history, api_history (text-only turns) trimmed to last 40 before each call
+  - System prompt covering all thresholds, series IDs, not-yet-available data, and response style guidelines

@@ -324,11 +324,11 @@ def generate_daily_briefing(
             "timestamp":           (row.get("timestamp") or ""),
             "source_name":         (row.get("source_name") or ""),
             "sector":              (row.get("sector") or ""),
-            "ticker":              (row.get("ticker") or None),
+            "ticker":              row.get("ticker") if pd.notna(row.get("ticker")) else None,
             "headline":            (row.get("headline") or ""),
             "sentiment":           float(sent) if pd.notna(sent) else None,
-            "sentiment_label":     (row.get("sentiment_label") or None),
-            "macro_tag":           (row.get("macro_tag") or None),
+            "sentiment_label":     row.get("sentiment_label") if pd.notna(row.get("sentiment_label")) else None,
+            "macro_tag":           row.get("macro_tag") if pd.notna(row.get("macro_tag")) else None,
             "market_impact_score": float(mis) if pd.notna(mis) else None,
         })
 
@@ -371,12 +371,15 @@ def main() -> None:
     briefing  = generate_daily_briefing(date=args.date, output_dir=output_dir)
     date_str  = briefing["date"]
     out_path  = output_dir / f"daily_briefing_{date_str}.json"
-    out_path.write_text(json.dumps(briefing, indent=2))
 
-    print(
-        f"[BRIEFING] {date_str} — {briefing['article_count']} articles, "
-        f"{len(briefing['alerts'])} alerts  →  {out_path}"
-    )
+    if briefing["article_count"] == 0:
+        print(f"[BRIEFING] {date_str} — 0 articles, skipping write (no file created)")
+    else:
+        out_path.write_text(json.dumps(briefing, indent=2, allow_nan=False))
+        print(
+            f"[BRIEFING] {date_str} — {briefing['article_count']} articles, "
+            f"{len(briefing['alerts'])} alerts  →  {out_path}"
+        )
 
 
 if __name__ == "__main__":

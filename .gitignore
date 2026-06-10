@@ -9,6 +9,10 @@ __pycache__/
 # API keys — never commit
 .env
 
+# Google Drive OAuth credentials and cached token
+google_drive_credentials.json
+outputs/backups/gdrive_token.json
+
 # Local Claude Code config
 .claude/
 
@@ -19,3 +23,9 @@ __pycache__/
 *.egg-info/
 dist/
 build/
+
+# Weather data — backed up to Google Drive, not stored in GitHub
+data/Weather/
+
+# Per-city weather model artifacts (large; regenerable from data/Weather/)
+outputs/city/

@@ -1,0 +1,2 @@
+timestamp,ingested_at,source_api,source_name,url,headline,summary,sector,ticker,entities,sentiment,sentiment_label,macro_tag,market_impact_score
+2026-06-10T19:13:44Z,2026-06-10T19:22:10.245185Z,finnhub,CNBC,https://www.cnbc.com/2026/06/10/starbucks-stock-is-a-bright-spot-in-wednesdays-bleak-market-heres-why.html,Starbucks stock is a bright spot in Wednesday's bleak market. Here's why,"Every weekday, the Investing Club releases the Homestretch; an actionable afternoon update just in time for the last hour of trading.",equities,,[],,,,

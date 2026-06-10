@@ -1,0 +1,107 @@
+{
+  "group": "competitive_intelligence",
+  "run_at": "2026-06-10T12:56:23",
+  "competitor_count": 4,
+  "competitors": [
+    {
+      "id": "example-competitor-3",
+      "name": "Bigger Pockets",
+      "website": "https://www.biggerpockets.com",
+      "industry": "Passive Income",
+      "size_estimate": "100-500",
+      "priority": 1,
+      "scores": {
+        "financial_health_score": 0.0,
+        "hiring_momentum_score": 0.0,
+        "innovation_score": 1.0,
+        "market_focus_score": 0.0,
+        "customer_momentum_score": 0.4,
+        "funding_strength_score": 0.0,
+        "threat_score": 0.14
+      },
+      "strategy_summary": "BiggerPockets operates squarely within the real estate investing vertical, positioning itself as an educational and community platform targeting both novice and experienced investors seeking deal flow, networking, and financial literacy resources. Its case studies highlight member outcomes centered on income generation, funding access, and network building, suggesting the platform's core value proposition remains community-driven lead generation and peer learning rather than direct transactional services. The blog's focus on real estate investing news and weekly briefings indicates a content marketing strategy aimed at audience retention and organic search authority. However, with zero estimated open job postings, there are no signals of near-term expansion, product development, or strategic hiring activity to suggest accelerating momentum. Given the absence of evidence of recent funding, partnerships, or new product launches, the platform's competitive threat score of 0.14 out of 1.0 appears well-supported \u2014 it is an established niche player with a loyal community but shows limited signs of aggressive competitive moves at this time.",
+      "signal_count": 6,
+      "job_posting_count": 0,
+      "news_count": 0,
+      "last_signals_at": "2026-06-10",
+      "crunchbase_profile": null,
+      "recent_rounds": [],
+      "recent_news": []
+    },
+    {
+      "id": "example-competitor-2",
+      "name": "Bank On Yourself",
+      "website": "https://www.bankonyourself.com",
+      "industry": "Be Your Own Bank",
+      "size_estimate": "100-500",
+      "priority": 1,
+      "scores": {
+        "financial_health_score": 0.0,
+        "hiring_momentum_score": 0.0,
+        "innovation_score": 0.7,
+        "market_focus_score": 0.0,
+        "customer_momentum_score": 0.0,
+        "funding_strength_score": 0.0,
+        "threat_score": 0.07
+      },
+      "strategy_summary": "Bank On Yourself operates primarily in the personal finance and retirement planning vertical, positioning itself as an alternative to conventional vehicles like 401(k)s and IRAs by promoting dividend-paying whole life insurance as a savings and wealth-building strategy. Its content heavily targets pre-retirees and retirement-anxious consumers concerned about market volatility, Social Security taxation, and Congressional policy risk, suggesting a focused audience acquisition strategy built around fear-of-loss messaging. The company's primary commercial asset appears to be its book, *The Bank On Yourself Revolution*, a New York Times bestseller, which serves as both a lead generation tool and a credibility anchor rather than a traditional product or service offering. There are no open job postings detected, no visible funding activity, and no apparent partnership or product expansion signals, indicating a lean or static operational posture. With a threat score of 0.07/1.0, this organization represents a minimal competitive threat \u2014 likely functioning as a niche media and advisory brand with limited scale ambitions rather than an aggressive market disruptor.",
+      "signal_count": 4,
+      "job_posting_count": 0,
+      "news_count": 0,
+      "last_signals_at": "2026-06-10",
+      "crunchbase_profile": null,
+      "recent_rounds": [],
+      "recent_news": []
+    },
+    {
+      "id": "example-competitor-5",
+      "name": "The Real Asset Investor",
+      "website": "https://therealassetinvestor.com",
+      "industry": "Wealth Strategy Platform",
+      "size_estimate": "100-500",
+      "priority": 1,
+      "scores": {
+        "financial_health_score": 0.0,
+        "hiring_momentum_score": 0.0,
+        "innovation_score": 0.333,
+        "market_focus_score": 0.0,
+        "customer_momentum_score": 0.0,
+        "funding_strength_score": 0.0,
+        "threat_score": 0.033
+      },
+      "strategy_summary": "The Real Asset Investor is a niche investment education and deal-sponsorship platform targeting individual investors seeking alternative assets, with a focus on self-storage funds, cash flow-generating real assets, and tax-advantaged investment strategies. The platform is led by Dave Zook and Laura Weaver, positioning itself around a personal brand-driven model that emphasizes wealth-building through non-conventional vehicles. There are no detectable open job postings, suggesting a lean, static organizational structure with limited near-term growth or expansion activity. No recent funding rounds, partnerships, or new product launches are evident from the available evidence, indicating modest or plateaued financial momentum. With a threat score of 0.03 out of 1.0, this firm represents a minimal competitive threat \u2014 it operates in a narrow, relationship-driven segment of the alternative investment space and lacks the scale, hiring activity, or strategic signals that would suggest broader market disruption.",
+      "signal_count": 2,
+      "job_posting_count": 0,
+      "news_count": 0,
+      "last_signals_at": "2026-06-10",
+      "crunchbase_profile": null,
+      "recent_rounds": [],
+      "recent_news": []
+    },
+    {
+      "id": "example-competitor-4",
+      "name": "Cashflow Tactics",
+      "website": "https://cashflowtactics.com",
+      "industry": "Passive Income",
+      "size_estimate": "100-500",
+      "priority": 1,
+      "scores": {
+        "financial_health_score": 0.0,
+        "hiring_momentum_score": 0.0,
+        "innovation_score": 0.0,
+        "market_focus_score": 0.0,
+        "customer_momentum_score": 0.0,
+        "funding_strength_score": 0.0,
+        "threat_score": 0.0
+      },
+      "strategy_summary": "Based on the available evidence, Cashflow Tactics shows no currently open job postings, which limits the ability to draw meaningful conclusions about their strategic direction, target verticals, or near-term growth initiatives. The absence of active hiring activity may indicate a stable but static headcount, a pause in expansion, or a lean operational model that relies on a small core team or contractors. There are no observable signals of recent funding rounds, product launches, or partnerships from the provided evidence. Given the lack of measurable momentum indicators, the competitive threat score of 0.00/1.0 is consistent with the evidence, suggesting they do not currently pose a material competitive threat based on what can be assessed here. Any meaningful competitive assessment would require additional data points such as web traffic trends, product updates, customer reviews, or leadership activity.",
+      "signal_count": 0,
+      "job_posting_count": 0,
+      "news_count": 0,
+      "last_signals_at": "2026-06-10",
+      "crunchbase_profile": null,
+      "recent_rounds": [],
+      "recent_news": []
+    }
+  ]
+}

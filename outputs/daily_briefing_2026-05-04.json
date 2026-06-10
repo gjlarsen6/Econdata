@@ -1,0 +1,127 @@
+{
+  "date": "2026-05-04",
+  "generated_at": "2026-05-05T00:01:43",
+  "article_count": 146,
+  "top_stories": [
+    {
+      "timestamp": "2026-05-04T17:00:14.000000Z",
+      "source_name": "benzinga.com",
+      "sector": "macro",
+      "ticker": "MSFT",
+      "headline": "Elon Musk Predicts Greg Brockman, Sam Altman 'Will Be The Most Hated Men In America' - Alphabet (NASDAQ:G",
+      "sentiment": -0.36345,
+      "sentiment_label": "negative",
+      "macro_tag": null,
+      "market_impact_score": 0.5509
+    },
+    {
+      "timestamp": "2026-05-04T00:34:00Z",
+      "source_name": "Reuters",
+      "sector": "macro",
+      "ticker": null,
+      "headline": "Dollar edges up as US-Iran conflict keeps risk appetite in check - Reuters",
+      "sentiment": null,
+      "sentiment_label": null,
+      "macro_tag": "earnings",
+      "market_impact_score": 0.55
+    },
+    {
+      "timestamp": "2026-05-04T08:26:09Z",
+      "source_name": "Reuters",
+      "sector": "macro",
+      "ticker": null,
+      "headline": "Dubai Airports scaling up operations as UAE airspace restored, CEO says - Reuters",
+      "sentiment": null,
+      "sentiment_label": null,
+      "macro_tag": "ipo",
+      "market_impact_score": 0.52
+    },
+    {
+      "timestamp": "2026-05-04T18:29:36Z",
+      "source_name": "CNBC",
+      "sector": "equities",
+      "ticker": null,
+      "headline": "What's behind Eli Lilly's down-and-up day after last week's post-earnings surge",
+      "sentiment": null,
+      "sentiment_label": null,
+      "macro_tag": "earnings",
+      "market_impact_score": 0.52
+    },
+    {
+      "timestamp": "2026-05-04T15:21:08Z",
+      "source_name": "CNBC",
+      "sector": "equities",
+      "ticker": null,
+      "headline": "We're adding to our position in a stock that has gotten cheaper since earnings",
+      "sentiment": null,
+      "sentiment_label": null,
+      "macro_tag": "earnings",
+      "market_impact_score": 0.52
+    },
+    {
+      "timestamp": "2026-05-04T01:40:00Z",
+      "source_name": "Reuters",
+      "sector": "macro",
+      "ticker": null,
+      "headline": "Gold slips as Iran risks support dollar, keep inflation fears in focus - Reuters",
+      "sentiment": null,
+      "sentiment_label": null,
+      "macro_tag": "inflation",
+      "market_impact_score": 0.505
+    },
+    {
+      "timestamp": "2026-05-04T17:01:01.000000Z",
+      "source_name": "finance.yahoo.com",
+      "sector": "macro",
+      "ticker": "GOOGL",
+      "headline": "Apollo Global president says it'll take 'all the markets' to fund AI spending",
+      "sentiment": 0.0853,
+      "sentiment_label": "positive",
+      "macro_tag": null,
+      "market_impact_score": 0.4813
+    },
+    {
+      "timestamp": "2026-05-04T12:50:34Z",
+      "source_name": "CNBC",
+      "sector": "energy",
+      "ticker": null,
+      "headline": "\u2018Misplaced euphoria\u2019: Markets are sleepwalking into a recession amid Iran war oil price shock",
+      "sentiment": null,
+      "sentiment_label": null,
+      "macro_tag": "gdp",
+      "market_impact_score": 0.475
+    },
+    {
+      "timestamp": "2026-05-04T16:54:48.000000Z",
+      "source_name": "benzinga.com",
+      "sector": "equities",
+      "ticker": "ZM",
+      "headline": "Why Is Zoom Stock Surging On Monday? - Zoom Communications (NASDAQ:ZM)",
+      "sentiment": 0.42405,
+      "sentiment_label": "positive",
+      "macro_tag": null,
+      "market_impact_score": 0.466
+    },
+    {
+      "timestamp": "2026-05-04T16:38:25Z",
+      "source_name": "Reuters",
+      "sector": "macro",
+      "ticker": null,
+      "headline": "Wall St falls as Middle East tensions spark fresh jitters - Reuters",
+      "sentiment": null,
+      "sentiment_label": null,
+      "macro_tag": null,
+      "market_impact_score": 0.46
+    }
+  ],
+  "sector_mood": {
+    "equities": 0.106,
+    "macro": -0.139
+  },
+  "macro_signals": [
+    "Market regime: Contraction (FSI=0.453)",
+    "9 regulation articles today",
+    "8 earnings articles today"
+  ],
+  "alerts": []
+}

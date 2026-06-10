@@ -168,8 +168,9 @@ class MarketBiasConnector(BaseConnector):
         merged = merged.sort_values("_merge_date")
 
         # Carry forward last known signal for event dates with no market data
-        merged["spy_cross_9_20"] = merged["spy_cross_9_20"].ffill()
-        merged["spy_cross_20_50"] = merged["spy_cross_20_50"].ffill()
+        # limit=5 covers a standard trading week; gaps beyond that stay NaN
+        merged["spy_cross_9_20"] = merged["spy_cross_9_20"].ffill(limit=5)
+        merged["spy_cross_20_50"] = merged["spy_cross_20_50"].ffill(limit=5)
 
         merged = merged.drop(columns=["_merge_date"])
         return merged.reset_index(drop=True)
